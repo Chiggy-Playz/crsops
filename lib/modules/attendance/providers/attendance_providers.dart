@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/data/supabase_client_provider.dart';
+import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
 import '../models/gap_row.dart';
 import '../models/shift_defaults.dart';
@@ -49,3 +50,16 @@ Future<List<EffectiveStatusRow>> effectiveRangeStatus(
 
 @riverpod
 Future<List<GapRow>> recentGaps(Ref ref) => ref.watch(attendanceRepositoryProvider).fetchRecentGaps();
+
+@riverpod
+Future<List<DerivedFlagsRow>> derivedFlags(
+  Ref ref, {
+  required DateTime start,
+  required DateTime end,
+  String? employeeId,
+}) =>
+    ref.watch(attendanceRepositoryProvider).fetchDerivedFlags(
+          start: start,
+          end: end,
+          employeeId: employeeId,
+        );

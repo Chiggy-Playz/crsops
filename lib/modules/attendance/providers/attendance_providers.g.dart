@@ -407,3 +407,97 @@ final class RecentGapsProvider
 }
 
 String _$recentGapsHash() => r'0a7de945c876fdda5813c1f1e15f45d8375451fa';
+
+@ProviderFor(derivedFlags)
+final derivedFlagsProvider = DerivedFlagsFamily._();
+
+final class DerivedFlagsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<DerivedFlagsRow>>,
+          List<DerivedFlagsRow>,
+          FutureOr<List<DerivedFlagsRow>>
+        >
+    with
+        $FutureModifier<List<DerivedFlagsRow>>,
+        $FutureProvider<List<DerivedFlagsRow>> {
+  DerivedFlagsProvider._({
+    required DerivedFlagsFamily super.from,
+    required ({DateTime start, DateTime end, String? employeeId})
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'derivedFlagsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$derivedFlagsHash();
+
+  @override
+  String toString() {
+    return r'derivedFlagsProvider'
+        ''
+        '$argument';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<DerivedFlagsRow>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<DerivedFlagsRow>> create(Ref ref) {
+    final argument =
+        this.argument as ({DateTime start, DateTime end, String? employeeId});
+    return derivedFlags(
+      ref,
+      start: argument.start,
+      end: argument.end,
+      employeeId: argument.employeeId,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is DerivedFlagsProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$derivedFlagsHash() => r'852deb428600f4e4089437a5d11739c1c85e3e70';
+
+final class DerivedFlagsFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<DerivedFlagsRow>>,
+          ({DateTime start, DateTime end, String? employeeId})
+        > {
+  DerivedFlagsFamily._()
+    : super(
+        retry: null,
+        name: r'derivedFlagsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  DerivedFlagsProvider call({
+    required DateTime start,
+    required DateTime end,
+    String? employeeId,
+  }) => DerivedFlagsProvider._(
+    argument: (start: start, end: end, employeeId: employeeId),
+    from: this,
+  );
+
+  @override
+  String toString() => r'derivedFlagsProvider';
+}
