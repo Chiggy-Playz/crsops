@@ -205,34 +205,61 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     // Exactly one employee selected: use the server-side filter directly.
     // Zero (all) or several selected: fetch everyone and filter client-side,
     // since the RPCs don't support an arbitrary subset.
-    final singleEmployeeId = _selectedEmployeeIds.length == 1 ? _selectedEmployeeIds.first : null;
+    final singleEmployeeId = _selectedEmployeeIds.length == 1
+        ? _selectedEmployeeIds.first
+        : null;
 
     final statusTypesAsync = ref.watch(statusTypesProvider);
-    final summaryAsync = ref.watch(effectiveRangeStatusProvider(
-      start: range.start,
-      end: range.end,
-      employeeId: singleEmployeeId,
-    ));
-    final exceptionsAsync = ref.watch(derivedFlagsProvider(
-      start: range.start,
-      end: range.end,
-      employeeId: singleEmployeeId,
-    ));
+    final employeesAsync = ref.watch(employeeListProvider);
+    final summaryAsync = ref.watch(
+      effectiveRangeStatusProvider(
+        start: range.start,
+        end: range.end,
+        employeeId: singleEmployeeId,
+      ),
+    );
+    final exceptionsAsync = ref.watch(
+      derivedFlagsProvider(
+        start: range.start,
+        end: range.end,
+        employeeId: singleEmployeeId,
+      ),
+    );
 
-    if (statusTypesAsync.isLoading || summaryAsync.isLoading || exceptionsAsync.isLoading) {
+    if (statusTypesAsync.isLoading ||
+        employeesAsync.isLoading ||
+        summaryAsync.isLoading ||
+        exceptionsAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (statusTypesAsync.hasError) return Center(child: Text('${statusTypesAsync.error}'));
-    if (summaryAsync.hasError) return Center(child: Text('${summaryAsync.error}'));
-    if (exceptionsAsync.hasError) return Center(child: Text('${exceptionsAsync.error}'));
+    if (statusTypesAsync.hasError) {
+      return Center(child: Text('${statusTypesAsync.error}'));
+    }
+    if (employeesAsync.hasError) {
+      return Center(child: Text('${employeesAsync.error}'));
+    }
+    if (summaryAsync.hasError) {
+      return Center(child: Text('${summaryAsync.error}'));
+    }
+    if (exceptionsAsync.hasError) {
+      return Center(child: Text('${exceptionsAsync.error}'));
+    }
 
     final statusTypes = statusTypesAsync.value!;
-    final needsClientFilter = singleEmployeeId == null && _selectedEmployeeIds.isNotEmpty;
+    final nameByEmployeeId = {
+      for (final e in employeesAsync.value!) e.id: e.name,
+    };
+    final needsClientFilter =
+        singleEmployeeId == null && _selectedEmployeeIds.isNotEmpty;
     final List<EffectiveStatusRow> statusRows = needsClientFilter
-        ? summaryAsync.value!.where((r) => _selectedEmployeeIds.contains(r.employeeId)).toList()
+        ? summaryAsync.value!
+              .where((r) => _selectedEmployeeIds.contains(r.employeeId))
+              .toList()
         : summaryAsync.value!;
     final List<DerivedFlagsRow> exceptionRows = needsClientFilter
-        ? exceptionsAsync.value!.where((r) => _selectedEmployeeIds.contains(r.employeeId)).toList()
+        ? exceptionsAsync.value!
+              .where((r) => _selectedEmployeeIds.contains(r.employeeId))
+              .toList()
         : exceptionsAsync.value!;
 
     final summary = computeStatusSummary(statusRows, statusTypes);
@@ -256,29 +283,43 @@ class _ReportPageState extends ConsumerState<ReportPage> {
           ],
         ),
         const SizedBox(height: 24),
-        Text('Late / early / overtime', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Late / early / overtime',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         if (exceptions.isEmpty)
-          const Padding(padding: EdgeInsets.only(top: 8), child: Text('No exceptions in this range.'))
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text('No exceptions in this range.'),
+          )
         else
-          ...exceptions.map((e) => ListTile(
-                title: Text(_dateFormat.format(e.date)),
-                subtitle: Text([
-                  if (e.isLate) 'Late',
-                  if (e.isEarly) 'Left early',
-                  if (e.overtimeMinutes > 0) '+${e.overtimeMinutes}m overtime',
-                ].join(' · ')),
-              )),
+          ...exceptions.map(
+            (e) => ListTile(
+              title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
+              subtitle: Text(
+                '${_dateFormat.format(e.date)} · ${[if (e.isLate) 'Late', if (e.isEarly) 'Left early', if (e.overtimeMinutes > 0) '+${e.overtimeMinutes}m overtime'].join(' · ')}',
+              ),
+            ),
+          ),
         const SizedBox(height: 24),
         Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
-        _ReportCalendar(range: range, rows: statusRows, statusTypes: statusTypes),
+        _ReportCalendar(
+          range: range,
+          rows: statusRows,
+          statusTypes: statusTypes,
+        ),
       ],
     );
   }
 }
 
 class _ReportCalendar extends StatelessWidget {
-  const _ReportCalendar({required this.range, required this.rows, required this.statusTypes});
+  const _ReportCalendar({
+    required this.range,
+    required this.rows,
+    required this.statusTypes,
+  });
 
   final DateTimeRange range;
   final List<EffectiveStatusRow> rows;
