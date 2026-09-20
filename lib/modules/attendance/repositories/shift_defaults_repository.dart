@@ -1,0 +1,75 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../../core/errors/exception_translator.dart';
+import '../models/shift_defaults.dart';
+
+abstract class ShiftDefaultsRepository {
+  Future<ShiftDefaults> fetchCurrent();
+  Future<List<ShiftDefaults>> fetchHistory();
+  Future<ShiftDefaults> addEffectiveFrom({
+    required DateTime effectiveFrom,
+    required String defaultStart,
+    required String defaultEnd,
+    required List<int> weekOffDays,
+  });
+}
+
+class SupabaseShiftDefaultsRepository implements ShiftDefaultsRepository {
+  SupabaseShiftDefaultsRepository(this._client);
+  final SupabaseClient _client;
+
+  @override
+  Future<ShiftDefaults> fetchCurrent() async {
+    try {
+      final rows = await _client
+          .schema('attendance')
+          .from('shift_defaults')
+          .select()
+          .lte('effective_from', DateTime.now().toIso8601String().split('T').first)
+          .order('effective_from', ascending: false)
+          .limit(1);
+      return ShiftDefaultsMapper.fromMap(rows.first);
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<List<ShiftDefaults>> fetchHistory() async {
+    try {
+      final rows = await _client
+          .schema('attendance')
+          .from('shift_defaults')
+          .select()
+          .order('effective_from', ascending: false);
+      return rows.map(ShiftDefaultsMapper.fromMap).toList();
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<ShiftDefaults> addEffectiveFrom({
+    required DateTime effectiveFrom,
+    required String defaultStart,
+    required String defaultEnd,
+    required List<int> weekOffDays,
+  }) async {
+    try {
+      final row = await _client
+          .schema('attendance')
+          .from('shift_defaults')
+          .insert({
+            'effective_from': effectiveFrom.toIso8601String().split('T').first,
+            'default_start': defaultStart,
+            'default_end': defaultEnd,
+            'week_off_days': weekOffDays,
+          })
+          .select()
+          .single();
+      return ShiftDefaultsMapper.fromMap(row);
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+}
