@@ -603,6 +603,7 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
   }) async {
     try {
       final row = await _client
+          .schema('core')
           .from('employees')
           .insert({'name': name, 'color': color, 'salary': salary, 'notes': notes})
           .select()
@@ -617,6 +618,7 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
   Future<Employee> update(Employee employee) async {
     try {
       final row = await _client
+          .schema('core')
           .from('employees')
           .update({
             'name': employee.name,
@@ -693,6 +695,7 @@ class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
   Future<List<TimelineEntry>> fetchTimeline(String employeeId) async {
     try {
       final rows = await _client
+          .schema('core')
           .from('employee_timeline')
           .select()
           .eq('employee_id', employeeId)
@@ -756,6 +759,7 @@ class SupabaseEventTypeRepository implements EventTypeRepository {
   Future<EventType> updateDisplay(String id, {String? iconName, String? colorHex}) async {
     try {
       final row = await _client
+          .schema('core')
           .from('event_types')
           .update({'icon_name': iconName, 'color_hex': colorHex})
           .eq('id', id)
