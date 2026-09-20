@@ -1,0 +1,45 @@
+import 'package:crs_ops/core/employees/models/event_type.dart';
+import 'package:crs_ops/core/employees/pages/event_types_manager_page.dart';
+import 'package:crs_ops/core/employees/providers/employee_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../fakes/fake_event_type_repository.dart';
+
+void main() {
+  testWidgets('lists every event type with its current icon/color', (tester) async {
+    final repo = FakeEventTypeRepository(seed: [
+      const EventType(id: 'joined', statusEffect: 'active', iconName: 'check', colorHex: '#4CAF50'),
+      const EventType(id: 'promotion', description: 'Promoted'),
+    ]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [eventTypeRepositoryProvider.overrideWithValue(repo)],
+        child: const MaterialApp(home: EventTypesManagerPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('joined'), findsOneWidget);
+    expect(find.text('promotion'), findsOneWidget);
+  });
+
+  testWidgets('tapping a type opens an edit dialog that updates its icon/color', (tester) async {
+    final repo = FakeEventTypeRepository(seed: [const EventType(id: 'promotion', description: 'Promoted')]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [eventTypeRepositoryProvider.overrideWithValue(repo)],
+        child: const MaterialApp(home: EventTypesManagerPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('promotion'));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('event-type-edit-dialog')), findsOneWidget);
+  });
+}
