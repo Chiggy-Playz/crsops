@@ -9,6 +9,13 @@ const signInPath = '/sign-in';
 const unauthorizedPath = '/unauthorized';
 const loadingPath = '/loading';
 
+/// Module id as seeded in `core.modules`. Kept as a named constant (not a
+/// literal at the call site) so a rename fails loudly in one place; future
+/// modules (challan, asset) add theirs here. This is the *module registry*
+/// id, not the Postgres schema name — repositories' `.schema('attendance')`
+/// calls are a separate concept and stay as-is inside their own module.
+const attendanceModuleId = 'attendance';
+
 /// Locations that previously carried their own per-route superadmin guard.
 /// Moved here during the typed-routes migration (generated redirect has no
 /// Ref). Derived from the route classes' own locations, so the path strings
@@ -57,7 +64,9 @@ String? computeRedirect({
     return session.isAdminOrAbove ? null : unauthorizedPath;
   }
   if (currentLocation == const CalendarRoute().location) {
-    return session.hasModuleAccess('attendance') ? null : unauthorizedPath;
+    return session.hasModuleAccess(attendanceModuleId)
+        ? null
+        : unauthorizedPath;
   }
 
   if (currentLocation == signInPath ||
