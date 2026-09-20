@@ -5,7 +5,6 @@ import '../../../core/utils/date_key.dart';
 import '../models/shift_defaults.dart';
 
 abstract class ShiftDefaultsRepository {
-  Future<ShiftDefaults> fetchCurrent();
   Future<List<ShiftDefaults>> fetchHistory();
   Future<ShiftDefaults> addEffectiveFrom({
     required DateTime effectiveFrom,
@@ -18,22 +17,6 @@ abstract class ShiftDefaultsRepository {
 class SupabaseShiftDefaultsRepository implements ShiftDefaultsRepository {
   SupabaseShiftDefaultsRepository(this._client);
   final SupabaseClient _client;
-
-  @override
-  Future<ShiftDefaults> fetchCurrent() async {
-    try {
-      final rows = await _client
-          .schema('attendance')
-          .from('shift_defaults')
-          .select()
-          .lte('effective_from', dateOnly(DateTime.now()))
-          .order('effective_from', ascending: false)
-          .limit(1);
-      return ShiftDefaultsMapper.fromMap(rows.first);
-    } catch (error) {
-      throw translateException(error);
-    }
-  }
 
   @override
   Future<List<ShiftDefaults>> fetchHistory() async {

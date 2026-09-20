@@ -12,6 +12,11 @@ import '../models/gap_row.dart';
 /// Must match a row in `attendance.status_types` (seeded).
 const defaultPresenceStatusId = 'present';
 
+/// Seeded `attendance.status_types` id used by the mark-as-holiday bulk
+/// action. Named next to [defaultPresenceStatusId] so a DB rename breaks
+/// loudly in one place instead of silently in a string literal.
+const holidayStatusId = 'holiday';
+
 /// Applies [defaultPresenceStatusId] to a null half. Pure so it stays unit
 /// testable without a Supabase client.
 String applyPresenceDefault(String? halfStatus) =>
@@ -202,7 +207,11 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     required DateTime date,
     required List<String> employeeIds,
   }) async {
-    await _markAll(date: date, employeeIds: employeeIds, status: 'holiday');
+    await _markAll(
+      date: date,
+      employeeIds: employeeIds,
+      status: holidayStatusId,
+    );
   }
 
   /// Shared bulk-mark body behind [markAllPresent]/[markHoliday], which

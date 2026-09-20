@@ -15,6 +15,7 @@ import '../models/status_type.dart';
 import '../providers/attendance_providers.dart';
 import '../report_calculations.dart';
 import 'widgets/day_cell.dart';
+import 'widgets/employee_picker_dialog.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -66,107 +67,43 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         PopupMenuItem(value: 'custom', child: Text('Custom range…')),
       ],
     );
-    switch (choice) {
-      case 'today':
-        setState(() {
-          _range = DateTimeRange(start: now, end: now);
-          _rangeLabel = 'Today';
-        });
-      case '7d':
-        setState(() {
-          _range = DateTimeRange(
-            start: now.subtract(const Duration(days: 7)),
-            end: now,
-          );
-          _rangeLabel = 'Last 7 days';
-        });
-      case '30d':
-        setState(() {
-          _range = DateTimeRange(
-            start: now.subtract(const Duration(days: 30)),
-            end: now,
-          );
-          _rangeLabel = 'Last 30 days';
-        });
-      case 'month':
-        setState(() {
-          _range = DateTimeRange(
-            start: DateTime(now.year, now.month, 1),
-            end: now,
-          );
-          _rangeLabel = 'This month';
-        });
-      case 'custom':
-        await _pickCustomRange();
+    if (choice == 'custom') {
+      await _pickCustomRange();
+      return;
+    }
+    // One hoisted `now` above; each preset differs only by range math.
+    final presets = {
+      'today': DateTimeRange(start: now, end: now),
+      '7d': DateTimeRange(
+        start: now.subtract(const Duration(days: 7)),
+        end: now,
+      ),
+      '30d': DateTimeRange(
+        start: now.subtract(const Duration(days: 30)),
+        end: now,
+      ),
+      'month': DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
+    };
+    final labels = {
+      'today': 'Today',
+      '7d': 'Last 7 days',
+      '30d': 'Last 30 days',
+      'month': 'This month',
+    };
+    final range = presets[choice];
+    if (range != null) {
+      setState(() {
+        _range = range;
+        _rangeLabel = labels[choice];
+      });
     }
   }
 
   Future<void> _openEmployeePicker(List<Employee> employees) async {
-    var query = '';
-    var selection = Set<String>.of(_selectedEmployeeIds);
-
-    final result = await showDialog<Set<String>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          final filtered = employees
-              .where((e) => e.name.toLowerCase().contains(query.toLowerCase()))
-              .toList();
-          return AlertDialog(
-            title: const Text('Filter by employee'),
-            content: SizedBox(
-              width: 300,
-              height: 400,
-              child: Column(
-                children: [
-                  TextField(
-                    decoration: const InputDecoration(
-                      labelText: 'Search',
-                      prefixIcon: Icon(Icons.search),
-                    ),
-                    onChanged: (value) => setDialogState(() => query = value),
-                  ),
-                  Expanded(
-                    child: ListView(
-                      children: [
-                        CheckboxListTile(
-                          title: const Text('All employees'),
-                          value: selection.isEmpty,
-                          onChanged: (_) =>
-                              setDialogState(() => selection = {}),
-                        ),
-                        const Divider(height: 1),
-                        for (final e in filtered)
-                          CheckboxListTile(
-                            title: Text(e.name),
-                            value: selection.contains(e.id),
-                            onChanged: (checked) => setDialogState(() {
-                              if (checked == true) {
-                                selection.add(e.id);
-                              } else {
-                                selection.remove(e.id);
-                              }
-                            }),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(selection),
-                child: const Text('Done'),
-              ),
-            ],
-          );
-        },
-      ),
+    final result = await showEmployeePicker(
+      context,
+      employees: employees,
+      initialSelection: _selectedEmployeeIds,
     );
     if (result != null) setState(() => _selectedEmployeeIds = result);
   }

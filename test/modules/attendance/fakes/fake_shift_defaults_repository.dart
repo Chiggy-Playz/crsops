@@ -17,9 +17,6 @@ class FakeShiftDefaultsRepository implements ShiftDefaultsRepository {
   final List<ShiftDefaults> _history;
 
   @override
-  Future<ShiftDefaults> fetchCurrent() async => _history.first;
-
-  @override
   Future<List<ShiftDefaults>> fetchHistory() async => List.of(_history);
 
   @override

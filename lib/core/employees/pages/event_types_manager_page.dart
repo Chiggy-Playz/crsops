@@ -8,8 +8,6 @@ import '../../widgets/status_metadata.dart';
 import '../models/event_type.dart';
 import '../providers/employee_providers.dart';
 
-const _kIconNames = ['check', 'close', 'event_busy', 'beach_access', 'weekend'];
-
 class EventTypesManagerPage extends ConsumerWidget {
   const EventTypesManagerPage({super.key});
 
@@ -74,7 +72,7 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
       ref.invalidate(eventTypesProvider);
       if (mounted) Navigator.of(context).pop();
     } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
+      if (mounted) showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -95,7 +93,7 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
               initialSelection: _iconName,
               expandedInsets: EdgeInsets.zero,
               hintText: 'Icon',
-              dropdownMenuEntries: _kIconNames
+              dropdownMenuEntries: knownIconNames
                   .map(
                     (name) => DropdownMenuEntry(
                       value: name,

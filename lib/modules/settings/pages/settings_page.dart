@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/auth_providers.dart';
 import '../../../core/employees/routes.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/error_snackbar.dart';
 import '../../attendance/routes.dart';
 import '../routes.dart';
 
@@ -59,7 +61,13 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
-            onTap: () => ref.read(authRepositoryProvider).signOut(),
+            onTap: () async {
+              try {
+                await ref.read(authRepositoryProvider).signOut();
+              } on AppException catch (e) {
+                if (context.mounted) showErrorSnackBar(context, e);
+              }
+            },
           ),
         ],
       ),

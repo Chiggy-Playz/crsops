@@ -153,46 +153,6 @@ final class AttendanceRepositoryProvider
 String _$attendanceRepositoryHash() =>
     r'490d9d3c8f7d23475d5f4e78cf55eedb81cfcf54';
 
-@ProviderFor(currentShiftDefaults)
-final currentShiftDefaultsProvider = CurrentShiftDefaultsProvider._();
-
-final class CurrentShiftDefaultsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<ShiftDefaults>,
-          ShiftDefaults,
-          FutureOr<ShiftDefaults>
-        >
-    with $FutureModifier<ShiftDefaults>, $FutureProvider<ShiftDefaults> {
-  CurrentShiftDefaultsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'currentShiftDefaultsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$currentShiftDefaultsHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<ShiftDefaults> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<ShiftDefaults> create(Ref ref) {
-    return currentShiftDefaults(ref);
-  }
-}
-
-String _$currentShiftDefaultsHash() =>
-    r'0be10e5b35c7908d4e3cf3b145f60c30f2896cb2';
-
 @ProviderFor(shiftDefaultsHistory)
 final shiftDefaultsHistoryProvider = ShiftDefaultsHistoryProvider._();
 

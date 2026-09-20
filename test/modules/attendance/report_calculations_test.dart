@@ -151,6 +151,10 @@ void main() {
       expect(formatOvertime(61), '1h 1m');
     });
 
+    test('negative input trips the contract assert', () {
+      expect(() => formatOvertime(-5), throwsA(isA<AssertionError>()));
+    });
+
     test('exact hours drop the minutes', () {
       expect(formatOvertime(120), '2h');
     });

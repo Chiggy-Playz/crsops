@@ -12,6 +12,11 @@ const _iconByName = <String, IconData>{
 IconData iconFor(String? iconName) =>
     _iconByName[iconName] ?? Icons.help_outline;
 
+/// The curated icon names a status/event type may use — the single source
+/// for the manager-page dropdowns, so adding a key to [_iconByName] reaches
+/// every picker without a lockstep edit elsewhere.
+List<String> get knownIconNames => _iconByName.keys.toList();
+
 Color colorFor(String? colorHex) {
   // One malformed color_hex row must never crash every screen that renders
   // a color — fall back to grey on anything that isn't #RRGGBB.

@@ -25,15 +25,12 @@ AttendanceRepository attendanceRepository(Ref ref) =>
     SupabaseAttendanceRepository(ref.watch(supabaseClientProvider));
 
 @riverpod
-Future<ShiftDefaults> currentShiftDefaults(Ref ref) =>
-    ref.watch(shiftDefaultsRepositoryProvider).fetchCurrent();
-
-@riverpod
 Future<List<ShiftDefaults>> shiftDefaultsHistory(Ref ref) =>
     ref.watch(shiftDefaultsRepositoryProvider).fetchHistory();
 
 @Riverpod(keepAlive: true)
-Future<List<StatusType>> statusTypes(Ref ref) => ref.watch(statusTypeRepositoryProvider).fetchAll();
+Future<List<StatusType>> statusTypes(Ref ref) =>
+    ref.watch(statusTypeRepositoryProvider).fetchAll();
 
 @riverpod
 Future<List<EffectiveStatusRow>> effectiveRangeStatus(
@@ -41,15 +38,13 @@ Future<List<EffectiveStatusRow>> effectiveRangeStatus(
   required DateTime start,
   required DateTime end,
   String? employeeId,
-}) =>
-    ref.watch(attendanceRepositoryProvider).fetchEffectiveRangeStatus(
-          start: start,
-          end: end,
-          employeeId: employeeId,
-        );
+}) => ref
+    .watch(attendanceRepositoryProvider)
+    .fetchEffectiveRangeStatus(start: start, end: end, employeeId: employeeId);
 
 @riverpod
-Future<List<GapRow>> recentGaps(Ref ref) => ref.watch(attendanceRepositoryProvider).fetchRecentGaps();
+Future<List<GapRow>> recentGaps(Ref ref) =>
+    ref.watch(attendanceRepositoryProvider).fetchRecentGaps();
 
 @riverpod
 Future<List<DerivedFlagsRow>> derivedFlags(
@@ -57,9 +52,6 @@ Future<List<DerivedFlagsRow>> derivedFlags(
   required DateTime start,
   required DateTime end,
   String? employeeId,
-}) =>
-    ref.watch(attendanceRepositoryProvider).fetchDerivedFlags(
-          start: start,
-          end: end,
-          employeeId: employeeId,
-        );
+}) => ref
+    .watch(attendanceRepositoryProvider)
+    .fetchDerivedFlags(start: start, end: end, employeeId: employeeId);

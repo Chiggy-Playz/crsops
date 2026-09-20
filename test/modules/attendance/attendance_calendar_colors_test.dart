@@ -94,5 +94,30 @@ void main() {
 
       expect(dots, isEmpty);
     });
+
+    test('an unmarked week-off day gets the week-off dot', () {
+      final dots = statusDotsFor([
+        _row(
+          employeeId: '1',
+          date: DateTime(2024, 6, 2),
+          isExplicit: false,
+          isWeekOff: true,
+        ),
+      ], colors);
+
+      expect(dots, [const Color(0xFF9E9E9E)]);
+    });
+
+    test('an unknown status id falls back to grey', () {
+      final dots = statusDotsFor([
+        _row(
+          employeeId: '1',
+          date: DateTime(2024, 6, 3),
+          firstHalfStatus: 'mystery',
+        ),
+      ], colors);
+
+      expect(dots, [Colors.grey]);
+    });
   });
 }

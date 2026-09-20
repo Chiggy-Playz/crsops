@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/utils/date_key.dart';
 
+/// Key for the gap-warning marker of a day, shared with tests so the format
+/// lives in one place. Takes the `yyyy-MM-dd` date key (see [dateOnly]).
+Key gapMarkerKey(String dateKey) => Key('gap-marker-$dateKey');
+
 class DayCell extends StatelessWidget {
   const DayCell({
     super.key,
@@ -63,7 +67,7 @@ class DayCell extends StatelessWidget {
                 Icons.warning_amber,
                 size: 12,
                 color: Colors.orange,
-                key: Key('gap-marker-$_dateKey'),
+                key: gapMarkerKey(_dateKey),
               ),
             ),
         ],

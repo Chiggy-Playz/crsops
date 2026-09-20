@@ -7,8 +7,6 @@ import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
 
-const _kIconNames = ['check', 'close', 'event_busy', 'beach_access', 'weekend'];
-
 class StatusTypesManagerPage extends ConsumerWidget {
   const StatusTypesManagerPage({super.key});
 
@@ -87,7 +85,7 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
       ref.invalidate(statusTypesProvider);
       if (mounted) Navigator.of(context).pop();
     } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
+      if (mounted) showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -122,7 +120,7 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
             DropdownMenu<String>(
               expandedInsets: EdgeInsets.zero,
               hintText: 'Icon',
-              dropdownMenuEntries: _kIconNames
+              dropdownMenuEntries: knownIconNames
                   .map(
                     (name) => DropdownMenuEntry(
                       value: name,
