@@ -51,3 +51,35 @@ create policy status_types_insert on attendance.status_types
   for insert with check (core.is_admin_or_above());
 create policy status_types_update on attendance.status_types
   for update using (core.is_admin_or_above()) with check (core.is_admin_or_above());
+
+create table attendance.attendance_days (
+  id uuid primary key default gen_random_uuid(),
+  employee_id uuid not null references core.employees(id) on delete cascade,
+  date date not null,
+  first_half_status text references attendance.status_types(id),
+  second_half_status text references attendance.status_types(id),
+  time_in time,
+  time_out time,
+  note text,
+  created_by uuid references auth.users(id),
+  updated_at timestamptz not null default now(),
+  unique (employee_id, date)
+);
+
+alter table attendance.attendance_days enable row level security;
+create policy attendance_days_select on attendance.attendance_days
+  for select using (
+    core.is_admin_or_above()
+    or exists (select 1 from core.employees e where e.id = employee_id and e.user_id = auth.uid())
+  );
+create policy attendance_days_write on attendance.attendance_days
+  for all using (core.is_admin_or_above()) with check (core.is_admin_or_above());
+
+-- The exact gap that broke every core query in Phase 1 until fixed — not
+-- skipping it this time. RLS restricts which rows a role can see; it does not
+-- substitute for baseline schema/table/function GRANTs.
+grant usage on schema attendance to authenticated;
+grant select, insert, update, delete on all tables in schema attendance to authenticated;
+grant execute on all functions in schema attendance to authenticated;
+alter default privileges in schema attendance grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema attendance grant execute on functions to authenticated;
