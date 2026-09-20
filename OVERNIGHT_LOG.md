@@ -260,6 +260,13 @@ the migration files themselves stay complete and correct as the historical
 record for a future fresh reset elsewhere, they just don't drive tonight's own
 already-applied state past the first push per file.
 
+**Phase 3's Task 12 schema-qualification audit (the dedicated checkpoint added
+specifically because this bug recurred twice in Phases 1–2) passed clean on the
+first check** — all 12 `.from()`/`.rpc()` call sites across the three repositories
+were correctly `.schema('attendance')`-qualified from the start this time, no fix
+needed. Writing them correctly the first time, rather than retrofitting, seems to
+be sticking now that it's an explicit habit.
+
 
 ## Scope correction (from Chirag, mid-session)
 
