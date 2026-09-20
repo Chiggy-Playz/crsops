@@ -310,6 +310,41 @@ execution process is well-established now (see the three plans already in
 `docs/superpowers/plans/`) — happy to continue the same way whenever you want,
 in a fresh session or by just asking me to keep going in this one.
 
+### You approved merging to master, and Phase 4 (Finance ledger)
+
+Merged `v1-implementation` into `master` directly (you said this is fine —
+solo project, nobody else on it) and kept going straight on `master` from
+there since it's just the two of us. **A tenth real bug**, caught by actually
+running the test rather than trusting the plan's own code: the "Add payment"
+dialog's Save button was enabled based only on a valid amount, but `_save()`
+silently did nothing if no category was selected (an early return, no error
+shown) — tap Save, nothing happens, no feedback. Fixed `_canSave` to also
+require a valid category (existing dropdown selection, or a non-empty typed
+new one), and added a missing `onChanged` handler on the new-category field
+so typing into it actually re-enables the button reactively.
+
+Phase 4 is otherwise straightforward — no new schema needed (confirmed by
+reading Phase 1's migration directly before writing any code), just a new
+model/repository/dialog following Phase 2's exact same shape.
+
+### Phase 4 (Finance ledger) complete
+
+All 6 tasks done and committed on `master`. 51 tests passing project-wide,
+`flutter analyze` clean, `flutter build web` verified end-to-end. The real
+integration check against your live project confirmed an inserted ledger
+entry shows up correctly in `core.employee_timeline` (`kind='ledger'`,
+interleaved with events) — the one bit of plan test data that needed a fix
+was a malformed UUID literal (11 hex characters instead of 12 in the last
+group), caught immediately by Postgres rejecting it, fixed trivially.
+
+Employee detail pages now have both "Add event" (FAB) and "Add payment"
+(AppBar action) — a manual, append-only ledger per employee, exactly per
+req. 5: no update/delete method exists anywhere in this phase, matching
+"explicitly not automated payroll" from the spec.
+
+**Grand total: 10 real bugs found and fixed tonight via actually building,
+running, and testing things** (see the full list threaded through this log).
+
 **What you actually need to do, in order, to see this running for real:**
 1. Enable Google OAuth in Supabase Studio (needs a Google Cloud Console OAuth
    client first) and expose `core`/`attendance` schemas via PostgREST (Studio →
