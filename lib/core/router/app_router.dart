@@ -2,15 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import '../../modules/attendance/routes.dart';
-import '../../modules/settings/routes.dart';
-import '../employees/routes.dart';
-import '../auth/pages/loading_page.dart';
-import '../auth/pages/sign_in_page.dart';
-import '../auth/pages/unauthorized_page.dart';
+import '../../modules/attendance/routes.dart' as attendance_routes;
+import '../../modules/settings/routes.dart' as settings_routes;
+import '../employees/routes.dart' as employee_routes;
+import 'auth_routes.dart' as auth_routes;
 import '../auth/providers/auth_providers.dart';
 import 'redirect_logic.dart';
-import 'route_names.dart';
 
 part 'app_router.g.dart';
 
@@ -24,23 +21,23 @@ GoRouter appRouter(Ref ref) {
   ref.listen(sessionProvider, (previous, next) => refreshNotifier.refresh());
 
   return GoRouter(
-    initialLocation: loadingPath,
+    initialLocation: const auth_routes.LoadingRoute().location,
     redirect: (context, state) {
       final sessionValue = ref.read(sessionProvider);
-      return computeRedirect(sessionValue: sessionValue, currentLocation: state.matchedLocation);
+      return computeRedirect(
+        sessionValue: sessionValue,
+        currentLocation: state.matchedLocation,
+      );
     },
     refreshListenable: refreshNotifier,
+    // Each route file generates its own $appRoutes list (go_router_builder
+    // is per-library); merged here, which is also the module boundary —
+    // adding a module means one import plus one spread line.
     routes: [
-      GoRoute(path: loadingPath, name: RouteNames.loading, builder: (context, state) => const LoadingPage()),
-      GoRoute(path: signInPath, name: RouteNames.signIn, builder: (context, state) => const SignInPage()),
-      GoRoute(
-        path: unauthorizedPath,
-        name: RouteNames.unauthorized,
-        builder: (context, state) => const UnauthorizedPage(),
-      ),
-      ...employeeRoutes(ref),
-      ...attendanceRoutes(ref),
-      ...settingsRoutes(ref),
+      ...auth_routes.$appRoutes,
+      ...employee_routes.$appRoutes,
+      ...attendance_routes.$appRoutes,
+      ...settings_routes.$appRoutes,
     ],
   );
 }

@@ -63,6 +63,7 @@ dev_dependencies:
   riverpod_generator: ^4.0.9
   dart_mappable_builder: ^4.10.0
   flutter_gen_runner: ^5.13.0+1
+  go_router_builder: ^4.5.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -1,60 +1,64 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/auth/providers/auth_providers.dart';
-import '../../core/router/route_names.dart';
 import 'pages/attendance_day_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/report_page.dart';
 import 'pages/shift_defaults_manager_page.dart';
 import 'pages/status_types_manager_page.dart';
 
-List<RouteBase> attendanceRoutes(Ref ref) => [
-  GoRoute(
-    path: '/',
-    name: RouteNames.calendar,
-    redirect: (context, state) {
-      final session = ref.read(sessionProvider).value;
-      return session != null && session.hasModuleAccess('attendance')
-          ? null
-          : '/unauthorized';
-    },
-    builder: (context, state) => const CalendarPage(),
-  ),
-  GoRoute(
-    path: '/reports',
-    name: RouteNames.reports,
-    builder: (context, state) => const ReportPage(),
-  ),
-  GoRoute(
-    path: '/attendance/shift-defaults',
-    name: RouteNames.shiftDefaults,
-    redirect: (context, state) {
-      final session = ref.read(sessionProvider).value;
-      return session != null && session.isAdminOrAbove ? null : '/unauthorized';
-    },
-    builder: (context, state) => const ShiftDefaultsManagerPage(),
-  ),
-  GoRoute(
-    path: '/attendance/status-types',
-    name: RouteNames.statusTypes,
-    redirect: (context, state) {
-      final session = ref.read(sessionProvider).value;
-      return session != null && session.isAdminOrAbove ? null : '/unauthorized';
-    },
-    builder: (context, state) => const StatusTypesManagerPage(),
-  ),
-  GoRoute(
-    path: '/attendance/:date',
-    name: RouteNames.attendanceDay,
-    // A malformed date param must bounce to the calendar, not throw a
-    // FormatException out of the builder. The builder's parse is safe:
-    // redirect runs first on the same unchanged path parameters.
-    redirect: (context, state) =>
-        DateTime.tryParse(state.pathParameters['date'] ?? '') == null
-        ? '/'
-        : null,
-    builder: (context, state) =>
-        AttendanceDayPage(date: DateTime.parse(state.pathParameters['date']!)),
-  ),
-];
+part 'routes.g.dart';
+
+@TypedGoRoute<CalendarRoute>(path: '/')
+class CalendarRoute extends GoRouteData with $CalendarRoute {
+  const CalendarRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const CalendarPage();
+}
+
+@TypedGoRoute<ReportsRoute>(path: '/reports')
+class ReportsRoute extends GoRouteData with $ReportsRoute {
+  const ReportsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) => const ReportPage();
+}
+
+@TypedGoRoute<ShiftDefaultsRoute>(path: '/attendance/shift-defaults')
+class ShiftDefaultsRoute extends GoRouteData with $ShiftDefaultsRoute {
+  const ShiftDefaultsRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ShiftDefaultsManagerPage();
+}
+
+@TypedGoRoute<StatusTypesRoute>(path: '/attendance/status-types')
+class StatusTypesRoute extends GoRouteData with $StatusTypesRoute {
+  const StatusTypesRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const StatusTypesManagerPage();
+}
+
+@TypedGoRoute<AttendanceDayRoute>(path: '/attendance/:date')
+class AttendanceDayRoute extends GoRouteData with $AttendanceDayRoute {
+  // Kept a String (not DateTime) on purpose: codegen field decoding would
+  // throw on a malformed date before redirect runs, bypassing the guard
+  // below. Raw-string redirect first, parse in build.
+  const AttendanceDayRoute(this.date);
+  final String date;
+
+  @override
+  String? redirect(BuildContext context, GoRouterState state) =>
+      DateTime.tryParse(state.pathParameters['date'] ?? '') == null
+      ? const CalendarRoute().location
+      : null;
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      AttendanceDayPage(date: DateTime.parse(date));
+}

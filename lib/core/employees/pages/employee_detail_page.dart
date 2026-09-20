@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../router/route_names.dart';
 import '../../errors/app_exception.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/error_snackbar.dart';
@@ -12,6 +10,7 @@ import '../models/employee.dart';
 import '../models/event_type.dart';
 import '../models/timeline_entry.dart';
 import '../providers/employee_providers.dart';
+import '../routes.dart';
 import 'widgets/add_event_dialog.dart';
 import 'widgets/add_payment_dialog.dart';
 
@@ -59,11 +58,10 @@ class EmployeeDetailPage extends ConsumerWidget {
             tooltip: 'Edit employee',
             onPressed: employeeAsync.value == null
                 ? null
-                : () => context.pushNamed(
-                    RouteNames.employeeEdit,
-                    pathParameters: {'id': employeeId},
-                    extra: employeeAsync.value,
-                  ),
+                : () => EmployeeEditRoute(
+                    employeeId,
+                    $extra: employeeAsync.value,
+                  ).push(context),
           ),
         ],
       ),

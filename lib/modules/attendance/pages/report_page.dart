@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
-import '../../../core/router/route_names.dart';
 import '../../../core/utils/date_key.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../attendance_calendar_colors.dart';
+import '../routes.dart';
 import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
 import '../models/status_type.dart';
@@ -380,10 +379,8 @@ class _ReportCalendar extends StatelessWidget {
         lastDay: range.end,
         focusedDay: range.start,
         headerStyle: const HeaderStyle(formatButtonVisible: false),
-        onDaySelected: (selectedDay, focusedDay) => context.pushNamed(
-          RouteNames.attendanceDay,
-          pathParameters: {'date': dateOnly(selectedDay)},
-        ),
+        onDaySelected: (selectedDay, focusedDay) =>
+            AttendanceDayRoute(dateOnly(selectedDay)).push(context),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
             final dateKey = dateOnly(day);
