@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/providers/auth_providers.dart';
 import '../router/route_names.dart';
+import 'models/employee.dart';
 import 'pages/employee_detail_page.dart';
 import 'pages/employee_edit_page.dart';
 import 'pages/employee_list_page.dart';
@@ -23,6 +24,14 @@ List<RouteBase> employeeRoutes(Ref ref) => [
         path: '/employees/:id',
         name: RouteNames.employeeDetail,
         builder: (context, state) => EmployeeDetailPage(employeeId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/employees/:id/edit',
+        name: RouteNames.employeeEdit,
+        // `extra` carries the already-fetched Employee so this doesn't need
+        // its own async fetch — the detail page that navigates here already
+        // has the full object via employeeProvider.
+        builder: (context, state) => EmployeeEditPage(existing: state.extra as Employee),
       ),
       GoRoute(
         path: '/employees/event-types',

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../router/route_names.dart';
 import '../providers/employee_providers.dart';
 import 'widgets/add_event_dialog.dart';
 import 'widgets/add_payment_dialog.dart';
@@ -24,6 +26,18 @@ class EmployeeDetailPage extends ConsumerWidget {
           error: (_, _) => const Text('Employee'),
         ),
         actions: [
+          IconButton(
+            key: const Key('edit-employee-button'),
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit employee',
+            onPressed: employeeAsync.value == null
+                ? null
+                : () => context.pushNamed(
+                      RouteNames.employeeEdit,
+                      pathParameters: {'id': employeeId},
+                      extra: employeeAsync.value,
+                    ),
+          ),
           IconButton(
             key: const Key('add-payment-button'),
             icon: const Icon(Icons.payments),

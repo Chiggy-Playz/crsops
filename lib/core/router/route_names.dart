@@ -13,6 +13,7 @@ class RouteNames {
   static const employees = 'employees';
   static const employeeNew = 'employeeNew';
   static const employeeDetail = 'employeeDetail';
+  static const employeeEdit = 'employeeEdit';
   static const eventTypes = 'eventTypes';
 
   static const calendar = 'calendar';
