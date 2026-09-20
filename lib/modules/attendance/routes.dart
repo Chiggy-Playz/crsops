@@ -20,12 +20,6 @@ List<RouteBase> attendanceRoutes(Ref ref) => [
         builder: (context, state) => const CalendarPage(),
       ),
       GoRoute(
-        path: '/attendance/:date',
-        name: RouteNames.attendanceDay,
-        builder: (context, state) =>
-            AttendanceDayPage(date: DateTime.parse(state.pathParameters['date']!)),
-      ),
-      GoRoute(
         path: '/reports',
         name: RouteNames.reports,
         builder: (context, state) => const ReportPage(),
@@ -47,5 +41,11 @@ List<RouteBase> attendanceRoutes(Ref ref) => [
           return session != null && session.isAdminOrAbove ? null : '/unauthorized';
         },
         builder: (context, state) => const StatusTypesManagerPage(),
+      ),
+      GoRoute(
+        path: '/attendance/:date',
+        name: RouteNames.attendanceDay,
+        builder: (context, state) =>
+            AttendanceDayPage(date: DateTime.parse(state.pathParameters['date']!)),
       ),
     ];

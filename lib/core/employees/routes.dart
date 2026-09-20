@@ -21,6 +21,15 @@ List<RouteBase> employeeRoutes(Ref ref) => [
         builder: (context, state) => const EmployeeEditPage(existing: null),
       ),
       GoRoute(
+        path: '/employees/event-types',
+        name: RouteNames.eventTypes,
+        redirect: (context, state) {
+          final session = ref.read(sessionProvider).value;
+          return session != null && session.isSuperadmin ? null : '/unauthorized';
+        },
+        builder: (context, state) => const EventTypesManagerPage(),
+      ),
+      GoRoute(
         path: '/employees/:id',
         name: RouteNames.employeeDetail,
         builder: (context, state) => EmployeeDetailPage(employeeId: state.pathParameters['id']!),
@@ -32,14 +41,5 @@ List<RouteBase> employeeRoutes(Ref ref) => [
         // its own async fetch — the detail page that navigates here already
         // has the full object via employeeProvider.
         builder: (context, state) => EmployeeEditPage(existing: state.extra as Employee),
-      ),
-      GoRoute(
-        path: '/employees/event-types',
-        name: RouteNames.eventTypes,
-        redirect: (context, state) {
-          final session = ref.read(sessionProvider).value;
-          return session != null && session.isSuperadmin ? null : '/unauthorized';
-        },
-        builder: (context, state) => const EventTypesManagerPage(),
       ),
     ];
