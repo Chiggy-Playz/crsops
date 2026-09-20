@@ -5,6 +5,7 @@ import '../models/employee.dart';
 import '../models/event_type.dart';
 import '../models/timeline_entry.dart';
 import '../repositories/employee_event_repository.dart';
+import '../repositories/employee_ledger_entry_repository.dart';
 import '../repositories/employee_repository.dart';
 import '../repositories/event_type_repository.dart';
 
@@ -21,6 +22,10 @@ EmployeeEventRepository employeeEventRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 EventTypeRepository eventTypeRepository(Ref ref) =>
     SupabaseEventTypeRepository(ref.watch(supabaseClientProvider));
+
+@Riverpod(keepAlive: true)
+EmployeeLedgerEntryRepository employeeLedgerEntryRepository(Ref ref) =>
+    SupabaseEmployeeLedgerEntryRepository(ref.watch(supabaseClientProvider));
 
 @riverpod
 Future<List<Employee>> employeeList(Ref ref) => ref.watch(employeeRepositoryProvider).fetchAll();
@@ -39,3 +44,7 @@ Future<List<TimelineEntry>> employeeTimeline(Ref ref, String employeeId) =>
 
 @Riverpod(keepAlive: true)
 Future<List<EventType>> eventTypes(Ref ref) => ref.watch(eventTypeRepositoryProvider).fetchAll();
+
+@Riverpod(keepAlive: true)
+Future<List<String>> distinctEntryTypes(Ref ref) =>
+    ref.watch(employeeLedgerEntryRepositoryProvider).fetchDistinctEntryTypes();

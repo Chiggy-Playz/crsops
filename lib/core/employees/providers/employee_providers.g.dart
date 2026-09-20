@@ -153,6 +153,57 @@ final class EventTypeRepositoryProvider
 String _$eventTypeRepositoryHash() =>
     r'ce7b0ee6c1124340c611e24a3b43491f9ffdc287';
 
+@ProviderFor(employeeLedgerEntryRepository)
+final employeeLedgerEntryRepositoryProvider =
+    EmployeeLedgerEntryRepositoryProvider._();
+
+final class EmployeeLedgerEntryRepositoryProvider
+    extends
+        $FunctionalProvider<
+          EmployeeLedgerEntryRepository,
+          EmployeeLedgerEntryRepository,
+          EmployeeLedgerEntryRepository
+        >
+    with $Provider<EmployeeLedgerEntryRepository> {
+  EmployeeLedgerEntryRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'employeeLedgerEntryRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$employeeLedgerEntryRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<EmployeeLedgerEntryRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EmployeeLedgerEntryRepository create(Ref ref) {
+    return employeeLedgerEntryRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EmployeeLedgerEntryRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EmployeeLedgerEntryRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$employeeLedgerEntryRepositoryHash() =>
+    r'c8528b85332b5ea705c27d033446c26ce273e61a';
+
 @ProviderFor(employeeList)
 final employeeListProvider = EmployeeListProvider._();
 
@@ -447,3 +498,43 @@ final class EventTypesProvider
 }
 
 String _$eventTypesHash() => r'bbb56dbc0ee02e5305dafbe860e714d02e728410';
+
+@ProviderFor(distinctEntryTypes)
+final distinctEntryTypesProvider = DistinctEntryTypesProvider._();
+
+final class DistinctEntryTypesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<String>>,
+          List<String>,
+          FutureOr<List<String>>
+        >
+    with $FutureModifier<List<String>>, $FutureProvider<List<String>> {
+  DistinctEntryTypesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'distinctEntryTypesProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$distinctEntryTypesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<String>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<String>> create(Ref ref) {
+    return distinctEntryTypes(ref);
+  }
+}
+
+String _$distinctEntryTypesHash() =>
+    r'aeaad395555d06b368228759f1c47346b87eda7b';
