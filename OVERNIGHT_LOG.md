@@ -208,6 +208,26 @@ from the name controller's text) was still evaluated with the pre-edit empty tex
 when `tap()` fired immediately after — test failed with 0 employees saved instead
 of 1. Fixed by adding `await tester.pump();` between `enterText` and `tap`.
 
+**An eighth bug, in Task 13's router-merge instructions**: the relative import
+`../../employees/routes.dart` from `lib/core/router/app_router.dart` overshoots by
+one level (goes to `lib/`, not `lib/core/`) — correct path is
+`../employees/routes.dart`. Caught immediately by `dart analyze`, one-line fix.
+
+### Phase 2 (Employee core) complete
+
+All 14 tasks done and committed. Full project: `flutter analyze` clean, all 39
+tests passing (19 from Phase 1 + 20 from Phase 2), and `flutter build web`
+verified end-to-end again with the employee screens included. Employee list,
+create/edit (with color picker, inserts a `joined` event), detail/timeline (merged
+events+ledger, inline new-event-type creation), and the superadmin-gated
+event-types manager are all real, working, tested code — reachable at
+`/employees`, `/employees/new`, `/employees/:id`, `/employees/event-types`.
+
+Two more real bugs found and fixed this phase (bringing tonight's total to 8): the
+same `.schema('core')` gap from Phase 1 (4 of 11 calls were split across lines and
+missed by an earlier same-line-only fix — all fixed properly now) and a test-timing
+bug (`enterText` needs an explicit `pump()` before checking rebuilt widget state).
+
 
 ## Scope correction (from Chirag, mid-session)
 
