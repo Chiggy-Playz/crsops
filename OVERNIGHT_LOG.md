@@ -409,6 +409,9 @@ per-phase check instead.
 3. `flutter run -d chrome` (or `-d linux`, or install the APK on a phone) with
    `--dart-define=SUPABASE_URL=https://ocalljagckzyvngprlxo.supabase.co
    --dart-define=SUPABASE_PUBLISHABLE_KEY=<from supabase projects api-keys>`.
+   Android builds also need `--dart-define=GOOGLE_SERVER_CLIENT_ID=<the Web OAuth
+   client ID from Google Cloud Console>` — see "Fix: native Google sign-in missing
+   serverClientId" below.
 
 
 ## Scope correction (from Chirag, mid-session)
@@ -426,5 +429,26 @@ briefly tried `supabase start` (hit a Docker permission issue — your user isn'
 work per the correction. **Left alone, your call if you want it later**: `sudo
 usermod -aG docker chiggy` then log out/in (or `newgrp docker`) would fix that if you
 ever want local Supabase running.
+
+---
+
+## Fix: native Google sign-in missing serverClientId
+
+Found while walking Chirag through Google Cloud Console setup: `_signInWithGoogleNative`
+called `GoogleSignIn.instance.initialize()` with no `serverClientId`. Without it, the
+ID token Google returns has the wrong audience and Supabase's `signInWithIdToken`
+rejects it even though native sign-in itself succeeds on-device — a silent failure
+that would only surface during real Android testing.
+
+Fixed by threading it through as a compile-time define, matching how
+`SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY` are already supplied: `--dart-define=
+GOOGLE_SERVER_CLIENT_ID=<the Web OAuth client ID>` (the same client ID pasted into
+Supabase's Google provider config). `flutter analyze` clean, all 59 tests still pass.
+
+Still outstanding, unrelated to this fix and can't be done from here: a separate
+Android-type OAuth client (package name + SHA-1 signing fingerprint) needs
+registering in Google Cloud Console before native sign-in will work on a real
+device — no code involved, purely a console step, and only matters once Android
+testing actually starts.
 
 ---
