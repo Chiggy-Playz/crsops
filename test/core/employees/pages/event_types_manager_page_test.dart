@@ -22,8 +22,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('joined'), findsOneWidget);
-    expect(find.text('promotion'), findsOneWidget);
+    expect(find.text('Joined'), findsOneWidget);
+    expect(find.text('Promotion'), findsOneWidget);
   });
 
   testWidgets('tapping a type opens an edit dialog that updates its icon/color', (tester) async {
@@ -37,7 +37,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('promotion'));
+    await tester.tap(find.text('Promotion'));
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('event-type-edit-dialog')), findsOneWidget);

@@ -14,3 +14,22 @@ IconData iconFor(String? iconName) => _iconByName[iconName] ?? Icons.help_outlin
 Color colorFor(String? colorHex) => colorHex == null
     ? Colors.grey
     : Color(int.parse('FF${colorHex.replaceFirst('#', '')}', radix: 16));
+
+/// Ids/entry types are stored as lowercase slugs (`rehired`, `salary_payment`)
+/// so they stay stable as FK/lookup keys — this only affects how they're shown.
+String displayLabel(String id) => id
+    .split(RegExp('[_ ]+'))
+    .where((word) => word.isNotEmpty)
+    .map((word) => word[0].toUpperCase() + word.substring(1))
+    .join(' ');
+
+String initialsFor(String name) => name
+    .trim()
+    .split(RegExp(r'\s+'))
+    .where((w) => w.isNotEmpty)
+    .take(2)
+    .map((w) => w[0].toUpperCase())
+    .join();
+
+Color contrastingTextColor(Color background) =>
+    ThemeData.estimateBrightnessForColor(background) == Brightness.dark ? Colors.white : Colors.black;

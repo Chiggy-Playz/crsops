@@ -31,16 +31,13 @@ class ModuleAccessManagerPage extends ConsumerWidget {
               return ListTile(
                 title: Text(profile.email),
                 subtitle: Text(granted.isEmpty ? 'No module access granted' : granted.join(', ')),
-                trailing: IconButton(
-                  icon: const Icon(Icons.add),
-                  tooltip: 'Grant module access',
-                  onPressed: modules.isEmpty
-                      ? null
-                      : () => showDialog<void>(
-                            context: context,
-                            builder: (context) => _GrantModuleAccessDialog(profileId: profile.id, modules: modules),
-                          ),
-                ),
+                trailing: const Icon(Icons.add),
+                onTap: modules.isEmpty
+                    ? null
+                    : () => showDialog<void>(
+                          context: context,
+                          builder: (context) => _GrantModuleAccessDialog(profileId: profile.id, modules: modules),
+                        ),
               );
             },
           );
@@ -61,29 +58,48 @@ class _GrantModuleAccessDialog extends ConsumerStatefulWidget {
 
 class _GrantModuleAccessDialogState extends ConsumerState<_GrantModuleAccessDialog> {
   String? _selectedModuleId;
+  bool _saving = false;
 
   Future<void> _grant() async {
-    await ref.read(adminRepositoryProvider).grantModuleAccess(
-          userId: widget.profileId,
-          moduleId: _selectedModuleId!,
-        );
-    ref.invalidate(moduleAccessProvider);
-    if (mounted) Navigator.of(context).pop();
+    setState(() => _saving = true);
+    try {
+      await ref.read(adminRepositoryProvider).grantModuleAccess(
+            userId: widget.profileId,
+            moduleId: _selectedModuleId!,
+          );
+      ref.invalidate(moduleAccessProvider);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Grant module access'),
-      content: DropdownButton<String>(
-        value: _selectedModuleId,
-        hint: const Text('Select a module'),
-        items: widget.modules.map((m) => DropdownMenuItem(value: m.id, child: Text(m.name))).toList(),
-        onChanged: (value) => setState(() => _selectedModuleId = value),
+      content: SizedBox(
+        width: 280,
+        child: DropdownMenu<String>(
+          initialSelection: _selectedModuleId,
+          expandedInsets: EdgeInsets.zero,
+          hintText: 'Select a module',
+          dropdownMenuEntries:
+              widget.modules.map((m) => DropdownMenuEntry(value: m.id, label: m.name)).toList(),
+          onSelected: (value) => setState(() => _selectedModuleId = value),
+        ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: _selectedModuleId != null ? _grant : null, child: const Text('Grant')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _saving || _selectedModuleId == null ? null : _grant,
+          child: _saving
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Grant'),
+        ),
       ],
     );
   }

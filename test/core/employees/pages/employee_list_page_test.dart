@@ -55,4 +55,26 @@ void main() {
 
     expect(find.byType(FloatingActionButton), findsOneWidget);
   });
+
+  testWidgets('hides inactive employees by default, toggle reveals them', (tester) async {
+    final repo = FakeEmployeeRepository(
+      seed: [
+        Employee(id: '1', name: 'Ramesh', color: 0xFF4CAF50, createdAt: DateTime(2024, 1, 1)),
+        Employee(id: '2', name: 'Suresh', color: 0xFF2196F3, createdAt: DateTime(2024, 1, 1)),
+      ],
+      statusById: {'1': 'active', '2': 'inactive'},
+    );
+
+    await tester.pumpWidget(_wrap(const EmployeeListPage(), repo: repo));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ramesh'), findsOneWidget);
+    expect(find.text('Suresh'), findsNothing);
+
+    await tester.tap(find.byIcon(Icons.visibility_off));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ramesh'), findsOneWidget);
+    expect(find.text('Suresh'), findsOneWidget);
+  });
 }

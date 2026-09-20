@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
+import '../../../core/widgets/status_metadata.dart';
 
 class RolesManagerPage extends ConsumerWidget {
   const RolesManagerPage({super.key});
@@ -10,6 +11,27 @@ class RolesManagerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(profilesProvider);
     final rolesAsync = ref.watch(userRolesProvider);
+
+    // Two independent async fetches back this page — gate on both together so
+    // a row never briefly shows "no role granted" before roles finish loading.
+    if (profilesAsync.isLoading || rolesAsync.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Roles')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (profilesAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Roles')),
+        body: Center(child: Text('${profilesAsync.error}')),
+      );
+    }
+    if (rolesAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Roles')),
+        body: Center(child: Text('${rolesAsync.error}')),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Roles')),
@@ -28,7 +50,7 @@ class RolesManagerPage extends ConsumerWidget {
               final role = roles[profile.id];
               return ListTile(
                 title: Text(profile.email),
-                subtitle: Text(role == null ? 'No role granted' : 'Role: $role'),
+                subtitle: Text(role == null ? 'No role granted' : 'Role: ${displayLabel(role)}'),
                 onTap: () => showDialog<void>(
                   context: context,
                   builder: (context) => _EditRoleDialog(profileId: profile.id, currentRole: role),
@@ -53,34 +75,52 @@ class _EditRoleDialog extends ConsumerStatefulWidget {
 
 class _EditRoleDialogState extends ConsumerState<_EditRoleDialog> {
   late String? _selectedRole = widget.currentRole;
+  bool _saving = false;
 
-  bool get _canSave => _selectedRole != null && _selectedRole != widget.currentRole;
+  bool get _canSave => !_saving && _selectedRole != null && _selectedRole != widget.currentRole;
 
   Future<void> _save() async {
-    final repo = ref.read(adminRepositoryProvider);
-    if (widget.currentRole != null) {
-      await repo.revokeRole(userId: widget.profileId, roleId: widget.currentRole!);
+    setState(() => _saving = true);
+    try {
+      final repo = ref.read(adminRepositoryProvider);
+      if (widget.currentRole != null) {
+        await repo.revokeRole(userId: widget.profileId, roleId: widget.currentRole!);
+      }
+      await repo.grantRole(userId: widget.profileId, roleId: _selectedRole!);
+      ref.invalidate(userRolesProvider);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    await repo.grantRole(userId: widget.profileId, roleId: _selectedRole!);
-    ref.invalidate(userRolesProvider);
-    if (mounted) Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Change role'),
-      content: DropdownButton<String>(
-        value: _selectedRole,
-        hint: const Text('Select a role'),
-        items: const ['superadmin', 'admin', 'employee']
-            .map((role) => DropdownMenuItem(value: role, child: Text(role)))
-            .toList(),
-        onChanged: (value) => setState(() => _selectedRole = value),
+      content: SizedBox(
+        width: 280,
+        child: DropdownMenu<String>(
+          initialSelection: _selectedRole,
+          expandedInsets: EdgeInsets.zero,
+          hintText: 'Select a role',
+          dropdownMenuEntries: const ['superadmin', 'admin', 'employee']
+              .map((role) => DropdownMenuEntry(value: role, label: role))
+              .toList(),
+          onSelected: (value) => setState(() => _selectedRole = value),
+        ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
-        FilledButton(onPressed: _canSave ? _save : null, child: const Text('Save')),
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _canSave ? _save : null,
+          child: _saving
+              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Text('Save'),
+        ),
       ],
     );
   }
