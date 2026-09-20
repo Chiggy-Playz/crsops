@@ -1,4 +1,4 @@
-package com.example.crs_ops
+package tech.chiggydoes.crs_ops
 
 import io.flutter.embedding.android.FlutterActivity
 
