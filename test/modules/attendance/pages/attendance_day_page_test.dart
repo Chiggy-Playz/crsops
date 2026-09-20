@@ -13,8 +13,18 @@ import '../fakes/fake_attendance_repository.dart';
 import '../fakes/fake_status_type_repository.dart';
 
 const _statusTypes = [
-  StatusType(id: 'present', label: 'Present', iconName: 'check', colorHex: '#4CAF50'),
-  StatusType(id: 'absent', label: 'Absent', iconName: 'close', colorHex: '#F44336'),
+  StatusType(
+    id: 'present',
+    label: 'Present',
+    iconName: 'check',
+    colorHex: '#4CAF50',
+  ),
+  StatusType(
+    id: 'absent',
+    label: 'Absent',
+    iconName: 'close',
+    colorHex: '#F44336',
+  ),
 ];
 
 // effectiveRangeStatusProvider (which is what decides which employees are
@@ -28,90 +38,188 @@ final _activeUnmarkedRow = EffectiveStatusRow(
   isWeekOff: false,
 );
 
-Widget _wrap({required FakeAttendanceRepository attendanceRepo}) => ProviderScope(
+Widget _wrap({required FakeAttendanceRepository attendanceRepo}) =>
+    ProviderScope(
       overrides: [
         employeeRepositoryProvider.overrideWithValue(
-          FakeEmployeeRepository(seed: [
-            Employee(id: '1', name: 'Ramesh', color: 0xFF4CAF50, createdAt: DateTime(2024, 1, 1)),
-          ]),
+          FakeEmployeeRepository(
+            seed: [
+              Employee(
+                id: '1',
+                name: 'Ramesh',
+                color: 0xFF4CAF50,
+                createdAt: DateTime(2024, 1, 1),
+              ),
+            ],
+          ),
         ),
         attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-        statusTypeRepositoryProvider.overrideWithValue(FakeStatusTypeRepository(seed: _statusTypes)),
+        statusTypeRepositoryProvider.overrideWithValue(
+          FakeStatusTypeRepository(seed: _statusTypes),
+        ),
       ],
       child: MaterialApp(home: AttendanceDayPage(date: DateTime(2024, 6, 3))),
     );
 
 void main() {
-  testWidgets('picking Present from the status menu marks the employee full-day present', (tester) async {
-    final attendanceRepo = FakeAttendanceRepository(rangeStatusSeed: [_activeUnmarkedRow]);
-    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'picking Present from the status menu marks the employee full-day present',
+    (tester) async {
+      final attendanceRepo = FakeAttendanceRepository(
+        rangeStatusSeed: [_activeUnmarkedRow],
+      );
+      await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('mark-status-1')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Present'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('mark-status-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Present'));
+      await tester.pumpAndSettle();
 
-    expect(attendanceRepo.markedDays, hasLength(1));
-    expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'present');
-    expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'present');
-  });
+      expect(attendanceRepo.markedDays, hasLength(1));
+      expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'present');
+      expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'present');
+    },
+  );
 
-  testWidgets('picking Absent from the status menu marks the employee full-day absent', (tester) async {
-    final attendanceRepo = FakeAttendanceRepository(rangeStatusSeed: [_activeUnmarkedRow]);
-    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'picking Absent from the status menu marks the employee full-day absent',
+    (tester) async {
+      final attendanceRepo = FakeAttendanceRepository(
+        rangeStatusSeed: [_activeUnmarkedRow],
+      );
+      await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('mark-status-1')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Absent'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('mark-status-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Absent'));
+      await tester.pumpAndSettle();
 
-    expect(attendanceRepo.markedDays, hasLength(1));
-    expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'absent');
-    expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'absent');
-  });
+      expect(attendanceRepo.markedDays, hasLength(1));
+      expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'absent');
+      expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'absent');
+    },
+  );
 
-  testWidgets('mark all present shows a confirm dialog before calling the repository', (tester) async {
-    final attendanceRepo = FakeAttendanceRepository(rangeStatusSeed: [_activeUnmarkedRow]);
-    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'mark all present shows a confirm dialog before calling the repository',
+    (tester) async {
+      final attendanceRepo = FakeAttendanceRepository(
+        rangeStatusSeed: [_activeUnmarkedRow],
+      );
+      await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+      await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('mark-all-present-button')));
-    await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('mark-all-present-button')));
+      await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('mark-all-present-confirm-dialog')), findsOneWidget);
-    expect(attendanceRepo.markedAllPresentDates, isEmpty);
+      expect(
+        find.byKey(const Key('mark-all-present-confirm-dialog')),
+        findsOneWidget,
+      );
+      expect(attendanceRepo.markedAllPresentDates, isEmpty);
 
-    await tester.tap(find.text('Confirm'));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirm'));
+      await tester.pumpAndSettle();
 
-    expect(attendanceRepo.markedAllPresentDates, hasLength(1));
-  });
+      expect(attendanceRepo.markedAllPresentDates, hasLength(1));
+    },
+  );
 
-  testWidgets('an employee not yet active on this date is excluded from the list', (tester) async {
-    // No rangeStatusSeed row for employee '1' on this date at all — simulates
-    // an employee who joined after this date.
-    final attendanceRepo = FakeAttendanceRepository();
-    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'an employee not yet active on this date is excluded from the list',
+    (tester) async {
+      // No rangeStatusSeed row for employee '1' on this date at all — simulates
+      // an employee who joined after this date.
+      final attendanceRepo = FakeAttendanceRepository();
+      await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Ramesh'), findsNothing);
-    expect(find.text('No active employees for this date'), findsOneWidget);
-  });
+      expect(find.text('Ramesh'), findsNothing);
+      expect(find.text('No active employees for this date'), findsOneWidget);
+    },
+  );
 
-  testWidgets('an unmarked week-off day shows Week off instead of Unmarked', (tester) async {
+  testWidgets('an unmarked week-off day shows Week off instead of Unmarked', (
+    tester,
+  ) async {
     final weekOffRow = EffectiveStatusRow(
       employeeId: '1',
       date: DateTime(2024, 6, 3),
       isExplicit: false,
       isWeekOff: true,
     );
-    final attendanceRepo = FakeAttendanceRepository(rangeStatusSeed: [weekOffRow]);
+    final attendanceRepo = FakeAttendanceRepository(
+      rangeStatusSeed: [weekOffRow],
+    );
     await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
     await tester.pumpAndSettle();
 
     expect(find.text('Week off'), findsWidgets);
     expect(find.text('Unmarked'), findsNothing);
+  });
+
+  testWidgets('time picker entry is saved through the advanced section', (
+    tester,
+  ) async {
+    final attendanceRepo = FakeAttendanceRepository(
+      rangeStatusSeed: [_activeUnmarkedRow],
+    );
+    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('mark-status-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('mark-status-advanced')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('mark-status-time-in')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('mark-status-save-times')));
+    await tester.pumpAndSettle();
+
+    expect(attendanceRepo.markedDays, hasLength(1));
+    // Entering times implies presence on an unmarked day.
+    expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'present');
+    expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'present');
+    expect(
+      attendanceRepo.markedDays.first['timeIn'],
+      matches(RegExp(r'^\d{2}:\d{2}$')),
+    );
+    expect(attendanceRepo.markedDays.first['timeOut'], isNull);
+  });
+  testWidgets('quick full-day tap preserves already-entered times', (
+    tester,
+  ) async {
+    final markedWithTimes = EffectiveStatusRow(
+      employeeId: '1',
+      date: DateTime(2024, 6, 3),
+      firstHalfStatus: 'present',
+      secondHalfStatus: 'present',
+      isExplicit: true,
+      isWeekOff: false,
+      timeIn: '10:35',
+      timeOut: '18:40',
+    );
+    final attendanceRepo = FakeAttendanceRepository(
+      rangeStatusSeed: [markedWithTimes],
+    );
+    await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('mark-status-1')));
+    await tester.pumpAndSettle();
+    // The tile's own button also reads "Present" once marked — the sheet's
+    // quick-pick entry renders on top, i.e. last in the tree.
+    await tester.tap(find.text('Present').last);
+    await tester.pumpAndSettle();
+
+    expect(attendanceRepo.markedDays, hasLength(1));
+    expect(attendanceRepo.markedDays.first['timeIn'], '10:35');
+    expect(attendanceRepo.markedDays.first['timeOut'], '18:40');
   });
 }

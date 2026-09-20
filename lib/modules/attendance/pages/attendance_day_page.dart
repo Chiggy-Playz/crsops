@@ -39,15 +39,25 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       builder: (context) => AlertDialog(
         key: const Key('mark-all-present-confirm-dialog'),
         title: const Text('Mark all present?'),
-        content: const Text('This overwrites any existing marking for this day.'),
+        content: const Text(
+          'This overwrites any existing marking for this day.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Confirm')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
         ],
       ),
     );
     if (confirmed == true) {
-      await ref.read(attendanceRepositoryProvider).markAllPresent(date: widget.date, employeeIds: employeeIds);
+      await ref
+          .read(attendanceRepositoryProvider)
+          .markAllPresent(date: widget.date, employeeIds: employeeIds);
       _refresh();
     }
   }
@@ -58,15 +68,25 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       builder: (context) => AlertDialog(
         key: const Key('mark-holiday-confirm-dialog'),
         title: const Text('Mark day as company holiday?'),
-        content: const Text('This overwrites any existing marking for this day.'),
+        content: const Text(
+          'This overwrites any existing marking for this day.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Confirm')),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirm'),
+          ),
         ],
       ),
     );
     if (confirmed == true) {
-      await ref.read(attendanceRepositoryProvider).markHoliday(date: widget.date, employeeIds: employeeIds);
+      await ref
+          .read(attendanceRepositoryProvider)
+          .markHoliday(date: widget.date, employeeIds: employeeIds);
       _refresh();
     }
   }
@@ -74,11 +94,15 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   Future<void> _markStatus(String employeeId, StatusPick pick) async {
     setState(() => _busyEmployeeIds.add(employeeId));
     try {
-      await ref.read(attendanceRepositoryProvider).markDay(
+      await ref
+          .read(attendanceRepositoryProvider)
+          .markDay(
             employeeId: employeeId,
             date: widget.date,
-            firstHalfStatus: pick.statusId,
-            secondHalfStatus: pick.statusId,
+            firstHalfStatus: pick.firstHalfStatus,
+            secondHalfStatus: pick.secondHalfStatus,
+            timeIn: pick.timeIn,
+            timeOut: pick.timeOut,
             note: pick.note,
           );
       _refresh();
@@ -90,7 +114,9 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   Future<void> _unmark(String employeeId) async {
     setState(() => _busyEmployeeIds.add(employeeId));
     try {
-      await ref.read(attendanceRepositoryProvider).unmarkDay(employeeId: employeeId, date: widget.date);
+      await ref
+          .read(attendanceRepositoryProvider)
+          .unmarkDay(employeeId: employeeId, date: widget.date);
       _refresh();
     } finally {
       if (mounted) setState(() => _busyEmployeeIds.remove(employeeId));
@@ -100,7 +126,9 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   @override
   Widget build(BuildContext context) {
     final employeesAsync = ref.watch(employeeListProvider);
-    final statusAsync = ref.watch(effectiveRangeStatusProvider(start: widget.date, end: widget.date));
+    final statusAsync = ref.watch(
+      effectiveRangeStatusProvider(start: widget.date, end: widget.date),
+    );
     final statusTypesAsync = ref.watch(statusTypesProvider);
 
     // `effectiveRangeStatusProvider` already excludes employees who weren't
@@ -108,11 +136,18 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     // it returns, not the full employee list, is what decides who belongs on
     // this page. An employee joining next week must not show up as
     // "unmarked" on a day before they existed.
-    final activeEmployeeIds = statusAsync.value?.map((s) => s.employeeId).toSet();
-    final employeesById = {for (final e in employeesAsync.value ?? const []) e.id: e};
+    final activeEmployeeIds = statusAsync.value
+        ?.map((s) => s.employeeId)
+        .toSet();
+    final employeesById = {
+      for (final e in employeesAsync.value ?? const []) e.id: e,
+    };
     final activeEmployees = activeEmployeeIds == null
         ? null
-        : <Employee>[for (final id in activeEmployeeIds) if (employeesById[id] != null) employeesById[id]!];
+        : <Employee>[
+            for (final id in activeEmployeeIds)
+              if (employeesById[id] != null) employeesById[id]!,
+          ];
 
     return Scaffold(
       appBar: AppBar(
@@ -131,37 +166,40 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       body: employeesAsync.isLoading || statusAsync.isLoading
           ? const Center(child: CircularProgressIndicator())
           : employeesAsync.hasError
-              ? Center(child: Text('${employeesAsync.error}'))
-              : statusAsync.hasError
-                  ? Center(child: Text('${statusAsync.error}'))
-                  : activeEmployees == null || activeEmployees.isEmpty
-                      ? const Center(child: Text('No active employees for this date'))
-                      : Builder(
-                          builder: (context) {
-                            final statusByEmployeeId = {for (final s in statusAsync.value!) s.employeeId: s};
-                            return ListView.builder(
-                              itemCount: activeEmployees.length,
-                              itemBuilder: (context, index) {
-                                final employee = activeEmployees[index];
-                                return EmployeeMarkingTile(
-                                  employee: employee,
-                                  status: statusByEmployeeId[employee.id],
-                                  statusTypes: statusTypesAsync.value ?? const [],
-                                  busy: _busyEmployeeIds.contains(employee.id),
-                                  onMarkStatus: (pick) => _markStatus(employee.id, pick),
-                                  onUnmark: () => _unmark(employee.id),
-                                );
-                              },
-                            );
-                          },
-                        ),
+          ? Center(child: Text('${employeesAsync.error}'))
+          : statusAsync.hasError
+          ? Center(child: Text('${statusAsync.error}'))
+          : activeEmployees == null || activeEmployees.isEmpty
+          ? const Center(child: Text('No active employees for this date'))
+          : Builder(
+              builder: (context) {
+                final statusByEmployeeId = {
+                  for (final s in statusAsync.value!) s.employeeId: s,
+                };
+                return ListView.builder(
+                  itemCount: activeEmployees.length,
+                  itemBuilder: (context, index) {
+                    final employee = activeEmployees[index];
+                    return EmployeeMarkingTile(
+                      employee: employee,
+                      status: statusByEmployeeId[employee.id],
+                      statusTypes: statusTypesAsync.value ?? const [],
+                      busy: _busyEmployeeIds.contains(employee.id),
+                      onMarkStatus: (pick) => _markStatus(employee.id, pick),
+                      onUnmark: () => _unmark(employee.id),
+                    );
+                  },
+                );
+              },
+            ),
       // A FAB with nothing to act on shouldn't be shown at all — it's not a
       // form control to grey out, it's the screen's primary action.
       floatingActionButton: activeEmployees == null || activeEmployees.isEmpty
           ? null
           : FloatingActionButton.extended(
               key: const Key('mark-all-present-button'),
-              onPressed: () => _markAllPresent(activeEmployees.map((e) => e.id).toList()),
+              onPressed: () =>
+                  _markAllPresent(activeEmployees.map((e) => e.id).toList()),
               icon: const Icon(Icons.done_all),
               label: const Text('Mark all present'),
             ),
