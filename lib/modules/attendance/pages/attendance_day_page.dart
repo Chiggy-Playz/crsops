@@ -155,14 +155,16 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
                             );
                           },
                         ),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('mark-all-present-button'),
-        onPressed: activeEmployees == null || activeEmployees.isEmpty
-            ? null
-            : () => _markAllPresent(activeEmployees.map((e) => e.id).toList()),
-        icon: const Icon(Icons.done_all),
-        label: const Text('Mark all present'),
-      ),
+      // A FAB with nothing to act on shouldn't be shown at all — it's not a
+      // form control to grey out, it's the screen's primary action.
+      floatingActionButton: activeEmployees == null || activeEmployees.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              key: const Key('mark-all-present-button'),
+              onPressed: () => _markAllPresent(activeEmployees.map((e) => e.id).toList()),
+              icon: const Icon(Icons.done_all),
+              label: const Text('Mark all present'),
+            ),
     );
   }
 }
