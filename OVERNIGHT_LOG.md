@@ -228,6 +228,38 @@ same `.schema('core')` gap from Phase 1 (4 of 11 calls were split across lines a
 missed by an earlier same-line-only fix — all fixed properly now) and a test-timing
 bug (`enterText` needs an explicit `pump()` before checking rebuilt widget state).
 
+### Phase 3 (Attendance marking) in progress
+
+The `attendance` schema (shift_defaults, status_types, attendance_days) is up on
+the real project, with the identical RLS+GRANT treatment Phase 1 needed — applied
+correctly the first time this phase, no missing-grants repeat. All three
+functions (`effective_range_status`, `recent_gaps`, `derived_flags`) are live and
+verified against real inserted data, including the exact boundary/edge cases from
+plan.md: week-off computation, explicit-vs-unmarked distinction, the last-7-days
+gap window, and the overnight-shift late/early/overtime math.
+
+**A ninth real bug, a genuine Postgres type error this time**: `derived_flags`'s
+overnight-shift `CASE` expression had `effective_time_out + interval '24 hours'`
+in one branch (stays `time` type, which wraps around a 24h clock and can't
+represent "crosses into the next day") against an explicit `::interval` cast in
+the other branch — Postgres rejected it outright: `CASE types interval and time
+without time zone cannot be matched`. Fixed by casting to `::interval` *before*
+adding, in both branches. Verified after the fix with three real cases (on-time,
+late arrival, and the actual overnight 10:30→01:00 example from the spec) — all
+three now compute exactly as designed, including `is_early=false` correctly not
+firing on the overnight day.
+
+One operational note worth keeping in mind for the rest of tonight: `supabase db
+push` tracks migrations by **filename**, not content — editing a migration file
+after it's already been pushed once (which happens naturally here, since a task's
+SQL gets appended to the same file across several tasks) does **not** get
+re-applied by a plain `db push` afterward. Working around this by applying each
+new increment directly via `supabase db query --linked` (or `-f <file>` for
+anything with `$$` dollar-quoting, which is painful to shell-escape inline) —
+the migration files themselves stay complete and correct as the historical
+record for a future fresh reset elsewhere, they just don't drive tonight's own
+already-applied state past the first push per file.
+
 
 ## Scope correction (from Chirag, mid-session)
 
