@@ -145,6 +145,48 @@ Phase 2's already-written plan for the same patterns (`valueOrNull`, `.notifier`
 clean, doesn't use them. Worth double-checking Phase 3 onward for the same thing once
 written, especially anything touching `AsyncNotifier`/streams directly.
 
+### Phase 1 complete — status summary
+
+All 21 of Phase 1's 22 tasks are done and committed on branch `v1-implementation`
+(Task 22, end-to-end manual verification, is blocked on real Google OAuth setup —
+see below). Every task that could be verified for real, was: the full `core` schema
+against your actual linked Supabase project (not a local stub), all unit/widget
+tests (19 total, all passing), `dart analyze` clean across all of `lib/`, and a real
+`flutter build web` succeeded end to end. Also found: `flutter build linux` needs
+`cmake`, which isn't installed and I can't install without your sudo password —
+not attempted further; `flutter build apk` was running in the background as I
+wrote this, results below once it finishes.
+
+**Six real bugs found and fixed tonight, via actually building/running things, not
+just writing code and assuming it works:**
+1. `core.employees.color` was `integer`, too small for an opaque Flutter color.
+2. The entire `core` schema had RLS but no baseline `GRANT`s for `authenticated`.
+3. `event_types` insert/update RLS didn't actually enforce the superadmin-only
+   restriction on structural rows the design called for.
+4. Every Dart repository's `.from()`/`.rpc()` call needs explicit
+   `.schema('core')`/`.schema('attendance')` — bare calls silently target `public`.
+5. `google_sign_in`'s API changed since the plan was written (no more
+   `GoogleSignIn()`/`.signIn()`) — rewritten against the actual installed 7.x API.
+6. The resolved Riverpod version is 3.x, not 2.x — `AsyncValue.valueOrNull` is now
+   `.value`, and generated `FutureProvider`-style providers dropped `.stream`
+   entirely (fixed the router's refresh bridge to use `ref.listen` instead).
+
+Also fixed in passing: `Supabase.initialize`'s `anonKey` parameter is deprecated in
+favor of `publishableKey` in the installed version.
+
+**What's still genuinely blocked on you** (see the top of this file too):
+- Google OAuth client registration (Google Cloud Console) + enabling the provider
+  in Supabase Studio, and exposing `core`/`attendance` schemas via PostgREST
+  (Studio → Settings → API) — both dashboard actions, can't be done from here.
+- The real bootstrap (your + your dad's emails into the allow-list, then role
+  grants) — needs the above to exist first so there's something to sign in with.
+  `supabase/README.md` has the exact SQL ready to run, in order.
+- `cmake` for Linux desktop builds, if you want that platform buildable here too.
+
+Once OAuth is set up, Task 22's remaining steps (sign-in rejection/acceptance,
+`core.profiles` populating for real, unauthorized redirect, nav breakpoint on a
+real running app) are straightforward to run through.
+
 
 ## Scope correction (from Chirag, mid-session)
 
