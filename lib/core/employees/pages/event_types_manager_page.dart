@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../errors/app_exception.dart';
-import '../../widgets/error_snackbar.dart';
+import '../../widgets/guarded_save.dart';
 import '../../widgets/color_swatch_picker.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/event_type.dart';
@@ -60,22 +59,21 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
   bool _saving = false;
 
   Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      await ref
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () => ref
           .read(eventTypeRepositoryProvider)
           .updateDisplay(
             widget.type.id,
             iconName: _iconName,
             colorHex: _colorHex,
-          );
-      ref.invalidate(eventTypesProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+          ),
+      onSuccess: () {
+        ref.invalidate(eventTypesProvider);
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

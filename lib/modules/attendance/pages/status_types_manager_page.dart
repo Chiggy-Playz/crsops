@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/color_swatch_picker.dart';
-import '../../../core/widgets/error_snackbar.dart';
-import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
 
@@ -72,23 +71,22 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
   }
 
   Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      await ref
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () => ref
           .read(statusTypeRepositoryProvider)
           .add(
             id: _idController.text.trim(),
             label: _labelController.text.trim(),
             iconName: _iconName,
             colorHex: _colorHex,
-          );
-      ref.invalidate(statusTypesProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+          ),
+      onSuccess: () {
+        ref.invalidate(statusTypesProvider);
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

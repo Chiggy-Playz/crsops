@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/busy_overlay.dart';
 import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/guarded_save.dart';
 
 class AllowListManagerPage extends ConsumerStatefulWidget {
   const AllowListManagerPage({super.key});
@@ -72,17 +71,14 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
     final String? note = noteText.isEmpty ? null : noteText;
     if (!added || !mounted) return;
 
-    setState(() => _busy = true);
-    try {
-      await ref
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _busy = v),
+      action: () => ref
           .read(adminRepositoryProvider)
-          .addAllowedEmail(email: email, note: note);
-      ref.invalidate(allowedEmailsProvider);
-    } on AppException catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+          .addAllowedEmail(email: email, note: note),
+      onSuccess: () => ref.invalidate(allowedEmailsProvider),
+    );
   }
 
   Future<void> _remove(String email) async {
@@ -95,15 +91,12 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
     );
     if (!confirmed || !mounted) return;
 
-    setState(() => _busy = true);
-    try {
-      await ref.read(adminRepositoryProvider).removeAllowedEmail(email);
-      ref.invalidate(allowedEmailsProvider);
-    } on AppException catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _busy = v),
+      action: () => ref.read(adminRepositoryProvider).removeAllowedEmail(email),
+      onSuccess: () => ref.invalidate(allowedEmailsProvider),
+    );
   }
 
   @override

@@ -8,7 +8,7 @@ void main() {
     test('loading session redirects to /loading from any other route', () {
       final result = computeRedirect(
         sessionValue: const AsyncLoading(),
-        currentLocation: '/',
+        currentLocation: '/attendance/calendar',
       );
       expect(result, '/loading');
     });
@@ -24,7 +24,7 @@ void main() {
     test('signed out (null session) redirects to /sign-in', () {
       final result = computeRedirect(
         sessionValue: const AsyncData(null),
-        currentLocation: '/',
+        currentLocation: '/attendance/calendar',
       );
       expect(result, '/sign-in');
     });
@@ -46,12 +46,12 @@ void main() {
       );
       final result = computeRedirect(
         sessionValue: AsyncData(session),
-        currentLocation: '/',
+        currentLocation: '/attendance/calendar',
       );
       expect(result, '/unauthorized');
     });
 
-    test('signed in with a role on /sign-in redirects to /', () {
+    test('signed in with a role on /sign-in redirects to the calendar', () {
       const session = AppSession(
         userId: 'u1',
         email: 'a@x.com',
@@ -62,7 +62,7 @@ void main() {
         sessionValue: AsyncData(session),
         currentLocation: '/sign-in',
       );
-      expect(result, '/');
+      expect(result, '/attendance/calendar');
     });
 
     test('signed in with a role on an app route does not redirect', () {
@@ -74,7 +74,7 @@ void main() {
       );
       final result = computeRedirect(
         sessionValue: AsyncData(session),
-        currentLocation: '/',
+        currentLocation: '/attendance/calendar',
       );
       expect(result, isNull);
     });
@@ -82,7 +82,7 @@ void main() {
     test('error session redirects to /sign-in', () {
       final result = computeRedirect(
         sessionValue: AsyncError('boom', StackTrace.empty),
-        currentLocation: '/',
+        currentLocation: '/attendance/calendar',
       );
       expect(result, '/sign-in');
     });
@@ -161,7 +161,7 @@ void main() {
         expect(
           computeRedirect(
             sessionValue: const AsyncData(admin),
-            currentLocation: '/reports',
+            currentLocation: '/attendance/reports',
           ),
           isNull,
         );
@@ -171,18 +171,45 @@ void main() {
         expect(
           computeRedirect(
             sessionValue: const AsyncData(employeeWithAccess),
-            currentLocation: '/',
+            currentLocation: '/attendance/calendar',
           ),
           isNull,
         );
         expect(
           computeRedirect(
             sessionValue: const AsyncData(employeeWithoutAccess),
-            currentLocation: '/',
+            currentLocation: '/attendance/calendar',
           ),
           '/unauthorized',
         );
       });
+
+      test(
+        'reports and attendance-day require attendance module access too',
+        () {
+          expect(
+            computeRedirect(
+              sessionValue: const AsyncData(employeeWithAccess),
+              currentLocation: '/attendance/reports',
+            ),
+            isNull,
+          );
+          expect(
+            computeRedirect(
+              sessionValue: const AsyncData(employeeWithoutAccess),
+              currentLocation: '/attendance/reports',
+            ),
+            '/unauthorized',
+          );
+          expect(
+            computeRedirect(
+              sessionValue: const AsyncData(employeeWithoutAccess),
+              currentLocation: '/attendance/2024-06-03',
+            ),
+            '/unauthorized',
+          );
+        },
+      );
     });
   });
 }

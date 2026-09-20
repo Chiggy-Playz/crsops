@@ -15,7 +15,7 @@ List<RouteBase> get $appRoutes => [
 ];
 
 RouteBase get $calendarRoute => GoRouteData.$route(
-  path: '/',
+  path: '/attendance/calendar',
   hasOverriddenOnExit: false,
   factory: $CalendarRoute._fromState,
 );
@@ -24,7 +24,7 @@ mixin $CalendarRoute on GoRouteData {
   static CalendarRoute _fromState(GoRouterState state) => const CalendarRoute();
 
   @override
-  String get location => GoRouteData.$location('/');
+  String get location => GoRouteData.$location('/attendance/calendar');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -41,7 +41,7 @@ mixin $CalendarRoute on GoRouteData {
 }
 
 RouteBase get $reportsRoute => GoRouteData.$route(
-  path: '/reports',
+  path: '/attendance/reports',
   hasOverriddenOnExit: false,
   factory: $ReportsRoute._fromState,
 );
@@ -50,7 +50,7 @@ mixin $ReportsRoute on GoRouteData {
   static ReportsRoute _fromState(GoRouterState state) => const ReportsRoute();
 
   @override
-  String get location => GoRouteData.$location('/reports');
+  String get location => GoRouteData.$location('/attendance/reports');
 
   @override
   void go(BuildContext context) => context.go(location);

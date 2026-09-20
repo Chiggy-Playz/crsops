@@ -71,30 +71,31 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       await _pickCustomRange();
       return;
     }
-    // One hoisted `now` above; each preset differs only by range math.
+    // One hoisted `now` above. Single map (range plus label) so the two
+    // can never drift apart.
     final presets = {
-      'today': DateTimeRange(start: now, end: now),
-      '7d': DateTimeRange(
-        start: now.subtract(const Duration(days: 7)),
-        end: now,
+      'today': (DateTimeRange(start: now, end: now), 'Today'),
+      '7d': (
+        DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
+        'Last 7 days',
       ),
-      '30d': DateTimeRange(
-        start: now.subtract(const Duration(days: 30)),
-        end: now,
+      '30d': (
+        DateTimeRange(
+          start: now.subtract(const Duration(days: 30)),
+          end: now,
+        ),
+        'Last 30 days',
       ),
-      'month': DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
+      'month': (
+        DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
+        'This month',
+      ),
     };
-    final labels = {
-      'today': 'Today',
-      '7d': 'Last 7 days',
-      '30d': 'Last 30 days',
-      'month': 'This month',
-    };
-    final range = presets[choice];
-    if (range != null) {
+    final preset = presets[choice];
+    if (preset != null) {
       setState(() {
-        _range = range;
-        _rangeLabel = labels[choice];
+        _range = preset.$1;
+        _rangeLabel = preset.$2;
       });
     }
   }

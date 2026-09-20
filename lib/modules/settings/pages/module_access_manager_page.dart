@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/errors/app_exception.dart';
-import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/guarded_save.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
   const ModuleAccessManagerPage({super.key});
@@ -77,21 +76,20 @@ class _GrantModuleAccessDialogState
   bool _saving = false;
 
   Future<void> _grant() async {
-    setState(() => _saving = true);
-    try {
-      await ref
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () => ref
           .read(adminRepositoryProvider)
           .grantModuleAccess(
             userId: widget.profileId,
             moduleId: _selectedModuleId!,
-          );
-      ref.invalidate(moduleAccessProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+          ),
+      onSuccess: () {
+        ref.invalidate(moduleAccessProvider);
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

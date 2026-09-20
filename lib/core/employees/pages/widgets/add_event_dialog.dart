@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../errors/app_exception.dart';
-import '../../../widgets/error_snackbar.dart';
+import '../../../widgets/guarded_save.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
@@ -53,44 +52,44 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
     final typed = slugifyEventType(_typedType);
     if (typed.isEmpty || _saving) return;
 
-    setState(() => _saving = true);
-    try {
-      var typeId = typed;
-      if (!existingTypeIds.contains(typed)) {
-        final created = await ref
-            .read(eventTypeRepositoryProvider)
-            .addDescriptiveType(typed);
-        typeId = created.id;
+    var typeId = typed;
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () async {
+        if (!existingTypeIds.contains(typed)) {
+          final created = await ref
+              .read(eventTypeRepositoryProvider)
+              .addDescriptiveType(typed);
+          typeId = created.id;
+        }
+        final note = _noteController.text.isEmpty ? null : _noteController.text;
+        if (_isEditing) {
+          await ref
+              .read(employeeEventRepositoryProvider)
+              .updateEvent(
+                id: widget.existing!.id,
+                eventType: typeId,
+                eventDate: _eventDate,
+                note: note,
+              );
+        } else {
+          await ref
+              .read(employeeEventRepositoryProvider)
+              .addEvent(
+                employeeId: widget.employeeId,
+                eventType: typeId,
+                eventDate: _eventDate,
+                note: note,
+              );
+        }
+      },
+      onSuccess: () {
         ref.invalidate(eventTypesProvider);
-      }
-
-      final note = _noteController.text.isEmpty ? null : _noteController.text;
-      if (_isEditing) {
-        await ref
-            .read(employeeEventRepositoryProvider)
-            .updateEvent(
-              id: widget.existing!.id,
-              eventType: typeId,
-              eventDate: _eventDate,
-              note: note,
-            );
-      } else {
-        await ref
-            .read(employeeEventRepositoryProvider)
-            .addEvent(
-              employeeId: widget.employeeId,
-              eventType: typeId,
-              eventDate: _eventDate,
-              note: note,
-            );
-      }
-      ref.invalidate(employeeTimelineProvider(widget.employeeId));
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+        ref.invalidate(employeeTimelineProvider(widget.employeeId));
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

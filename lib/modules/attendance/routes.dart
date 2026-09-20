@@ -9,7 +9,7 @@ import 'pages/status_types_manager_page.dart';
 
 part 'routes.g.dart';
 
-@TypedGoRoute<CalendarRoute>(path: '/')
+@TypedGoRoute<CalendarRoute>(path: '/attendance/calendar')
 class CalendarRoute extends GoRouteData with $CalendarRoute {
   const CalendarRoute();
 
@@ -18,7 +18,7 @@ class CalendarRoute extends GoRouteData with $CalendarRoute {
       const CalendarPage();
 }
 
-@TypedGoRoute<ReportsRoute>(path: '/reports')
+@TypedGoRoute<ReportsRoute>(path: '/attendance/reports')
 class ReportsRoute extends GoRouteData with $ReportsRoute {
   const ReportsRoute();
 

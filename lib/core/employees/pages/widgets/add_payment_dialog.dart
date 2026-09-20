@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../errors/app_exception.dart';
-import '../../../widgets/error_snackbar.dart';
+import '../../../widgets/guarded_save.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
@@ -62,38 +61,39 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
     final entryType = _typedEntryType.trim();
     if (entryType.isEmpty || _saving) return;
 
-    setState(() => _saving = true);
-    try {
-      final note = _noteController.text.isEmpty ? null : _noteController.text;
-      if (_isEditing) {
-        await ref
-            .read(employeeLedgerEntryRepositoryProvider)
-            .updateEntry(
-              id: widget.existing!.id,
-              entryDate: _entryDate,
-              amount: amount,
-              entryType: entryType,
-              note: note,
-            );
-      } else {
-        await ref
-            .read(employeeLedgerEntryRepositoryProvider)
-            .addEntry(
-              employeeId: widget.employeeId,
-              entryDate: _entryDate,
-              amount: amount,
-              entryType: entryType,
-              note: note,
-            );
-      }
-      ref.invalidate(distinctEntryTypesProvider);
-      ref.invalidate(employeeTimelineProvider(widget.employeeId));
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () async {
+        final note = _noteController.text.isEmpty ? null : _noteController.text;
+        if (_isEditing) {
+          await ref
+              .read(employeeLedgerEntryRepositoryProvider)
+              .updateEntry(
+                id: widget.existing!.id,
+                entryDate: _entryDate,
+                amount: amount,
+                entryType: entryType,
+                note: note,
+              );
+        } else {
+          await ref
+              .read(employeeLedgerEntryRepositoryProvider)
+              .addEntry(
+                employeeId: widget.employeeId,
+                entryDate: _entryDate,
+                amount: amount,
+                entryType: entryType,
+                note: note,
+              );
+        }
+      },
+      onSuccess: () {
+        ref.invalidate(distinctEntryTypesProvider);
+        ref.invalidate(employeeTimelineProvider(widget.employeeId));
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

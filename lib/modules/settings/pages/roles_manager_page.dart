@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/errors/app_exception.dart';
-import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/status_metadata.dart';
 
 class RolesManagerPage extends ConsumerWidget {
@@ -88,23 +87,24 @@ class _EditRoleDialogState extends ConsumerState<_EditRoleDialog> {
       !_saving && _selectedRole != null && _selectedRole != widget.currentRole;
 
   Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      final repo = ref.read(adminRepositoryProvider);
-      if (widget.currentRole != null) {
-        await repo.revokeRole(
-          userId: widget.profileId,
-          roleId: widget.currentRole!,
-        );
-      }
-      await repo.grantRole(userId: widget.profileId, roleId: _selectedRole!);
-      ref.invalidate(userRolesProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () async {
+        final repo = ref.read(adminRepositoryProvider);
+        if (widget.currentRole != null) {
+          await repo.revokeRole(
+            userId: widget.profileId,
+            roleId: widget.currentRole!,
+          );
+        }
+        await repo.grantRole(userId: widget.profileId, roleId: _selectedRole!);
+      },
+      onSuccess: () {
+        ref.invalidate(userRolesProvider);
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override

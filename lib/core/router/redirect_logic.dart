@@ -57,7 +57,12 @@ String? computeRedirect({
   if (_adminPaths.contains(currentLocation)) {
     return session.isAdminOrAbove ? null : unauthorizedPath;
   }
-  if (currentLocation == const CalendarRoute().location) {
+  // Every attendance page lives under the '/attendance' prefix (calendar,
+  // reports, day view, managers), so one prefix check gates the whole
+  // module — including future nested pages. Tied to the prefix of the
+  // @TypedGoRoute annotations; if it ever changes, this must follow
+  // (there is exactly one place).
+  if (currentLocation.startsWith('/attendance/')) {
     return session.hasModuleAccess(ModuleNames.attendance)
         ? null
         : unauthorizedPath;
@@ -66,7 +71,7 @@ String? computeRedirect({
   if (currentLocation == signInPath ||
       currentLocation == unauthorizedPath ||
       currentLocation == loadingPath) {
-    return '/';
+    return const CalendarRoute().location;
   }
 
   return null;

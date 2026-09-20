@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/attendance_providers.dart';
-import '../../../core/errors/app_exception.dart';
-import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/guarded_save.dart';
 
 const _kWeekdayNames = {
   1: 'Monday',
@@ -81,23 +80,22 @@ class _AddShiftDefaultDialogState
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   Future<void> _save() async {
-    setState(() => _saving = true);
-    try {
-      await ref
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () => ref
           .read(shiftDefaultsRepositoryProvider)
           .addEffectiveFrom(
             effectiveFrom: _effectiveFrom,
             defaultStart: _fmt(_start),
             defaultEnd: _fmt(_end),
             weekOffDays: _weekOffDays.toList()..sort(),
-          );
-      ref.invalidate(shiftDefaultsHistoryProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+          ),
+      onSuccess: () {
+        ref.invalidate(shiftDefaultsHistoryProvider);
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override
