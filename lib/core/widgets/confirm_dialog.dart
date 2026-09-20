@@ -9,10 +9,12 @@ Future<bool> showConfirmDialog(
   required String message,
   String confirmLabel = 'Confirm',
   bool isDestructive = false,
+  Key? dialogKey,
 }) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
+      key: dialogKey,
       title: Text(title),
       content: Text(message),
       actions: [

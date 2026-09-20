@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/router/route_names.dart';
+import '../../../core/utils/date_key.dart';
 import '../attendance_calendar_colors.dart';
 import '../models/effective_status_row.dart';
 import '../providers/attendance_providers.dart';
@@ -22,17 +23,22 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     final gapsAsync = ref.watch(recentGapsProvider);
-    final gapDates = gapsAsync.value?.map((g) => g.date.toIso8601String().split('T').first).toSet() ?? {};
+    final gapDates =
+        gapsAsync.value?.map((g) => dateOnly(g.date)).toSet() ?? {};
 
     final monthStart = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final monthEnd = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
-    final monthStatusAsync = ref.watch(effectiveRangeStatusProvider(start: monthStart, end: monthEnd));
+    final monthStatusAsync = ref.watch(
+      effectiveRangeStatusProvider(start: monthStart, end: monthEnd),
+    );
     final statusTypesAsync = ref.watch(statusTypesProvider);
     final colorHexByStatusId = <String, String>{
       for (final t in statusTypesAsync.value ?? const [])
         if (t.colorHex != null) t.id: t.colorHex!,
     };
-    final rowsByDate = groupRowsByDate(monthStatusAsync.value ?? const <EffectiveStatusRow>[]);
+    final rowsByDate = groupRowsByDate(
+      monthStatusAsync.value ?? const <EffectiveStatusRow>[],
+    );
 
     return Scaffold(
       appBar: AppBar(
@@ -66,16 +72,19 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           setState(() => _focusedDay = focusedDay);
           context.pushNamed(
             RouteNames.attendanceDay,
-            pathParameters: {'date': selectedDay.toIso8601String().split('T').first},
+            pathParameters: {'date': dateOnly(selectedDay)},
           );
         },
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
-            final dateKey = day.toIso8601String().split('T').first;
+            final dateKey = dateOnly(day);
             return DayCell(
               day: day,
               hasGap: gapDates.contains(dateKey),
-              statusDots: statusDotsFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId),
+              statusDots: statusDotsFor(
+                rowsByDate[dateKey] ?? const [],
+                colorHexByStatusId,
+              ),
             );
           },
         ),

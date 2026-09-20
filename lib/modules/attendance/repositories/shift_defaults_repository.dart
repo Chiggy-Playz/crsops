@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/exception_translator.dart';
+import '../../../core/utils/date_key.dart';
 import '../models/shift_defaults.dart';
 
 abstract class ShiftDefaultsRepository {
@@ -25,7 +26,7 @@ class SupabaseShiftDefaultsRepository implements ShiftDefaultsRepository {
           .schema('attendance')
           .from('shift_defaults')
           .select()
-          .lte('effective_from', DateTime.now().toIso8601String().split('T').first)
+          .lte('effective_from', dateOnly(DateTime.now()))
           .order('effective_from', ascending: false)
           .limit(1);
       return ShiftDefaultsMapper.fromMap(rows.first);
@@ -60,7 +61,7 @@ class SupabaseShiftDefaultsRepository implements ShiftDefaultsRepository {
           .schema('attendance')
           .from('shift_defaults')
           .insert({
-            'effective_from': effectiveFrom.toIso8601String().split('T').first,
+            'effective_from': dateOnly(effectiveFrom),
             'default_start': defaultStart,
             'default_end': defaultEnd,
             'week_off_days': weekOffDays,

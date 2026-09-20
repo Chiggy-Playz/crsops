@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../core/utils/date_key.dart';
 import '../../core/widgets/status_metadata.dart';
 import 'models/effective_status_row.dart';
 
 /// Groups rows by date (`yyyy-MM-dd` key) — shared by any calendar view that
 /// needs "what happened on this day" regardless of how many employees' rows
 /// are in the list (one, a chosen few, or all of them).
-Map<String, List<EffectiveStatusRow>> groupRowsByDate(List<EffectiveStatusRow> rows) {
+Map<String, List<EffectiveStatusRow>> groupRowsByDate(
+  List<EffectiveStatusRow> rows,
+) {
   final byDate = <String, List<EffectiveStatusRow>>{};
   for (final row in rows) {
-    byDate.putIfAbsent(row.date.toIso8601String().split('T').first, () => []).add(row);
+    byDate.putIfAbsent(dateOnly(row.date), () => []).add(row);
   }
   return byDate;
 }
@@ -27,11 +30,16 @@ Map<String, List<EffectiveStatusRow>> groupRowsByDate(List<EffectiveStatusRow> r
 /// must win over it, same priority order as computeStatusSummary, or an
 /// employee explicitly marked present on a week-off day silently loses
 /// their dot to the week-off one.
-List<Color> statusDotsFor(List<EffectiveStatusRow> dayRows, Map<String, String> colorHexByStatusId) {
+List<Color> statusDotsFor(
+  List<EffectiveStatusRow> dayRows,
+  Map<String, String> colorHexByStatusId,
+) {
   final seen = <String>{};
   final dots = <Color>[];
   for (final row in dayRows) {
-    final statusId = row.isExplicit ? row.firstHalfStatus : (row.isWeekOff ? 'week_off' : null);
+    final statusId = row.isExplicit
+        ? row.firstHalfStatus
+        : (row.isWeekOff ? 'week_off' : null);
     if (statusId == null) continue;
     if (seen.add(statusId)) {
       dots.add(colorFor(colorHexByStatusId[statusId]));

@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../errors/exception_translator.dart';
+import '../../utils/date_key.dart';
 import '../models/timeline_entry.dart';
 
 abstract class EmployeeEventRepository {
@@ -39,7 +40,7 @@ class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
       await _client.schema('core').from('employee_events').insert({
         'employee_id': employeeId,
         'event_type': eventType,
-        'event_date': eventDate.toIso8601String().split('T').first,
+        'event_date': dateOnly(eventDate),
         'note': note,
       });
     } catch (error) {
@@ -75,7 +76,7 @@ class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
           .from('employee_events')
           .update({
             'event_type': eventType,
-            'event_date': eventDate.toIso8601String().split('T').first,
+            'event_date': dateOnly(eventDate),
             'note': note,
           })
           .eq('id', id);
@@ -87,7 +88,11 @@ class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
   @override
   Future<void> deleteEvent(String id) async {
     try {
-      await _client.schema('core').from('employee_events').delete().eq('id', id);
+      await _client
+          .schema('core')
+          .from('employee_events')
+          .delete()
+          .eq('id', id);
     } catch (error) {
       throw translateException(error);
     }

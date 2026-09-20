@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../errors/exception_translator.dart';
+import '../../utils/date_key.dart';
 
 abstract class EmployeeLedgerEntryRepository {
   Future<void> addEntry({
@@ -26,7 +27,8 @@ abstract class EmployeeLedgerEntryRepository {
   Future<void> deleteEntry(String id);
 }
 
-class SupabaseEmployeeLedgerEntryRepository implements EmployeeLedgerEntryRepository {
+class SupabaseEmployeeLedgerEntryRepository
+    implements EmployeeLedgerEntryRepository {
   SupabaseEmployeeLedgerEntryRepository(this._client);
   final SupabaseClient _client;
 
@@ -41,7 +43,7 @@ class SupabaseEmployeeLedgerEntryRepository implements EmployeeLedgerEntryReposi
     try {
       await _client.schema('core').from('employee_ledger_entries').insert({
         'employee_id': employeeId,
-        'entry_date': entryDate.toIso8601String().split('T').first,
+        'entry_date': dateOnly(entryDate),
         'amount': amount,
         'entry_type': entryType,
         'note': note,
@@ -59,7 +61,8 @@ class SupabaseEmployeeLedgerEntryRepository implements EmployeeLedgerEntryReposi
           .from('employee_ledger_entries')
           .select('entry_type')
           .order('entry_type');
-      final types = rows.map((r) => r['entry_type'] as String).toSet().toList()..sort();
+      final types = rows.map((r) => r['entry_type'] as String).toSet().toList()
+        ..sort();
       return types;
     } catch (error) {
       throw translateException(error);
@@ -79,7 +82,7 @@ class SupabaseEmployeeLedgerEntryRepository implements EmployeeLedgerEntryReposi
           .schema('core')
           .from('employee_ledger_entries')
           .update({
-            'entry_date': entryDate.toIso8601String().split('T').first,
+            'entry_date': dateOnly(entryDate),
             'amount': amount,
             'entry_type': entryType,
             'note': note,
@@ -93,7 +96,11 @@ class SupabaseEmployeeLedgerEntryRepository implements EmployeeLedgerEntryReposi
   @override
   Future<void> deleteEntry(String id) async {
     try {
-      await _client.schema('core').from('employee_ledger_entries').delete().eq('id', id);
+      await _client
+          .schema('core')
+          .from('employee_ledger_entries')
+          .delete()
+          .eq('id', id);
     } catch (error) {
       throw translateException(error);
     }

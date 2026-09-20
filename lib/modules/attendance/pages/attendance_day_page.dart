@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/confirm_dialog.dart';
 import '../providers/attendance_providers.dart';
 import 'widgets/employee_marking_tile.dart';
 
@@ -41,27 +42,13 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   }
 
   Future<void> _markAllPresent(List<String> employeeIds) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        key: const Key('mark-all-present-confirm-dialog'),
-        title: const Text('Mark all present?'),
-        content: const Text(
-          'This overwrites any existing marking for this day.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Mark all present?',
+      message: 'This overwrites any existing marking for this day.',
+      dialogKey: const Key('mark-all-present-confirm-dialog'),
     );
-    if (confirmed == true) {
+    if (confirmed) {
       try {
         await ref
             .read(attendanceRepositoryProvider)
@@ -74,27 +61,13 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   }
 
   Future<void> _markHoliday(List<String> employeeIds) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        key: const Key('mark-holiday-confirm-dialog'),
-        title: const Text('Mark day as company holiday?'),
-        content: const Text(
-          'This overwrites any existing marking for this day.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Mark day as company holiday?',
+      message: 'This overwrites any existing marking for this day.',
+      dialogKey: const Key('mark-holiday-confirm-dialog'),
     );
-    if (confirmed == true) {
+    if (confirmed) {
       try {
         await ref
             .read(attendanceRepositoryProvider)
@@ -106,20 +79,16 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     }
   }
 
-  Future<void> _markStatus(String employeeId, StatusPick pick) async {
+  /// Busy-flag wrapper shared by the per-employee mutations: same
+  /// set-busy/try/refresh-or-error/clear shape, only the repository call
+  /// differs.
+  Future<void> _runFor(
+    String employeeId,
+    Future<void> Function() action,
+  ) async {
     setState(() => _busyEmployeeIds.add(employeeId));
     try {
-      await ref
-          .read(attendanceRepositoryProvider)
-          .markDay(
-            employeeId: employeeId,
-            date: widget.date,
-            firstHalfStatus: pick.firstHalfStatus,
-            secondHalfStatus: pick.secondHalfStatus,
-            timeIn: pick.timeIn,
-            timeOut: pick.timeOut,
-            note: pick.note,
-          );
+      await action();
       _refresh();
     } on AppException catch (e) {
       _showError(e);
@@ -128,19 +97,27 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     }
   }
 
-  Future<void> _unmark(String employeeId) async {
-    setState(() => _busyEmployeeIds.add(employeeId));
-    try {
-      await ref
-          .read(attendanceRepositoryProvider)
-          .unmarkDay(employeeId: employeeId, date: widget.date);
-      _refresh();
-    } on AppException catch (e) {
-      _showError(e);
-    } finally {
-      if (mounted) setState(() => _busyEmployeeIds.remove(employeeId));
-    }
-  }
+  Future<void> _markStatus(String employeeId, StatusPick pick) => _runFor(
+    employeeId,
+    () => ref
+        .read(attendanceRepositoryProvider)
+        .markDay(
+          employeeId: employeeId,
+          date: widget.date,
+          firstHalfStatus: pick.firstHalfStatus,
+          secondHalfStatus: pick.secondHalfStatus,
+          timeIn: pick.timeIn,
+          timeOut: pick.timeOut,
+          note: pick.note,
+        ),
+  );
+
+  Future<void> _unmark(String employeeId) => _runFor(
+    employeeId,
+    () => ref
+        .read(attendanceRepositoryProvider)
+        .unmarkDay(employeeId: employeeId, date: widget.date),
+  );
 
   @override
   Widget build(BuildContext context) {

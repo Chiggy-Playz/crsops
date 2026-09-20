@@ -7,6 +7,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
 import '../../../core/router/route_names.dart';
+import '../../../core/utils/date_key.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../attendance_calendar_colors.dart';
 import '../models/derived_flags_row.dart';
@@ -381,13 +382,11 @@ class _ReportCalendar extends StatelessWidget {
         headerStyle: const HeaderStyle(formatButtonVisible: false),
         onDaySelected: (selectedDay, focusedDay) => context.pushNamed(
           RouteNames.attendanceDay,
-          pathParameters: {
-            'date': selectedDay.toIso8601String().split('T').first,
-          },
+          pathParameters: {'date': dateOnly(selectedDay)},
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
-            final dateKey = day.toIso8601String().split('T').first;
+            final dateKey = dateOnly(day);
             return DayCell(
               day: day,
               hasGap: false,

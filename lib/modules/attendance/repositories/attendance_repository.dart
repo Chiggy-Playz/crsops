@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/exception_translator.dart';
+import '../../../core/utils/date_key.dart';
 import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
 import '../models/gap_row.dart';
@@ -87,8 +88,6 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
   SupabaseAttendanceRepository(this._client);
   final SupabaseClient _client;
 
-  String _dateOnly(DateTime d) => d.toIso8601String().split('T').first;
-
   @override
   Future<List<EffectiveStatusRow>> fetchEffectiveRangeStatus({
     required DateTime start,
@@ -101,8 +100,8 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
           .rpc(
             'effective_range_status',
             params: {
-              'p_start': _dateOnly(start),
-              'p_end': _dateOnly(end),
+              'p_start': dateOnly(start),
+              'p_end': dateOnly(end),
               'p_employee_id': employeeId,
             },
           );
@@ -142,8 +141,8 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
           .rpc(
             'derived_flags',
             params: {
-              'p_start': _dateOnly(start),
-              'p_end': _dateOnly(end),
+              'p_start': dateOnly(start),
+              'p_end': dateOnly(end),
               'p_employee_id': employeeId,
             },
           );
@@ -172,7 +171,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
           .upsert(
             markDayPayload(
               employeeId: employeeId,
-              date: _dateOnly(date),
+              date: dateOnly(date),
               firstHalfStatus: firstHalfStatus,
               secondHalfStatus: secondHalfStatus,
               timeIn: timeIn,
@@ -191,24 +190,11 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     required DateTime date,
     required List<String> employeeIds,
   }) async {
-    try {
-      final rows = employeeIds
-          .map(
-            (id) => {
-              'employee_id': id,
-              'date': _dateOnly(date),
-              'first_half_status': 'present',
-              'second_half_status': 'present',
-            },
-          )
-          .toList();
-      await _client
-          .schema('attendance')
-          .from('attendance_days')
-          .upsert(rows, onConflict: 'employee_id,date');
-    } catch (error) {
-      throw translateException(error);
-    }
+    await _markAll(
+      date: date,
+      employeeIds: employeeIds,
+      status: defaultPresenceStatusId,
+    );
   }
 
   @override
@@ -216,14 +202,24 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     required DateTime date,
     required List<String> employeeIds,
   }) async {
+    await _markAll(date: date, employeeIds: employeeIds, status: 'holiday');
+  }
+
+  /// Shared bulk-mark body behind [markAllPresent]/[markHoliday], which
+  /// differ only by status id.
+  Future<void> _markAll({
+    required DateTime date,
+    required List<String> employeeIds,
+    required String status,
+  }) async {
     try {
       final rows = employeeIds
           .map(
             (id) => {
               'employee_id': id,
-              'date': _dateOnly(date),
-              'first_half_status': 'holiday',
-              'second_half_status': 'holiday',
+              'date': dateOnly(date),
+              'first_half_status': status,
+              'second_half_status': status,
             },
           )
           .toList();
@@ -247,7 +243,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
           .from('attendance_days')
           .delete()
           .eq('employee_id', employeeId)
-          .eq('date', _dateOnly(date));
+          .eq('date', dateOnly(date));
     } catch (error) {
       throw translateException(error);
     }

@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/date_key.dart';
+
 class DayCell extends StatelessWidget {
-  const DayCell({super.key, required this.day, required this.hasGap, this.statusDots = const []});
+  const DayCell({
+    super.key,
+    required this.day,
+    required this.hasGap,
+    this.statusDots = const [],
+  });
 
   final DateTime day;
   final bool hasGap;
@@ -12,7 +19,7 @@ class DayCell extends StatelessWidget {
   /// gap-warning icon already signals that separately.
   final List<Color> statusDots;
 
-  String get _dateKey => day.toIso8601String().split('T').first;
+  String get _dateKey => dateOnly(day);
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +43,10 @@ class DayCell extends StatelessWidget {
                           child: Container(
                             width: 5,
                             height: 5,
-                            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color,
+                            ),
                           ),
                         ),
                     ],
@@ -49,7 +59,12 @@ class DayCell extends StatelessWidget {
             Positioned(
               top: 2,
               right: 2,
-              child: Icon(Icons.warning_amber, size: 12, color: Colors.orange, key: Key('gap-marker-$_dateKey')),
+              child: Icon(
+                Icons.warning_amber,
+                size: 12,
+                color: Colors.orange,
+                key: Key('gap-marker-$_dateKey'),
+              ),
             ),
         ],
       ),
