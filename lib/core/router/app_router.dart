@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../employees/routes.dart';
 import '../auth/pages/loading_page.dart';
 import '../auth/pages/sign_in_page.dart';
 import '../auth/pages/unauthorized_page.dart';
@@ -36,6 +37,7 @@ GoRouter appRouter(Ref ref) {
         path: '/',
         builder: (context, state) => const _PlaceholderHomeShell(),
       ),
+      ...employeeRoutes(ref),
     ],
   );
 }
