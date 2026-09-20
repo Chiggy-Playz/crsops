@@ -345,6 +345,38 @@ req. 5: no update/delete method exists anywhere in this phase, matching
 **Grand total: 10 real bugs found and fixed tonight via actually building,
 running, and testing things** (see the full list threaded through this log).
 
+### An 11th bug — the most severe one tonight, found by inspection not a test
+
+While checking whether the Employees screen was reachable from the UI (it
+wasn't — see below), I noticed every single navigation button across every
+phase used `Navigator.of(context).pushNamed(...)`. **This app uses
+`MaterialApp.router` (go_router) exclusively, which has no named-route table
+configured — that mechanism is mutually exclusive with the `.router`
+constructor.** Every navigation button in the entire app — Calendar's
+Employees/Reports/Settings icons, tapping a calendar day, the employee
+list's tiles and FAB, every Settings tile — would have thrown a runtime
+error the instant you actually tapped it, despite compiling fine and every
+widget test passing (tests wrap each page in a bare `MaterialApp`, never
+exercising the real app's router, so this was structurally invisible to
+every check I'd been running).
+
+Fixed by switching every call site to go_router's own `context.pushNamed(...)`,
+and added `name:` to every `GoRoute` plus a central `RouteNames` constants
+class (`lib/core/router/route_names.dart`) — chosen over hardcoded path
+strings specifically because a typo in a route name is now a compile error
+(undefined identifier), not a silent runtime failure, which is exactly the
+category of bug this was.
+
+**Also found in the same pass**: `/employees` itself (the entire employee
+list/create/edit/detail feature, all of Phase 2) had no link anywhere in the
+running UI — Settings only linked to `/employees/event-types`, a sub-page.
+Added an Employees icon to Calendar's app bar.
+
+**This is genuinely the most important fix of the night** — everything else
+was a real bug, but this one meant the app would have appeared to work in
+every check I ran while being non-functional the moment a real person
+touched it.
+
 ### Phase 5 (Reports) complete
 
 Status-count summary cards (driven dynamically by `attendance.status_types`,
