@@ -345,6 +345,29 @@ req. 5: no update/delete method exists anywhere in this phase, matching
 **Grand total: 10 real bugs found and fixed tonight via actually building,
 running, and testing things** (see the full list threaded through this log).
 
+### Phase 5 (Reports) complete
+
+Status-count summary cards (driven dynamically by `attendance.status_types`,
+not a hardcoded list) + a late/early/overtime exceptions drill-down, reachable
+via a new bar-chart icon on Calendar's app bar. No new schema — reused
+Phase 3's `effective_range_status`/`derived_flags` as-is, just added a
+`derivedFlags` provider that didn't exist yet. 59 tests passing, analyzer
+clean, no new unqualified `.from()`/`.rpc()` sites (confirmed no repository
+file even changed this phase).
+
+**One thing deliberately left as an open product question, not a bug**: how a
+mixed first-half-present/second-half-absent day rolls into the summary counts
+— per your own plan.md, this needs an actual conversation with your dad, not
+a decision made by AI. Implemented one concrete, stated rule for now (counts
+under `first_half_status` only) so the screen works today; flagged clearly in
+the code as the known v1 simplification, not silently swept under a TODO.
+
+Per your instruction mid-session: stopped doing full platform builds
+(web/apk/linux) after every single phase and stopped attempting live
+in-browser verification — you'll drive that yourself once the app is
+feature-complete. Kept `flutter analyze` + `flutter test` as the fast
+per-phase check instead.
+
 **What you actually need to do, in order, to see this running for real:**
 1. Enable Google OAuth in Supabase Studio (needs a Google Cloud Console OAuth
    client first) and expose `core`/`attendance` schemas via PostgREST (Studio →
