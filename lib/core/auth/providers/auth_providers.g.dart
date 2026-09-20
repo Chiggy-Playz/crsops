@@ -105,7 +105,7 @@ final class AuthStateChangesProvider
         argument: null,
         retry: null,
         name: r'authStateChangesProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -124,7 +124,7 @@ final class AuthStateChangesProvider
   }
 }
 
-String _$authStateChangesHash() => r'1ec122a0e26f12799ddc86e77bd48fab67af3a4f';
+String _$authStateChangesHash() => r'e5954d1345dbce84792f062a3e859cc60db28d8d';
 
 @ProviderFor(session)
 final sessionProvider = SessionProvider._();

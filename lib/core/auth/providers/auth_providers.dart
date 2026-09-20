@@ -14,7 +14,7 @@ AuthRepository authRepository(Ref ref) => AuthRepository(ref.watch(supabaseClien
 @Riverpod(keepAlive: true)
 RolesRepository rolesRepository(Ref ref) => RolesRepository(ref.watch(supabaseClientProvider));
 
-@riverpod
+@Riverpod(keepAlive: true)
 Stream<AuthState> authStateChanges(Ref ref) =>
     ref.watch(authRepositoryProvider).authStateChanges;
 
