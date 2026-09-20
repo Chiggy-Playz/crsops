@@ -194,6 +194,20 @@ Once OAuth is set up, Task 22's remaining steps (sign-in rejection/acceptance,
 `core.profiles` populating for real, unauthorized redirect, nav breakpoint on a
 real running app) are straightforward to run through.
 
+### Phase 2 (Employee core) in progress
+
+Same rigorous approach continuing: real TDD, real `dart analyze`, real test runs.
+Already fixed before execution (Task 6's repository code had the same
+`.schema('core')` gap Phase 1's `RolesRepository` had — 4 of the 11 `.from()` calls
+were split across lines, so an earlier same-line-only `sed` fix missed them; fixed
+all of them properly this time).
+
+**A seventh bug, in Task 10's own test**: `tester.enterText()` doesn't trigger a
+widget rebuild by itself, so the save button's `onPressed` (recomputed each build
+from the name controller's text) was still evaluated with the pre-edit empty text
+when `tap()` fired immediately after — test failed with 0 employees saved instead
+of 1. Fixed by adding `await tester.pump();` between `enterText` and `tap`.
+
 
 ## Scope correction (from Chirag, mid-session)
 
