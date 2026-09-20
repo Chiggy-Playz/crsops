@@ -154,8 +154,16 @@ against your actual linked Supabase project (not a local stub), all unit/widget
 tests (19 total, all passing), `dart analyze` clean across all of `lib/`, and a real
 `flutter build web` succeeded end to end. Also found: `flutter build linux` needs
 `cmake`, which isn't installed and I can't install without your sudo password —
-not attempted further; `flutter build apk` was running in the background as I
-wrote this, results below once it finishes.
+**`flutter build apk --debug` succeeded** (downloaded and installed the Android NDK
++ a CMake copy inside the Android SDK's own managed directory automatically, no
+sudo needed for that one since it's self-contained) — a real 176MB debug APK at
+`build/app/outputs/flutter-apk/app-debug.apk`. **Then reused that same
+Android-SDK-managed `cmake` binary (`/home/chiggy/Android/Sdk/cmake/3.22.1/bin`) by
+prepending it to `PATH` for the Linux build too** — worked, `flutter build linux
+--debug` succeeded, real executable at
+`build/linux/x64/debug/bundle/crs_ops`. So no system-wide `cmake` install is
+actually needed at all; that workaround covers it. **All three target platforms
+(Web, Android, Linux) now build successfully, end to end, for real.**
 
 **Six real bugs found and fixed tonight, via actually building/running things, not
 just writing code and assuming it works:**
@@ -181,7 +189,6 @@ favor of `publishableKey` in the installed version.
 - The real bootstrap (your + your dad's emails into the allow-list, then role
   grants) — needs the above to exist first so there's something to sign in with.
   `supabase/README.md` has the exact SQL ready to run, in order.
-- `cmake` for Linux desktop builds, if you want that platform buildable here too.
 
 Once OAuth is set up, Task 22's remaining steps (sign-in rejection/acceptance,
 `core.profiles` populating for real, unauthorized redirect, nav breakpoint on a
