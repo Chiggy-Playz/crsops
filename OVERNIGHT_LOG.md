@@ -267,6 +267,59 @@ were correctly `.schema('attendance')`-qualified from the start this time, no fi
 needed. Writing them correctly the first time, rather than retrofitting, seems to
 be sticking now that it's an explicit habit.
 
+### Phase 3 (Attendance marking) complete
+
+All 18 tasks done and committed. Full project: `flutter analyze` clean, all 49
+tests passing (19 Phase 1 + 20 Phase 2 + 10 Phase 3), `flutter build web`
+verified end-to-end with Calendar/attendance-day/admin screens included. The
+import-path depth mistake from Phase 2's Task 13 (`../employees/` vs.
+`../../modules/attendance/`) was explicitly called out in this plan and did
+**not** recur — got it right the first time.
+
+**Calendar is now the app's real default route** (`/`, gated on
+`session.hasModuleAccess('attendance')`), replacing Phase 1's placeholder —
+tapping a day opens attendance-for-day, which has working quick-tap-present and
+two confirm-gated bulk actions (mark all present / mark day as company holiday).
+Shift-defaults and status-types admin screens exist and are admin-or-above
+gated at the route level.
+
+**This is a genuinely working attendance app now**, not just scaffolding: real
+schema, real RLS, real functions (verified against real data including the
+overnight-shift edge case), real UI wired to all of it, real tests. What's
+deliberately deferred to a later polish pass (each called out inline in the
+code, not silent gaps — the underlying repository calls are already fully
+built): Calendar's per-employee day-cell color aggregation, the expandable
+half-split/time-in-out entry UI on attendance-for-day, and the "add a new
+effective-from row" form on the shift-defaults manager.
+
+**Grand total tonight: 9 real bugs found and fixed via actually building,
+running, and testing things** — a color-column overflow, missing schema grants
+(twice, once per new schema), an RLS gap, `.schema()` qualification misses
+(twice), an outdated `google_sign_in` API, Riverpod 3.x API changes, a
+widget-test timing issue, and a genuine Postgres CASE-type mismatch in the
+overnight-shift math. None of these would have been caught by writing code and
+assuming it was correct — every one came from actually pushing to your real
+database, running real queries against real data, or running real Flutter
+tests.
+
+### What's next, if you want to keep going
+
+Phases 4 (Finance ledger), 5 (Reports), 6 (RBAC console — allow-list/roles
+managers), and 7 (Settings & polish) aren't started. The plan-writing +
+execution process is well-established now (see the three plans already in
+`docs/superpowers/plans/`) — happy to continue the same way whenever you want,
+in a fresh session or by just asking me to keep going in this one.
+
+**What you actually need to do, in order, to see this running for real:**
+1. Enable Google OAuth in Supabase Studio (needs a Google Cloud Console OAuth
+   client first) and expose `core`/`attendance` schemas via PostgREST (Studio →
+   Settings → API) — both dashboard actions.
+2. Run the bootstrap SQL in `supabase/README.md` (allow-list → sign in → role
+   grants, in that order).
+3. `flutter run -d chrome` (or `-d linux`, or install the APK on a phone) with
+   `--dart-define=SUPABASE_URL=https://ocalljagckzyvngprlxo.supabase.co
+   --dart-define=SUPABASE_PUBLISHABLE_KEY=<from supabase projects api-keys>`.
+
 
 ## Scope correction (from Chirag, mid-session)
 
