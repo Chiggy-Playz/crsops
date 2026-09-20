@@ -20,7 +20,12 @@ class AppSession with AppSessionMappable {
   final Set<String> moduleAccess;
 
   bool get isSuperadmin => role == AppRole.superadmin;
-  bool get isAdminOrAbove => role == AppRole.superadmin || role == AppRole.admin;
+  bool get isAdminOrAbove =>
+      role == AppRole.superadmin || role == AppRole.admin;
 
-  bool hasModuleAccess(String moduleId) => isAdminOrAbove || moduleAccess.contains(moduleId);
+  bool hasModuleAccess(String moduleId) =>
+      isAdminOrAbove ||
+      moduleAccess.any(
+        (granted) => granted.toLowerCase() == moduleId.toLowerCase(),
+      );
 }
