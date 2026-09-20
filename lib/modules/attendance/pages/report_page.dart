@@ -26,7 +26,10 @@ class ReportPage extends ConsumerStatefulWidget {
 }
 
 class _ReportPageState extends ConsumerState<ReportPage> {
-  late DateTimeRange _range = DateTimeRange(start: DateTime(DateTime.now().year, DateTime.now().month, 1), end: DateTime.now());
+  late DateTimeRange _range = DateTimeRange(
+    start: DateTime(DateTime.now().year, DateTime.now().month, 1),
+    end: DateTime.now(),
+  );
   String? _rangeLabel = 'This month';
 
   /// Empty means "all employees". `effective_range_status`/`derived_flags`
@@ -71,17 +74,26 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         });
       case '7d':
         setState(() {
-          _range = DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now);
+          _range = DateTimeRange(
+            start: now.subtract(const Duration(days: 7)),
+            end: now,
+          );
           _rangeLabel = 'Last 7 days';
         });
       case '30d':
         setState(() {
-          _range = DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
+          _range = DateTimeRange(
+            start: now.subtract(const Duration(days: 30)),
+            end: now,
+          );
           _rangeLabel = 'Last 30 days';
         });
       case 'month':
         setState(() {
-          _range = DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+          _range = DateTimeRange(
+            start: DateTime(now.year, now.month, 1),
+            end: now,
+          );
           _rangeLabel = 'This month';
         });
       case 'custom':
@@ -97,7 +109,9 @@ class _ReportPageState extends ConsumerState<ReportPage> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          final filtered = employees.where((e) => e.name.toLowerCase().contains(query.toLowerCase())).toList();
+          final filtered = employees
+              .where((e) => e.name.toLowerCase().contains(query.toLowerCase()))
+              .toList();
           return AlertDialog(
             title: const Text('Filter by employee'),
             content: SizedBox(
@@ -106,7 +120,10 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               child: Column(
                 children: [
                   TextField(
-                    decoration: const InputDecoration(labelText: 'Search', prefixIcon: Icon(Icons.search)),
+                    decoration: const InputDecoration(
+                      labelText: 'Search',
+                      prefixIcon: Icon(Icons.search),
+                    ),
                     onChanged: (value) => setDialogState(() => query = value),
                   ),
                   Expanded(
@@ -115,7 +132,8 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                         CheckboxListTile(
                           title: const Text('All employees'),
                           value: selection.isEmpty,
-                          onChanged: (_) => setDialogState(() => selection = {}),
+                          onChanged: (_) =>
+                              setDialogState(() => selection = {}),
                         ),
                         const Divider(height: 1),
                         for (final e in filtered)
@@ -137,7 +155,10 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
               FilledButton(
                 onPressed: () => Navigator.of(context).pop(selection),
                 child: const Text('Done'),
@@ -178,7 +199,10 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               children: [
                 InputChip(
                   avatar: const Icon(Icons.date_range, size: 18),
-                  label: Text(_rangeLabel ?? '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}'),
+                  label: Text(
+                    _rangeLabel ??
+                        '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}',
+                  ),
                   onPressed: _openRangeMenu,
                 ),
                 employeesAsync.when(
@@ -188,7 +212,9 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                     avatar: const Icon(Icons.person_outline, size: 18),
                     label: Text(_employeeChipLabel(employees)),
                     onPressed: () => _openEmployeePicker(employees),
-                    onDeleted: _selectedEmployeeIds.isEmpty ? null : () => setState(() => _selectedEmployeeIds = {}),
+                    onDeleted: _selectedEmployeeIds.isEmpty
+                        ? null
+                        : () => setState(() => _selectedEmployeeIds = {}),
                   ),
                 ),
               ],
@@ -268,12 +294,21 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
+        GridView.extent(
+          maxCrossAxisExtent: 160,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          mainAxisExtent: 116,
           children: [
             for (final type in statusTypes)
-              _SummaryCard(label: type.label, count: summary[type.id] ?? 0, icon: iconFor(type.iconName), color: colorFor(type.colorHex)),
+              _SummaryCard(
+                label: type.label,
+                count: summary[type.id] ?? 0,
+                icon: iconFor(type.iconName),
+                color: colorFor(type.colorHex),
+              ),
             _SummaryCard(
               label: 'Unmarked',
               count: summary['unmarked'] ?? 0,
@@ -297,7 +332,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
             (e) => ListTile(
               title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
               subtitle: Text(
-                '${_dateFormat.format(e.date)} · ${[if (e.isLate) 'Late', if (e.isEarly) 'Left early', if (e.overtimeMinutes > 0) '+${e.overtimeMinutes}m overtime'].join(' · ')}',
+                '${_dateFormat.format(e.date)} · ${[if (e.isLate) 'Late', if (e.isEarly) 'Left early', if (e.overtimeMinutes > 0) '+${formatOvertime(e.overtimeMinutes)} overtime'].join(' · ')}',
               ),
             ),
           ),
@@ -342,12 +377,21 @@ class _ReportCalendar extends StatelessWidget {
         headerStyle: const HeaderStyle(formatButtonVisible: false),
         onDaySelected: (selectedDay, focusedDay) => context.pushNamed(
           RouteNames.attendanceDay,
-          pathParameters: {'date': selectedDay.toIso8601String().split('T').first},
+          pathParameters: {
+            'date': selectedDay.toIso8601String().split('T').first,
+          },
         ),
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
             final dateKey = day.toIso8601String().split('T').first;
-            return DayCell(day: day, hasGap: false, statusDots: statusDotsFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId));
+            return DayCell(
+              day: day,
+              hasGap: false,
+              statusDots: statusDotsFor(
+                rowsByDate[dateKey] ?? const [],
+                colorHexByStatusId,
+              ),
+            );
           },
         ),
       ),
@@ -356,7 +400,12 @@ class _ReportCalendar extends StatelessWidget {
 }
 
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.label, required this.count, required this.icon, required this.color});
+  const _SummaryCard({
+    required this.label,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
 
   final String label;
   final int count;
@@ -367,13 +416,19 @@ class _SummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color),
             Text('$count', style: Theme.of(context).textTheme.headlineSmall),
-            Text(label),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),

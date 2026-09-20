@@ -8,8 +8,14 @@ const _unmarkedKey = 'unmarked';
 /// mixed first-half-present/second-half-absent day counts only toward
 /// first_half_status's bucket — second_half_status is not counted
 /// separately. Real, working v1 behavior with a known, stated limitation.
-Map<String, int> computeStatusSummary(List<EffectiveStatusRow> rows, List<StatusType> statusTypes) {
-  final summary = <String, int>{for (final t in statusTypes) t.id: 0, _unmarkedKey: 0};
+Map<String, int> computeStatusSummary(
+  List<EffectiveStatusRow> rows,
+  List<StatusType> statusTypes,
+) {
+  final summary = <String, int>{
+    for (final t in statusTypes) t.id: 0,
+    _unmarkedKey: 0,
+  };
 
   for (final row in rows) {
     final String bucket;
@@ -28,3 +34,12 @@ Map<String, int> computeStatusSummary(List<EffectiveStatusRow> rows, List<Status
 
 List<DerivedFlagsRow> filterExceptions(List<DerivedFlagsRow> rows) =>
     rows.where((r) => r.isLate || r.isEarly || r.overtimeMinutes > 0).toList();
+
+/// Overtime display: minutes below an hour ("45m"), hours at/above it
+/// ("2h", "1h 30m"). Pure display — the stored minute count is untouched.
+String formatOvertime(int totalMinutes) {
+  if (totalMinutes < 60) return '${totalMinutes}m';
+  final hours = totalMinutes ~/ 60;
+  final rest = totalMinutes % 60;
+  return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
+}

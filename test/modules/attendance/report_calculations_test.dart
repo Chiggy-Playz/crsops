@@ -92,16 +92,65 @@ void main() {
   group('filterExceptions', () {
     test('includes a late row, an early row, and an overtime row; excludes an all-clear row', () {
       final rows = [
-        DerivedFlagsRow(employeeId: '1', date: DateTime(2024, 6, 1), workedMinutes: 480, isLate: false, isEarly: false, overtimeMinutes: 0),
-        DerivedFlagsRow(employeeId: '1', date: DateTime(2024, 6, 2), workedMinutes: 450, isLate: true, isEarly: false, overtimeMinutes: 0),
-        DerivedFlagsRow(employeeId: '1', date: DateTime(2024, 6, 3), workedMinutes: 420, isLate: false, isEarly: true, overtimeMinutes: 0),
-        DerivedFlagsRow(employeeId: '1', date: DateTime(2024, 6, 4), workedMinutes: 600, isLate: false, isEarly: false, overtimeMinutes: 120),
+        DerivedFlagsRow(
+          employeeId: '1',
+          date: DateTime(2024, 6, 1),
+          workedMinutes: 480,
+          isLate: false,
+          isEarly: false,
+          overtimeMinutes: 0,
+        ),
+        DerivedFlagsRow(
+          employeeId: '1',
+          date: DateTime(2024, 6, 2),
+          workedMinutes: 450,
+          isLate: true,
+          isEarly: false,
+          overtimeMinutes: 0,
+        ),
+        DerivedFlagsRow(
+          employeeId: '1',
+          date: DateTime(2024, 6, 3),
+          workedMinutes: 420,
+          isLate: false,
+          isEarly: true,
+          overtimeMinutes: 0,
+        ),
+        DerivedFlagsRow(
+          employeeId: '1',
+          date: DateTime(2024, 6, 4),
+          workedMinutes: 600,
+          isLate: false,
+          isEarly: false,
+          overtimeMinutes: 120,
+        ),
       ];
 
       final exceptions = filterExceptions(rows);
 
       expect(exceptions, hasLength(3));
-      expect(exceptions.map((r) => r.date), isNot(contains(DateTime(2024, 6, 1))));
+      expect(
+        exceptions.map((r) => r.date),
+        isNot(contains(DateTime(2024, 6, 1))),
+      );
+    });
+  });
+
+  group('formatOvertime', () {
+    test('under an hour stays in minutes', () {
+      expect(formatOvertime(45), '45m');
+    });
+
+    test('exact hours drop the minutes', () {
+      expect(formatOvertime(120), '2h');
+    });
+
+    test('mixed hours and minutes show both', () {
+      expect(formatOvertime(90), '1h 30m');
+    });
+
+    test('a full overnight shift reads in hours', () {
+      expect(formatOvertime(420), '7h');
     });
   });
 }
