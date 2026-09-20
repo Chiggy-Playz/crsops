@@ -30,11 +30,12 @@ void main() {
         child: const MaterialApp(home: ReportPage()),
       );
 
-  testWidgets('prompts for a date range before showing any report body', (tester) async {
+  testWidgets('defaults to this month and shows the report body immediately', (tester) async {
     await tester.pumpWidget(wrap());
     await tester.pumpAndSettle();
 
-    expect(find.text('Select a date range to see a report'), findsOneWidget);
+    expect(find.text('This month'), findsOneWidget);
+    expect(find.text('Late / early / overtime'), findsOneWidget);
   });
 
   testWidgets('has an employee filter defaulting to All employees', (tester) async {

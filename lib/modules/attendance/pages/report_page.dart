@@ -1,10 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:table_calendar/table_calendar.dart';
 
+import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
+import '../../../core/router/route_names.dart';
 import '../../../core/widgets/status_metadata.dart';
+import '../attendance_calendar_colors.dart';
+import '../models/derived_flags_row.dart';
+import '../models/effective_status_row.dart';
+import '../models/status_type.dart';
 import '../providers/attendance_providers.dart';
 import '../report_calculations.dart';
+import 'widgets/day_cell.dart';
+
+final _dateFormat = DateFormat('d MMM yyyy');
 
 class ReportPage extends ConsumerStatefulWidget {
   const ReportPage({super.key});
@@ -14,18 +26,140 @@ class ReportPage extends ConsumerStatefulWidget {
 }
 
 class _ReportPageState extends ConsumerState<ReportPage> {
-  DateTimeRange? _range;
-  String? _selectedEmployeeId;
+  late DateTimeRange _range = DateTimeRange(start: DateTime(DateTime.now().year, DateTime.now().month, 1), end: DateTime.now());
+  String? _rangeLabel = 'This month';
 
-  Future<void> _pickRange() async {
-    final now = DateTime.now();
+  /// Empty means "all employees". `effective_range_status`/`derived_flags`
+  /// only take one employee id or none (see attendance_repository.dart) —
+  /// there's no server-side "subset of employees" filter, so a multi-select
+  /// fetches everyone and filters client-side (see _buildBody).
+  Set<String> _selectedEmployeeIds = {};
+
+  Future<void> _pickCustomRange() async {
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-      initialDateRange: _range ?? DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
+      initialDateRange: _range,
     );
-    if (picked != null) setState(() => _range = picked);
+    if (picked != null) {
+      setState(() {
+        _range = picked;
+        _rangeLabel = null;
+      });
+    }
+  }
+
+  Future<void> _openRangeMenu() async {
+    final now = DateTime.now();
+    final choice = await showMenu<String>(
+      context: context,
+      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
+      items: const [
+        PopupMenuItem(value: 'today', child: Text('Today')),
+        PopupMenuItem(value: '7d', child: Text('Last 7 days')),
+        PopupMenuItem(value: '30d', child: Text('Last 30 days')),
+        PopupMenuItem(value: 'month', child: Text('This month')),
+        PopupMenuItem(value: 'custom', child: Text('Custom range…')),
+      ],
+    );
+    switch (choice) {
+      case 'today':
+        setState(() {
+          _range = DateTimeRange(start: now, end: now);
+          _rangeLabel = 'Today';
+        });
+      case '7d':
+        setState(() {
+          _range = DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now);
+          _rangeLabel = 'Last 7 days';
+        });
+      case '30d':
+        setState(() {
+          _range = DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
+          _rangeLabel = 'Last 30 days';
+        });
+      case 'month':
+        setState(() {
+          _range = DateTimeRange(start: DateTime(now.year, now.month, 1), end: now);
+          _rangeLabel = 'This month';
+        });
+      case 'custom':
+        await _pickCustomRange();
+    }
+  }
+
+  Future<void> _openEmployeePicker(List<Employee> employees) async {
+    var query = '';
+    var selection = Set<String>.of(_selectedEmployeeIds);
+
+    final result = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final filtered = employees.where((e) => e.name.toLowerCase().contains(query.toLowerCase())).toList();
+          return AlertDialog(
+            title: const Text('Filter by employee'),
+            content: SizedBox(
+              width: 300,
+              height: 400,
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: const InputDecoration(labelText: 'Search', prefixIcon: Icon(Icons.search)),
+                    onChanged: (value) => setDialogState(() => query = value),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        CheckboxListTile(
+                          title: const Text('All employees'),
+                          value: selection.isEmpty,
+                          onChanged: (_) => setDialogState(() => selection = {}),
+                        ),
+                        const Divider(height: 1),
+                        for (final e in filtered)
+                          CheckboxListTile(
+                            title: Text(e.name),
+                            value: selection.contains(e.id),
+                            onChanged: (checked) => setDialogState(() {
+                              if (checked == true) {
+                                selection.add(e.id);
+                              } else {
+                                selection.remove(e.id);
+                              }
+                            }),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(selection),
+                child: const Text('Done'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (result != null) setState(() => _selectedEmployeeIds = result);
+  }
+
+  String _employeeChipLabel(List<Employee> employees) {
+    if (_selectedEmployeeIds.isEmpty) return 'All employees';
+    if (_selectedEmployeeIds.length == 1) {
+      final id = _selectedEmployeeIds.first;
+      for (final e in employees) {
+        if (e.id == id) return e.name;
+      }
+      return '1 employee';
+    }
+    return '${_selectedEmployeeIds.length} employees';
   }
 
   @override
@@ -38,34 +172,23 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         children: [
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.date_range),
-                    label: Text(
-                      _range == null
-                          ? 'Select date range'
-                          : '${_range!.start.toIso8601String().split('T').first} – ${_range!.end.toIso8601String().split('T').first}',
-                    ),
-                    onPressed: _pickRange,
-                  ),
+                InputChip(
+                  avatar: const Icon(Icons.date_range, size: 18),
+                  label: Text(_rangeLabel ?? '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}'),
+                  onPressed: _openRangeMenu,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: employeesAsync.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (_, _) => const SizedBox.shrink(),
-                    data: (employees) => DropdownButton<String?>(
-                      isExpanded: true,
-                      value: _selectedEmployeeId,
-                      hint: const Text('All employees'),
-                      items: [
-                        const DropdownMenuItem<String?>(value: null, child: Text('All employees')),
-                        ...employees.map((e) => DropdownMenuItem<String?>(value: e.id, child: Text(e.name))),
-                      ],
-                      onChanged: (value) => setState(() => _selectedEmployeeId = value),
-                    ),
+                employeesAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (employees) => InputChip(
+                    avatar: const Icon(Icons.person_outline, size: 18),
+                    label: Text(_employeeChipLabel(employees)),
+                    onPressed: () => _openEmployeePicker(employees),
+                    onDeleted: _selectedEmployeeIds.isEmpty ? null : () => setState(() => _selectedEmployeeIds = {}),
                   ),
                 ),
               ],
@@ -79,20 +202,21 @@ class _ReportPageState extends ConsumerState<ReportPage> {
 
   Widget _buildBody() {
     final range = _range;
-    if (range == null) {
-      return const Center(child: Text('Select a date range to see a report'));
-    }
+    // Exactly one employee selected: use the server-side filter directly.
+    // Zero (all) or several selected: fetch everyone and filter client-side,
+    // since the RPCs don't support an arbitrary subset.
+    final singleEmployeeId = _selectedEmployeeIds.length == 1 ? _selectedEmployeeIds.first : null;
 
     final statusTypesAsync = ref.watch(statusTypesProvider);
     final summaryAsync = ref.watch(effectiveRangeStatusProvider(
       start: range.start,
       end: range.end,
-      employeeId: _selectedEmployeeId,
+      employeeId: singleEmployeeId,
     ));
     final exceptionsAsync = ref.watch(derivedFlagsProvider(
       start: range.start,
       end: range.end,
-      employeeId: _selectedEmployeeId,
+      employeeId: singleEmployeeId,
     ));
 
     if (statusTypesAsync.isLoading || summaryAsync.isLoading || exceptionsAsync.isLoading) {
@@ -103,8 +227,16 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     if (exceptionsAsync.hasError) return Center(child: Text('${exceptionsAsync.error}'));
 
     final statusTypes = statusTypesAsync.value!;
-    final summary = computeStatusSummary(summaryAsync.value!, statusTypes);
-    final exceptions = filterExceptions(exceptionsAsync.value!);
+    final needsClientFilter = singleEmployeeId == null && _selectedEmployeeIds.isNotEmpty;
+    final List<EffectiveStatusRow> statusRows = needsClientFilter
+        ? summaryAsync.value!.where((r) => _selectedEmployeeIds.contains(r.employeeId)).toList()
+        : summaryAsync.value!;
+    final List<DerivedFlagsRow> exceptionRows = needsClientFilter
+        ? exceptionsAsync.value!.where((r) => _selectedEmployeeIds.contains(r.employeeId)).toList()
+        : exceptionsAsync.value!;
+
+    final summary = computeStatusSummary(statusRows, statusTypes);
+    final exceptions = filterExceptions(exceptionRows);
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -129,14 +261,55 @@ class _ReportPageState extends ConsumerState<ReportPage> {
           const Padding(padding: EdgeInsets.only(top: 8), child: Text('No exceptions in this range.'))
         else
           ...exceptions.map((e) => ListTile(
-                title: Text(e.date.toIso8601String().split('T').first),
+                title: Text(_dateFormat.format(e.date)),
                 subtitle: Text([
                   if (e.isLate) 'Late',
                   if (e.isEarly) 'Left early',
                   if (e.overtimeMinutes > 0) '+${e.overtimeMinutes}m overtime',
                 ].join(' · ')),
               )),
+        const SizedBox(height: 24),
+        Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        _ReportCalendar(range: range, rows: statusRows, statusTypes: statusTypes),
       ],
+    );
+  }
+}
+
+class _ReportCalendar extends StatelessWidget {
+  const _ReportCalendar({required this.range, required this.rows, required this.statusTypes});
+
+  final DateTimeRange range;
+  final List<EffectiveStatusRow> rows;
+  final List<StatusType> statusTypes;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorHexByStatusId = <String, String>{
+      for (final t in statusTypes)
+        if (t.colorHex != null) t.id: t.colorHex!,
+    };
+    final rowsByDate = groupRowsByDate(rows);
+
+    return SizedBox(
+      height: 400,
+      child: TableCalendar(
+        firstDay: range.start,
+        lastDay: range.end,
+        focusedDay: range.start,
+        headerStyle: const HeaderStyle(formatButtonVisible: false),
+        onDaySelected: (selectedDay, focusedDay) => context.pushNamed(
+          RouteNames.attendanceDay,
+          pathParameters: {'date': selectedDay.toIso8601String().split('T').first},
+        ),
+        calendarBuilders: CalendarBuilders(
+          defaultBuilder: (context, day, focusedDay) {
+            final dateKey = day.toIso8601String().split('T').first;
+            return DayCell(day: day, hasGap: false, summaryColor: summaryColorFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId));
+          },
+        ),
+      ),
     );
   }
 }
