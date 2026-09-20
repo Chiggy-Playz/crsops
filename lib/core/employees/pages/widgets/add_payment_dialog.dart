@@ -6,10 +6,16 @@ import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
 
-Future<void> showAddPaymentDialog(BuildContext context, WidgetRef ref, String employeeId, {TimelineEntry? existing}) {
+Future<void> showAddPaymentDialog(
+  BuildContext context,
+  WidgetRef ref,
+  String employeeId, {
+  TimelineEntry? existing,
+}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => _AddPaymentDialog(employeeId: employeeId, existing: existing),
+    builder: (context) =>
+        _AddPaymentDialog(employeeId: employeeId, existing: existing),
   );
 }
 
@@ -25,16 +31,29 @@ class _AddPaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
-  late final _amountController = TextEditingController(text: widget.existing?.amount?.toStringAsFixed(0) ?? '');
-  late final _noteController = TextEditingController(text: widget.existing?.note ?? '');
+  late final _amountController = TextEditingController(
+    text: widget.existing?.amount?.toStringAsFixed(0) ?? '',
+  );
+  late final _noteController = TextEditingController(
+    text: widget.existing?.note ?? '',
+  );
   late String _typedEntryType = widget.existing?.label ?? '';
   late DateTime _entryDate = widget.existing?.entryDate ?? DateTime.now();
   bool _saving = false;
 
   bool get _isEditing => widget.existing != null;
 
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
   bool get _canSave =>
-      !_saving && double.tryParse(_amountController.text) != null && _typedEntryType.trim().isNotEmpty;
+      !_saving &&
+      double.tryParse(_amountController.text) != null &&
+      _typedEntryType.trim().isNotEmpty;
 
   Future<void> _save() async {
     final amount = double.parse(_amountController.text);
@@ -45,7 +64,9 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
     try {
       final note = _noteController.text.isEmpty ? null : _noteController.text;
       if (_isEditing) {
-        await ref.read(employeeLedgerEntryRepositoryProvider).updateEntry(
+        await ref
+            .read(employeeLedgerEntryRepositoryProvider)
+            .updateEntry(
               id: widget.existing!.id,
               entryDate: _entryDate,
               amount: amount,
@@ -53,7 +74,9 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
               note: note,
             );
       } else {
-        await ref.read(employeeLedgerEntryRepositoryProvider).addEntry(
+        await ref
+            .read(employeeLedgerEntryRepositoryProvider)
+            .addEntry(
               employeeId: widget.employeeId,
               entryDate: _entryDate,
               amount: amount,
@@ -88,7 +111,10 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
           ),
           const SizedBox(height: 8),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Date', suffixIcon: Icon(Icons.calendar_month)),
+            decoration: const InputDecoration(
+              labelText: 'Date',
+              suffixIcon: Icon(Icons.calendar_month),
+            ),
             child: InkWell(
               onTap: () async {
                 final picked = await showDatePicker(
@@ -115,7 +141,10 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(controller: _noteController, decoration: const InputDecoration(labelText: 'Note (optional)')),
+          TextField(
+            controller: _noteController,
+            decoration: const InputDecoration(labelText: 'Note (optional)'),
+          ),
         ],
       ),
       actions: [
@@ -127,7 +156,11 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
           key: const Key('payment-save-button'),
           onPressed: _canSave ? _save : null,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Text(_isEditing ? 'Save' : 'Add'),
         ),
       ],

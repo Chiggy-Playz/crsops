@@ -34,7 +34,10 @@ class StatusTypesManagerPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialog<void>(context: context, builder: (context) => const _AddStatusTypeDialog()),
+        onPressed: () => showDialog<void>(
+          context: context,
+          builder: (context) => const _AddStatusTypeDialog(),
+        ),
         child: const Icon(Icons.add),
       ),
     );
@@ -45,7 +48,8 @@ class _AddStatusTypeDialog extends ConsumerStatefulWidget {
   const _AddStatusTypeDialog();
 
   @override
-  ConsumerState<_AddStatusTypeDialog> createState() => _AddStatusTypeDialogState();
+  ConsumerState<_AddStatusTypeDialog> createState() =>
+      _AddStatusTypeDialogState();
 }
 
 class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
@@ -55,12 +59,24 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
   String? _colorHex;
   bool _saving = false;
 
-  bool get _canSave => !_saving && _idController.text.trim().isNotEmpty && _labelController.text.trim().isNotEmpty;
+  bool get _canSave =>
+      !_saving &&
+      _idController.text.trim().isNotEmpty &&
+      _labelController.text.trim().isNotEmpty;
+
+  @override
+  void dispose() {
+    _idController.dispose();
+    _labelController.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(statusTypeRepositoryProvider).add(
+      await ref
+          .read(statusTypeRepositoryProvider)
+          .add(
             id: _idController.text.trim(),
             label: _labelController.text.trim(),
             iconName: _iconName,
@@ -85,13 +101,17 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
           children: [
             TextField(
               controller: _idController,
-              decoration: const InputDecoration(labelText: 'Id (e.g. leave_sick)'),
+              decoration: const InputDecoration(
+                labelText: 'Id (e.g. leave_sick)',
+              ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _labelController,
-              decoration: const InputDecoration(labelText: 'Label (e.g. Sick leave)'),
+              decoration: const InputDecoration(
+                labelText: 'Label (e.g. Sick leave)',
+              ),
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
@@ -99,7 +119,13 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
               expandedInsets: EdgeInsets.zero,
               hintText: 'Icon',
               dropdownMenuEntries: _kIconNames
-                  .map((name) => DropdownMenuEntry(value: name, label: name, leadingIcon: Icon(iconFor(name))))
+                  .map(
+                    (name) => DropdownMenuEntry(
+                      value: name,
+                      label: name,
+                      leadingIcon: Icon(iconFor(name)),
+                    ),
+                  )
                   .toList(),
               onSelected: (value) => setState(() => _iconName = value),
             ),
@@ -121,7 +147,11 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
         FilledButton(
           onPressed: _canSave ? _save : null,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Add'),
         ),
       ],

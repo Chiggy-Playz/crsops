@@ -8,10 +8,16 @@ import '../../providers/employee_providers.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
-Future<void> showAddEventDialog(BuildContext context, WidgetRef ref, String employeeId, {TimelineEntry? existing}) {
+Future<void> showAddEventDialog(
+  BuildContext context,
+  WidgetRef ref,
+  String employeeId, {
+  TimelineEntry? existing,
+}) {
   return showDialog<void>(
     context: context,
-    builder: (context) => _AddEventDialog(employeeId: employeeId, existing: existing),
+    builder: (context) =>
+        _AddEventDialog(employeeId: employeeId, existing: existing),
   );
 }
 
@@ -26,11 +32,19 @@ class _AddEventDialog extends ConsumerStatefulWidget {
 
 class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
   late String _typedType = widget.existing?.label ?? '';
-  late final _noteController = TextEditingController(text: widget.existing?.note ?? '');
+  late final _noteController = TextEditingController(
+    text: widget.existing?.note ?? '',
+  );
   late DateTime _eventDate = widget.existing?.entryDate ?? DateTime.now();
   bool _saving = false;
 
   bool get _isEditing => widget.existing != null;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   Future<void> _save(List<String> existingTypeIds) async {
     final typed = _typedType.trim();
@@ -40,21 +54,27 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
     try {
       var typeId = typed;
       if (!existingTypeIds.contains(typed)) {
-        final created = await ref.read(eventTypeRepositoryProvider).addDescriptiveType(typed);
+        final created = await ref
+            .read(eventTypeRepositoryProvider)
+            .addDescriptiveType(typed);
         typeId = created.id;
         ref.invalidate(eventTypesProvider);
       }
 
       final note = _noteController.text.isEmpty ? null : _noteController.text;
       if (_isEditing) {
-        await ref.read(employeeEventRepositoryProvider).updateEvent(
+        await ref
+            .read(employeeEventRepositoryProvider)
+            .updateEvent(
               id: widget.existing!.id,
               eventType: typeId,
               eventDate: _eventDate,
               note: note,
             );
       } else {
-        await ref.read(employeeEventRepositoryProvider).addEvent(
+        await ref
+            .read(employeeEventRepositoryProvider)
+            .addEvent(
               employeeId: widget.employeeId,
               eventType: typeId,
               eventDate: _eventDate,
@@ -90,7 +110,10 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
           ),
           const SizedBox(height: 8),
           InputDecorator(
-            decoration: const InputDecoration(labelText: 'Date', suffixIcon: Icon(Icons.calendar_month)),
+            decoration: const InputDecoration(
+              labelText: 'Date',
+              suffixIcon: Icon(Icons.calendar_month),
+            ),
             child: InkWell(
               key: const Key('event-date-field'),
               onTap: () async {
@@ -106,7 +129,10 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(controller: _noteController, decoration: const InputDecoration(labelText: 'Note (optional)')),
+          TextField(
+            controller: _noteController,
+            decoration: const InputDecoration(labelText: 'Note (optional)'),
+          ),
         ],
       ),
       actions: [
@@ -119,7 +145,11 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
               ? null
               : () => _save(eventTypesAsync.value!.map((t) => t.id).toList()),
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : Text(_isEditing ? 'Save' : 'Add'),
         ),
       ],

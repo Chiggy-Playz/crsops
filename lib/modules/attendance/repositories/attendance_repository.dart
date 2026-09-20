@@ -16,6 +16,27 @@ const defaultPresenceStatusId = 'present';
 String applyPresenceDefault(String? halfStatus) =>
     halfStatus ?? defaultPresenceStatusId;
 
+/// The exact upsert payload [SupabaseAttendanceRepository.markDay] writes.
+/// Pure so upsert shape and presence-default application stay unit tested
+/// without a Supabase client; `date` is already date-only (yyyy-MM-dd).
+Map<String, dynamic> markDayPayload({
+  required String employeeId,
+  required String date,
+  String? firstHalfStatus,
+  String? secondHalfStatus,
+  String? timeIn,
+  String? timeOut,
+  String? note,
+}) => {
+  'employee_id': employeeId,
+  'date': date,
+  'first_half_status': applyPresenceDefault(firstHalfStatus),
+  'second_half_status': applyPresenceDefault(secondHalfStatus),
+  'time_in': timeIn,
+  'time_out': timeOut,
+  'note': note,
+};
+
 abstract class AttendanceRepository {
   Future<List<EffectiveStatusRow>> fetchEffectiveRangeStatus({
     required DateTime start,
@@ -145,15 +166,21 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     String? note,
   }) async {
     try {
-      await _client.schema('attendance').from('attendance_days').upsert({
-        'employee_id': employeeId,
-        'date': _dateOnly(date),
-        'first_half_status': applyPresenceDefault(firstHalfStatus),
-        'second_half_status': applyPresenceDefault(secondHalfStatus),
-        'time_in': timeIn,
-        'time_out': timeOut,
-        'note': note,
-      }, onConflict: 'employee_id,date');
+      await _client
+          .schema('attendance')
+          .from('attendance_days')
+          .upsert(
+            markDayPayload(
+              employeeId: employeeId,
+              date: _dateOnly(date),
+              firstHalfStatus: firstHalfStatus,
+              secondHalfStatus: secondHalfStatus,
+              timeIn: timeIn,
+              timeOut: timeOut,
+              note: note,
+            ),
+            onConflict: 'employee_id,date',
+          );
     } catch (error) {
       throw translateException(error);
     }

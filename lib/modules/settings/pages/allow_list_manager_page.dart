@@ -9,7 +9,8 @@ class AllowListManagerPage extends ConsumerStatefulWidget {
   const AllowListManagerPage({super.key});
 
   @override
-  ConsumerState<AllowListManagerPage> createState() => _AllowListManagerPageState();
+  ConsumerState<AllowListManagerPage> createState() =>
+      _AllowListManagerPageState();
 }
 
 class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
@@ -18,42 +19,67 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
   Future<void> _openAddDialog() async {
     final emailController = TextEditingController();
     final noteController = TextEditingController();
-    final added = await showDialog<bool>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Add allowed email'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                autofocus: true,
-                onChanged: (_) => setDialogState(() {}),
+    // Captured before disposal below — the controllers are unreadable after.
+    var added = false;
+    var email = '';
+    String? note;
+    try {
+      added =
+          await showDialog<bool>(
+            context: context,
+            builder: (context) => StatefulBuilder(
+              builder: (context, setDialogState) => AlertDialog(
+                title: const Text('Add allowed email'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: emailController,
+                      decoration: const InputDecoration(labelText: 'Email'),
+                      autofocus: true,
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: noteController,
+                      decoration: const InputDecoration(
+                        labelText: 'Note (optional)',
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: emailController.text.trim().isEmpty
+                        ? null
+                        : () => Navigator.of(context).pop(true),
+                    child: const Text('Add'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              TextField(controller: noteController, decoration: const InputDecoration(labelText: 'Note (optional)')),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: emailController.text.trim().isEmpty ? null : () => Navigator.of(context).pop(true),
-              child: const Text('Add'),
             ),
-          ],
-        ),
-      ),
-    );
-    if (added != true || !mounted) return;
+          ) ??
+          false;
+      email = emailController.text.trim();
+      final noteText = noteController.text.trim();
+      note = noteText.isEmpty ? null : noteText;
+    } finally {
+      // Method-local controllers: the dialog is gone once showDialog
+      // returns, so release them here instead of a State.dispose.
+      emailController.dispose();
+      noteController.dispose();
+    }
+    if (!added || !mounted) return;
 
     setState(() => _busy = true);
     try {
-      await ref.read(adminRepositoryProvider).addAllowedEmail(
-            email: emailController.text.trim(),
-            note: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
-          );
+      await ref
+          .read(adminRepositoryProvider)
+          .addAllowedEmail(email: email, note: note);
       ref.invalidate(allowedEmailsProvider);
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -102,7 +128,10 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
                   title: Text(entry.email),
                   subtitle: entry.note == null ? null : Text(entry.note!),
                   trailing: IconButton(
-                    icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
+                    icon: Icon(
+                      Icons.delete_outline,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                     onPressed: () => _remove(entry.email),
                   ),
                 );

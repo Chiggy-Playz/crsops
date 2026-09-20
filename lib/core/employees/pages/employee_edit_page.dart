@@ -18,14 +18,27 @@ class EmployeeEditPage extends ConsumerStatefulWidget {
 }
 
 class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
-  late final _nameController = TextEditingController(text: widget.existing?.name ?? '');
-  late final _salaryController =
-      TextEditingController(text: widget.existing?.salary?.toString() ?? '');
-  late final _notesController = TextEditingController(text: widget.existing?.notes ?? '');
+  late final _nameController = TextEditingController(
+    text: widget.existing?.name ?? '',
+  );
+  late final _salaryController = TextEditingController(
+    text: widget.existing?.salary?.toString() ?? '',
+  );
+  late final _notesController = TextEditingController(
+    text: widget.existing?.notes ?? '',
+  );
   late int _color = widget.existing?.color ?? employeeColorPalette.first;
   DateTime _joinDate = DateTime.now();
 
   bool get _isEditing => widget.existing != null;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _salaryController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
   Future<void> _save() async {
     final employeeRepo = ref.read(employeeRepositoryProvider);
@@ -50,7 +63,9 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
         salary: salary,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
       );
-      await ref.read(employeeEventRepositoryProvider).addEvent(
+      await ref
+          .read(employeeEventRepositoryProvider)
+          .addEvent(
             employeeId: created.id,
             eventType: 'joined',
             eventDate: _joinDate,
@@ -64,7 +79,9 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit employee' : 'New employee')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit employee' : 'New employee'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -75,11 +92,17 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 16),
-          EmployeeColorPicker(selectedColor: _color, onChanged: (c) => setState(() => _color = c)),
+          EmployeeColorPicker(
+            selectedColor: _color,
+            onChanged: (c) => setState(() => _color = c),
+          ),
           const SizedBox(height: 16),
           if (!_isEditing) ...[
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'Join date', suffixIcon: Icon(Icons.calendar_month)),
+              decoration: const InputDecoration(
+                labelText: 'Join date',
+                suffixIcon: Icon(Icons.calendar_month),
+              ),
               child: InkWell(
                 key: const Key('employee-join-date-field'),
                 onTap: () async {
