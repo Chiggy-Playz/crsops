@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/employee_providers.dart';
 import 'widgets/add_event_dialog.dart';
+import 'widgets/add_payment_dialog.dart';
 
 class EmployeeDetailPage extends ConsumerWidget {
   const EmployeeDetailPage({super.key, required this.employeeId});
@@ -22,6 +23,14 @@ class EmployeeDetailPage extends ConsumerWidget {
           loading: () => const Text(''),
           error: (_, _) => const Text('Employee'),
         ),
+        actions: [
+          IconButton(
+            key: const Key('add-payment-button'),
+            icon: const Icon(Icons.payments),
+            tooltip: 'Add payment',
+            onPressed: () => showAddPaymentDialog(context, ref, employeeId),
+          ),
+        ],
       ),
       body: Column(
         children: [

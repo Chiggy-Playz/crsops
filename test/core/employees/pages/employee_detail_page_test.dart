@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../fakes/fake_employee_event_repository.dart';
+import '../fakes/fake_employee_ledger_entry_repository.dart';
 import '../fakes/fake_employee_repository.dart';
 import '../fakes/fake_event_type_repository.dart';
 
@@ -61,5 +62,41 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('add-event-dialog')), findsOneWidget);
+  });
+
+  testWidgets('Add payment button opens a dialog that records a new ledger entry', (tester) async {
+    final ledgerRepo = FakeEmployeeLedgerEntryRepository();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          employeeRepositoryProvider.overrideWithValue(
+            FakeEmployeeRepository(seed: [Employee(id: '1', name: 'Ramesh', color: 0xFF4CAF50, createdAt: DateTime(2024, 1, 1))]),
+          ),
+          employeeEventRepositoryProvider.overrideWithValue(FakeEmployeeEventRepository()),
+          eventTypeRepositoryProvider.overrideWithValue(FakeEventTypeRepository()),
+          employeeLedgerEntryRepositoryProvider.overrideWithValue(ledgerRepo),
+        ],
+        child: const MaterialApp(home: EmployeeDetailPage(employeeId: '1')),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('add-payment-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('add-payment-dialog')), findsOneWidget);
+
+    await tester.enterText(find.byKey(const Key('payment-amount-field')), '5000');
+    await tester.pump();
+    await tester.tap(find.byType(DropdownButton<String>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('advance').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('payment-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(ledgerRepo.addedEntries, hasLength(1));
+    expect(ledgerRepo.addedEntries.first['amount'], 5000.0);
   });
 }
