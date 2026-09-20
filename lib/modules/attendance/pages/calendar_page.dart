@@ -25,6 +25,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         title: const Text('Calendar'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.people_outline),
+            tooltip: 'Employees',
+            onPressed: () => Navigator.of(context).pushNamed('/employees'),
+          ),
+          IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Reports',
             onPressed: () => Navigator.of(context).pushNamed('/reports'),
