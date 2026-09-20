@@ -43,3 +43,16 @@ as $$
   where (p_employee_id is null or e.id = p_employee_id)
     and core.employee_status_as_of(e.id, gs.d::date) = 'active';
 $$;
+
+create or replace function attendance.recent_gaps(p_window_days integer default 7)
+returns table (employee_id uuid, date date)
+language sql
+stable
+as $$
+  select r.employee_id, r.date
+  from attendance.effective_range_status(
+    ((now() at time zone 'Asia/Kolkata')::date - p_window_days),
+    ((now() at time zone 'Asia/Kolkata')::date - 1)
+  ) r
+  where not r.is_explicit and not r.is_week_off;
+$$;
