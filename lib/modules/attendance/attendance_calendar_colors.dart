@@ -14,28 +14,28 @@ Map<String, List<EffectiveStatusRow>> groupRowsByDate(List<EffectiveStatusRow> r
   return byDate;
 }
 
-/// Only the two unambiguous cases get a fill color: every included employee
-/// week-off that day, or every included employee explicitly marked the same
-/// single status. A genuinely mixed day (some present, some absent, some
-/// unmarked) is left uncolored — plan.md explicitly leaves "how does a mixed
-/// day roll up" as an open product question for reports; inventing an answer
-/// here isn't this fix's call to make. Works the same whether `dayRows` has
-/// one employee's row or many — a single row trivially satisfies "every row
-/// agrees."
-Color? summaryColorFor(List<EffectiveStatusRow> dayRows, Map<String, String> colorHexByStatusId) {
-  if (dayRows.isEmpty) return null;
-
-  if (dayRows.every((r) => r.isWeekOff)) {
-    return colorFor(colorHexByStatusId['week_off']);
-  }
-
-  if (dayRows.every((r) => r.isExplicit)) {
-    final firstStatus = dayRows.first.firstHalfStatus;
-    final uniform = dayRows.every((r) => r.firstHalfStatus == firstStatus && r.secondHalfStatus == firstStatus);
-    if (uniform && firstStatus != null) {
-      return colorFor(colorHexByStatusId[firstStatus]);
+/// One dot color per distinct status represented among `dayRows` — a mixed
+/// day (some present, some absent) naturally gets multiple dots instead of
+/// needing a single "winning" fill color, which sidesteps the "how does a
+/// mixed day roll up" open question entirely rather than answering it.
+/// Skips unmarked, non-week-off rows (no status to show); uses each row's
+/// first-half status as its representative status, same simplification
+/// already used by report_calculations.dart's summary buckets.
+///
+/// isWeekOff is a property of the date (every row on a Sunday has it true),
+/// not of whether that employee has an explicit mark — an explicit mark
+/// must win over it, same priority order as computeStatusSummary, or an
+/// employee explicitly marked present on a week-off day silently loses
+/// their dot to the week-off one.
+List<Color> statusDotsFor(List<EffectiveStatusRow> dayRows, Map<String, String> colorHexByStatusId) {
+  final seen = <String>{};
+  final dots = <Color>[];
+  for (final row in dayRows) {
+    final statusId = row.isExplicit ? row.firstHalfStatus : (row.isWeekOff ? 'week_off' : null);
+    if (statusId == null) continue;
+    if (seen.add(statusId)) {
+      dots.add(colorFor(colorHexByStatusId[statusId]));
     }
   }
-
-  return null;
+  return dots;
 }

@@ -306,7 +306,7 @@ class _ReportCalendar extends StatelessWidget {
         calendarBuilders: CalendarBuilders(
           defaultBuilder: (context, day, focusedDay) {
             final dateKey = day.toIso8601String().split('T').first;
-            return DayCell(day: day, hasGap: false, summaryColor: summaryColorFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId));
+            return DayCell(day: day, hasGap: false, statusDots: statusDotsFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId));
           },
         ),
       ),

@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
 class DayCell extends StatelessWidget {
-  const DayCell({super.key, required this.day, required this.hasGap, this.summaryColor});
+  const DayCell({super.key, required this.day, required this.hasGap, this.statusDots = const []});
 
   final DateTime day;
   final bool hasGap;
-  final Color? summaryColor;
+
+  /// One dot per distinct status represented that day (not per employee) —
+  /// e.g. a day with some present and some on leave shows two dots. An
+  /// unmarked day (no explicit status, not week-off) contributes none; the
+  /// gap-warning icon already signals that separately.
+  final List<Color> statusDots;
 
   String get _dateKey => day.toIso8601String().split('T').first;
 
@@ -13,13 +18,33 @@ class DayCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: summaryColor?.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(6),
-      ),
       child: Stack(
         children: [
-          Center(child: Text('${day.day}')),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${day.day}'),
+                if (statusDots.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final color in statusDots)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 1),
+                          child: Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
           if (hasGap)
             Positioned(
               top: 2,

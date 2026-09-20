@@ -75,7 +75,7 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             return DayCell(
               day: day,
               hasGap: gapDates.contains(dateKey),
-              summaryColor: summaryColorFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId),
+              statusDots: statusDotsFor(rowsByDate[dateKey] ?? const [], colorHexByStatusId),
             );
           },
         ),
