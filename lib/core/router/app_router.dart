@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../modules/attendance/routes.dart';
+import '../../modules/settings/routes.dart';
 import '../employees/routes.dart';
 import '../auth/pages/loading_page.dart';
 import '../auth/pages/sign_in_page.dart';
@@ -34,6 +35,7 @@ GoRouter appRouter(Ref ref) {
       GoRoute(path: unauthorizedPath, builder: (context, state) => const UnauthorizedPage()),
       ...employeeRoutes(ref),
       ...attendanceRoutes(ref),
+      ...settingsRoutes(ref),
     ],
   );
 }

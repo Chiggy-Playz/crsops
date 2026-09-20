@@ -29,6 +29,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
             tooltip: 'Reports',
             onPressed: () => Navigator.of(context).pushNamed('/reports'),
           ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+            onPressed: () => Navigator.of(context).pushNamed('/settings'),
+          ),
         ],
       ),
       body: TableCalendar(
