@@ -104,83 +104,87 @@ class _AddShiftDefaultDialogState
       title: const Text('New shift default'),
       content: SizedBox(
         width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Effective from',
-                suffixIcon: Icon(Icons.calendar_month),
+        // Scrollable: the date/time/chips stack overflows short screens
+        // (and the test window) otherwise.
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Effective from',
+                  suffixIcon: Icon(Icons.calendar_month),
+                ),
+                child: InkWell(
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _effectiveFrom,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) setState(() => _effectiveFrom = picked);
+                  },
+                  child: Text(_dateFormat.format(_effectiveFrom)),
+                ),
               ),
-              child: InkWell(
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _effectiveFrom,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setState(() => _effectiveFrom = picked);
-                },
-                child: Text(_dateFormat.format(_effectiveFrom)),
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'Start time',
+                  suffixIcon: Icon(Icons.access_time),
+                ),
+                child: InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _start,
+                    );
+                    if (picked != null) setState(() => _start = picked);
+                  },
+                  child: Text(_start.format(context)),
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Start time',
-                suffixIcon: Icon(Icons.access_time),
+              const SizedBox(height: 12),
+              InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: 'End time',
+                  suffixIcon: Icon(Icons.access_time),
+                ),
+                child: InkWell(
+                  onTap: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: _end,
+                    );
+                    if (picked != null) setState(() => _end = picked);
+                  },
+                  child: Text(_end.format(context)),
+                ),
               ),
-              child: InkWell(
-                onTap: () async {
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: _start,
-                  );
-                  if (picked != null) setState(() => _start = picked);
-                },
-                child: Text(_start.format(context)),
+              const SizedBox(height: 12),
+              const Text('Week off days'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final entry in _kWeekdayNames.entries)
+                    FilterChip(
+                      label: Text(entry.value),
+                      selected: _weekOffDays.contains(entry.key),
+                      onSelected: (selected) => setState(() {
+                        if (selected) {
+                          _weekOffDays.add(entry.key);
+                        } else {
+                          _weekOffDays.remove(entry.key);
+                        }
+                      }),
+                    ),
+                ],
               ),
-            ),
-            const SizedBox(height: 12),
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'End time',
-                suffixIcon: Icon(Icons.access_time),
-              ),
-              child: InkWell(
-                onTap: () async {
-                  final picked = await showTimePicker(
-                    context: context,
-                    initialTime: _end,
-                  );
-                  if (picked != null) setState(() => _end = picked);
-                },
-                child: Text(_end.format(context)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text('Week off days'),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final entry in _kWeekdayNames.entries)
-                  FilterChip(
-                    label: Text(entry.value),
-                    selected: _weekOffDays.contains(entry.key),
-                    onSelected: (selected) => setState(() {
-                      if (selected) {
-                        _weekOffDays.add(entry.key);
-                      } else {
-                        _weekOffDays.remove(entry.key);
-                      }
-                    }),
-                  ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [

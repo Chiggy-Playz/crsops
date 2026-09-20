@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/utils/date_key.dart';
 import '../../core/widgets/status_metadata.dart';
+import 'day_status.dart';
 import 'models/effective_status_row.dart';
 
 /// Groups rows by date (`yyyy-MM-dd` key) — shared by any calendar view that
@@ -37,9 +38,7 @@ List<Color> statusDotsFor(
   final seen = <String>{};
   final dots = <Color>[];
   for (final row in dayRows) {
-    final statusId = row.isExplicit
-        ? row.firstHalfStatus
-        : (row.isWeekOff ? 'week_off' : null);
+    final statusId = representativeStatus(row);
     if (statusId == null) continue;
     if (seen.add(statusId)) {
       dots.add(colorFor(colorHexByStatusId[statusId]));

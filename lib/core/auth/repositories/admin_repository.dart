@@ -5,6 +5,20 @@ import '../models/app_session.dart';
 import '../models/profile.dart';
 import 'roles_repository.dart';
 
+/// Groups `module_access` rows by user id. Pure so the fold stays unit
+/// tested without a Supabase client.
+Map<String, Set<String>> groupModuleAccessByUser(
+  List<Map<String, dynamic>> rows,
+) {
+  final byUser = <String, Set<String>>{};
+  for (final r in rows) {
+    byUser
+        .putIfAbsent(r['user_id'] as String, () => {})
+        .add(r['module_id'] as String);
+  }
+  return byUser;
+}
+
 abstract class AdminRepository {
   Future<List<({String email, String? note, DateTime addedAt})>>
   fetchAllowedEmails();
@@ -171,13 +185,7 @@ class SupabaseAdminRepository implements AdminRepository {
           .schema('core')
           .from('module_access')
           .select('user_id, module_id');
-      final byUser = <String, Set<String>>{};
-      for (final r in rows) {
-        final userId = r['user_id'] as String;
-        final moduleId = r['module_id'] as String;
-        byUser.putIfAbsent(userId, () => {}).add(moduleId);
-      }
-      return byUser;
+      return groupModuleAccessByUser(rows);
     } catch (error) {
       throw translateException(error);
     }

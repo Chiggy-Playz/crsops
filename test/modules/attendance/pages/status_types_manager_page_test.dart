@@ -9,10 +9,22 @@ import '../fakes/fake_status_type_repository.dart';
 
 void main() {
   testWidgets('lists every status type', (tester) async {
-    final repo = FakeStatusTypeRepository(seed: [
-      const StatusType(id: 'present', label: 'Present', iconName: 'check', colorHex: '#4CAF50'),
-      const StatusType(id: 'absent', label: 'Absent', iconName: 'close', colorHex: '#F44336'),
-    ]);
+    final repo = FakeStatusTypeRepository(
+      seed: [
+        const StatusType(
+          id: 'present',
+          label: 'Present',
+          iconName: 'check',
+          colorHex: '#4CAF50',
+        ),
+        const StatusType(
+          id: 'absent',
+          label: 'Absent',
+          iconName: 'close',
+          colorHex: '#F44336',
+        ),
+      ],
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -24,5 +36,45 @@ void main() {
 
     expect(find.text('Present'), findsOneWidget);
     expect(find.text('Absent'), findsOneWidget);
+  });
+
+  testWidgets('adding through the dialog inserts the type', (tester) async {
+    final repo = FakeStatusTypeRepository(
+      seed: [
+        const StatusType(
+          id: 'present',
+          label: 'Present',
+          iconName: 'check',
+          colorHex: '#4CAF50',
+        ),
+        const StatusType(
+          id: 'absent',
+          label: 'Absent',
+          iconName: 'close',
+          colorHex: '#F44336',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [statusTypeRepositoryProvider.overrideWithValue(repo)],
+        child: const MaterialApp(home: StatusTypesManagerPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).at(0), 'leave_sick');
+    await tester.enterText(find.byType(TextField).at(1), 'Sick leave');
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    final types = await repo.fetchAll();
+    expect(types.map((t) => t.id), contains('leave_sick'));
   });
 }

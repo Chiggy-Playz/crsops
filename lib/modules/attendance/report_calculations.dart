@@ -1,3 +1,4 @@
+import 'day_status.dart';
 import 'models/derived_flags_row.dart';
 import 'models/effective_status_row.dart';
 import 'models/status_type.dart';
@@ -18,14 +19,7 @@ Map<String, int> computeStatusSummary(
   };
 
   for (final row in rows) {
-    final String bucket;
-    if (row.isExplicit) {
-      bucket = row.firstHalfStatus ?? _unmarkedKey;
-    } else if (row.isWeekOff) {
-      bucket = 'week_off';
-    } else {
-      bucket = _unmarkedKey;
-    }
+    final bucket = representativeStatus(row) ?? _unmarkedKey;
     summary[bucket] = (summary[bucket] ?? 0) + 1;
   }
 
