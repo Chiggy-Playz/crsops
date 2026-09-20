@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
+import '../../../core/errors/app_exception.dart';
 import '../providers/attendance_providers.dart';
 import 'widgets/employee_marking_tile.dart';
 
@@ -33,6 +34,12 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     ref.invalidate(recentGapsProvider);
   }
 
+  void _showError(AppException e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(e.message)));
+  }
+
   Future<void> _markAllPresent(List<String> employeeIds) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -55,10 +62,14 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       ),
     );
     if (confirmed == true) {
-      await ref
-          .read(attendanceRepositoryProvider)
-          .markAllPresent(date: widget.date, employeeIds: employeeIds);
-      _refresh();
+      try {
+        await ref
+            .read(attendanceRepositoryProvider)
+            .markAllPresent(date: widget.date, employeeIds: employeeIds);
+        _refresh();
+      } on AppException catch (e) {
+        _showError(e);
+      }
     }
   }
 
@@ -84,10 +95,14 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       ),
     );
     if (confirmed == true) {
-      await ref
-          .read(attendanceRepositoryProvider)
-          .markHoliday(date: widget.date, employeeIds: employeeIds);
-      _refresh();
+      try {
+        await ref
+            .read(attendanceRepositoryProvider)
+            .markHoliday(date: widget.date, employeeIds: employeeIds);
+        _refresh();
+      } on AppException catch (e) {
+        _showError(e);
+      }
     }
   }
 
@@ -106,6 +121,8 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
             note: pick.note,
           );
       _refresh();
+    } on AppException catch (e) {
+      _showError(e);
     } finally {
       if (mounted) setState(() => _busyEmployeeIds.remove(employeeId));
     }
@@ -118,6 +135,8 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
           .read(attendanceRepositoryProvider)
           .unmarkDay(employeeId: employeeId, date: widget.date);
       _refresh();
+    } on AppException catch (e) {
+      _showError(e);
     } finally {
       if (mounted) setState(() => _busyEmployeeIds.remove(employeeId));
     }

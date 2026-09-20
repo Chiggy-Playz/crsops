@@ -141,6 +141,16 @@ void main() {
       expect(formatOvertime(45), '45m');
     });
 
+    test('zero minutes stays minutes', () {
+      expect(formatOvertime(0), '0m');
+    });
+
+    test('the hour boundary flips to hours', () {
+      expect(formatOvertime(59), '59m');
+      expect(formatOvertime(60), '1h');
+      expect(formatOvertime(61), '1h 1m');
+    });
+
     test('exact hours drop the minutes', () {
       expect(formatOvertime(120), '2h');
     });

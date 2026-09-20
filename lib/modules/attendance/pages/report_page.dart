@@ -220,13 +220,13 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               ],
             ),
           ),
-          Expanded(child: _buildBody()),
+          Expanded(child: _buildBody(employeesAsync)),
         ],
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AsyncValue<List<Employee>> employeesAsync) {
     final range = _range;
     // Exactly one employee selected: use the server-side filter directly.
     // Zero (all) or several selected: fetch everyone and filter client-side,
@@ -236,7 +236,6 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         : null;
 
     final statusTypesAsync = ref.watch(statusTypesProvider);
-    final employeesAsync = ref.watch(employeeListProvider);
     final summaryAsync = ref.watch(
       effectiveRangeStatusProvider(
         start: range.start,
@@ -258,17 +257,16 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         exceptionsAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (statusTypesAsync.hasError) {
-      return Center(child: Text('${statusTypesAsync.error}'));
-    }
-    if (employeesAsync.hasError) {
-      return Center(child: Text('${employeesAsync.error}'));
-    }
-    if (summaryAsync.hasError) {
-      return Center(child: Text('${summaryAsync.error}'));
-    }
-    if (exceptionsAsync.hasError) {
-      return Center(child: Text('${exceptionsAsync.error}'));
+    // One shape for every async failure: the errors are translated
+    // AppExceptions (user-safe by construction), so showing the first is
+    // enough — no per-source branch needed.
+    for (final AsyncValue<dynamic> async in <AsyncValue<dynamic>>[
+      statusTypesAsync,
+      employeesAsync,
+      summaryAsync,
+      exceptionsAsync,
+    ]) {
+      if (async.hasError) return Center(child: Text('${async.error}'));
     }
 
     final statusTypes = statusTypesAsync.value!;
@@ -300,7 +298,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
           physics: const NeverScrollableScrollPhysics(),
           mainAxisSpacing: 8,
           crossAxisSpacing: 8,
-          mainAxisExtent: 116,
+          mainAxisExtent: 124,
           children: [
             for (final type in statusTypes)
               _SummaryCard(
@@ -328,14 +326,20 @@ class _ReportPageState extends ConsumerState<ReportPage> {
             child: Text('No exceptions in this range.'),
           )
         else
-          ...exceptions.map(
-            (e) => ListTile(
+          ...exceptions.map((e) {
+            final parts = [
+              if (e.isLate) 'Late',
+              if (e.isEarly) 'Left early',
+              if (e.overtimeMinutes > 0)
+                '+${formatOvertime(e.overtimeMinutes)} overtime',
+            ];
+            return ListTile(
               title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
               subtitle: Text(
-                '${_dateFormat.format(e.date)} · ${[if (e.isLate) 'Late', if (e.isEarly) 'Left early', if (e.overtimeMinutes > 0) '+${formatOvertime(e.overtimeMinutes)} overtime'].join(' · ')}',
+                '${_dateFormat.format(e.date)} · ${parts.join(' · ')}',
               ),
-            ),
-          ),
+            );
+          }),
         const SizedBox(height: 24),
         Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
@@ -426,7 +430,7 @@ class _SummaryCard extends StatelessWidget {
             Text(
               label,
               textAlign: TextAlign.center,
-              maxLines: 1,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
           ],

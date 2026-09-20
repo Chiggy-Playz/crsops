@@ -37,7 +37,9 @@ List<DerivedFlagsRow> filterExceptions(List<DerivedFlagsRow> rows) =>
 
 /// Overtime display: minutes below an hour ("45m"), hours at/above it
 /// ("2h", "1h 30m"). Pure display — the stored minute count is untouched.
+/// Callers only pass positive flag values; the assert pins that contract.
 String formatOvertime(int totalMinutes) {
+  assert(totalMinutes >= 0, 'overtime minutes must not be negative');
   if (totalMinutes < 60) return '${totalMinutes}m';
   final hours = totalMinutes ~/ 60;
   final rest = totalMinutes % 60;

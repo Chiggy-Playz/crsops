@@ -47,7 +47,16 @@ class EmployeeMarkingTile extends StatelessWidget {
       ),
     );
     if (result == null) return;
-    if (result.firstHalfStatus == null && result.secondHalfStatus == null) {
+    // All-null means "nothing was entered" (the sheet's Unmark entry pops
+    // exactly this) — anything else, times/note included, is a marking, with
+    // null halves resolved to the presence default by the repository.
+    final isEmpty =
+        result.firstHalfStatus == null &&
+        result.secondHalfStatus == null &&
+        result.timeIn == null &&
+        result.timeOut == null &&
+        result.note == null;
+    if (isEmpty) {
       onUnmark();
     } else {
       onMarkStatus(result);
@@ -78,7 +87,7 @@ class EmployeeMarkingTile extends StatelessWidget {
 
     final hasTimes = status?.timeIn != null || status?.timeOut != null;
     final timeLabel = hasTimes
-        ? '${_formatStoredTime(context, status?.timeIn)}–${_formatStoredTime(context, status?.timeOut)}'
+        ? _formatStoredTimeRange(context, status?.timeIn, status?.timeOut)
         : null;
     final note = status?.note?.trim();
     final subtitleParts = [
@@ -134,13 +143,35 @@ String _formatStoredTime(BuildContext context, String? stored) {
   return MaterialLocalizations.of(context).formatTimeOfDay(parsed);
 }
 
+/// Tile subtitle time fragment: a range when both sides exist, just the
+/// set side ("in …" / "out …") for a half-entered pair, null when neither.
+String? _formatStoredTimeRange(
+  BuildContext context,
+  String? timeIn,
+  String? timeOut,
+) {
+  if (timeIn == null && timeOut == null) return null;
+  if (timeIn == null) return 'out ${_formatStoredTime(context, timeOut)}';
+  if (timeOut == null) return 'in ${_formatStoredTime(context, timeIn)}';
+  return '${_formatStoredTime(context, timeIn)}–${_formatStoredTime(context, timeOut)}';
+}
+
 TimeOfDay? _parseStoredTime(String? stored) {
   if (stored == null) return null;
   final parts = stored.split(':');
   if (parts.length < 2) return null;
   final hour = int.tryParse(parts[0]);
   final minute = int.tryParse(parts[1]);
-  if (hour == null || minute == null) return null;
+  // Shape-valid but out-of-range values (bad migration, manual DB edit)
+  // must fall back, never crash TimeOfDay's Asserts.
+  if (hour == null ||
+      minute == null ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59) {
+    return null;
+  }
   return TimeOfDay(hour: hour, minute: minute);
 }
 
@@ -179,28 +210,44 @@ class _StatusPickerSheetState extends State<_StatusPickerSheet> {
   late TimeOfDay? _timeIn = _parseStoredTime(widget.currentTimeIn);
   late TimeOfDay? _timeOut = _parseStoredTime(widget.currentTimeOut);
 
-  String? get _note =>
-      _noteController.text.trim().isEmpty ? null : _noteController.text.trim();
+  /// Set the moment a time is picked or cleared: distinguishes "untouched,
+  /// still showing the row's stored value" from "user explicitly cleared it
+  /// to null", so quick-pick never resurrects a cleared time (FINDING-03).
+  bool _timesTouched = false;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  String? get _note {
+    final text = _noteController.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
   String? get _storedTimeIn => _timeIn == null ? null : _toStoredTime(_timeIn!);
   String? get _storedTimeOut =>
       _timeOut == null ? null : _toStoredTime(_timeOut!);
 
-  /// Quick full-day tap preserves any already-entered times rather than
+  /// Quick full-day tap preserves already-entered times rather than
   /// silently wiping them — times are only changed via the advanced section.
+  /// Untouched fields pass the stored strings through verbatim; touched
+  /// fields (picked or cleared) use the sheet's current values.
   void _pickFullDay(String statusId) => Navigator.of(context).pop((
     firstHalfStatus: statusId,
     secondHalfStatus: statusId,
-    timeIn: _storedTimeIn ?? widget.currentTimeIn,
-    timeOut: _storedTimeOut ?? widget.currentTimeOut,
+    timeIn: _timesTouched ? _storedTimeIn : widget.currentTimeIn,
+    timeOut: _timesTouched ? _storedTimeOut : widget.currentTimeOut,
     note: _note,
   ));
 
-  /// Halves aren't user-editable (hidden for now): keep whatever the row
-  /// already has, defaulting an unmarked day to full-day present — entering
-  /// times implies presence.
+  /// Halves aren't user-editable (hidden for now): pass through whatever the
+  /// row already has. Nulls mean "unmarked" — the repository applies the
+  /// presence default, not the UI (FINDING-04).
   void _saveTimes() => Navigator.of(context).pop((
-    firstHalfStatus: widget.currentFirstHalf ?? 'present',
-    secondHalfStatus: widget.currentSecondHalf ?? 'present',
+    firstHalfStatus: widget.currentFirstHalf,
+    secondHalfStatus: widget.currentSecondHalf,
     timeIn: _storedTimeIn,
     timeOut: _storedTimeOut,
     note: _note,
@@ -211,7 +258,14 @@ class _StatusPickerSheetState extends State<_StatusPickerSheet> {
       initialTime: (isIn ? _timeIn : _timeOut) ?? TimeOfDay.now(),
     );
     if (picked != null) {
-      setState(() => isIn ? _timeIn = picked : _timeOut = picked);
+      setState(() {
+        _timesTouched = true;
+        if (isIn) {
+          _timeIn = picked;
+        } else {
+          _timeOut = picked;
+        }
+      });
     }
   }
 
@@ -238,8 +292,14 @@ class _StatusPickerSheetState extends State<_StatusPickerSheet> {
               key: clearKey,
               icon: const Icon(Icons.clear),
               tooltip: 'Clear $label',
-              onPressed: () =>
-                  setState(() => isIn ? _timeIn = null : _timeOut = null),
+              onPressed: () => setState(() {
+                _timesTouched = true;
+                if (isIn) {
+                  _timeIn = null;
+                } else {
+                  _timeOut = null;
+                }
+              }),
             ),
         ],
       ),
