@@ -39,6 +39,10 @@ Future<String?> employeeCurrentStatus(Ref ref, String employeeId) =>
     ref.watch(employeeRepositoryProvider).fetchCurrentStatus(employeeId);
 
 @riverpod
+Future<Map<String, String>> employeeCurrentStatuses(Ref ref) =>
+    ref.watch(employeeRepositoryProvider).fetchAllCurrentStatuses();
+
+@riverpod
 Future<List<TimelineEntry>> employeeTimeline(Ref ref, String employeeId) =>
     ref.watch(employeeEventRepositoryProvider).fetchTimeline(employeeId);
 

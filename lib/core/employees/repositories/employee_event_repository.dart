@@ -11,6 +11,17 @@ abstract class EmployeeEventRepository {
     String? note,
   });
   Future<List<TimelineEntry>> fetchTimeline(String employeeId);
+
+  /// Needed for real cases like backfilling a long-tenured employee's actual
+  /// historical join date when first setting up the app — not just fixing
+  /// typos.
+  Future<void> updateEvent({
+    required String id,
+    required String eventType,
+    required DateTime eventDate,
+    String? note,
+  });
+  Future<void> deleteEvent(String id);
 }
 
 class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
@@ -46,6 +57,37 @@ class SupabaseEmployeeEventRepository implements EmployeeEventRepository {
           .eq('employee_id', employeeId)
           .order('entry_date', ascending: false);
       return rows.map(TimelineEntryMapper.fromMap).toList();
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> updateEvent({
+    required String id,
+    required String eventType,
+    required DateTime eventDate,
+    String? note,
+  }) async {
+    try {
+      await _client
+          .schema('core')
+          .from('employee_events')
+          .update({
+            'event_type': eventType,
+            'event_date': eventDate.toIso8601String().split('T').first,
+            'note': note,
+          })
+          .eq('id', id);
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> deleteEvent(String id) async {
+    try {
+      await _client.schema('core').from('employee_events').delete().eq('id', id);
     } catch (error) {
       throw translateException(error);
     }

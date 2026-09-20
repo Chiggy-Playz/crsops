@@ -31,4 +31,29 @@ class FakeEmployeeLedgerEntryRepository implements EmployeeLedgerEntryRepository
 
   @override
   Future<List<String>> fetchDistinctEntryTypes() async => List.of(_entryTypes);
+
+  final List<Map<String, Object?>> updatedEntries = [];
+  final List<String> deletedIds = [];
+
+  @override
+  Future<void> updateEntry({
+    required String id,
+    required DateTime entryDate,
+    required double amount,
+    required String entryType,
+    String? note,
+  }) async {
+    updatedEntries.add({
+      'id': id,
+      'entryDate': entryDate,
+      'amount': amount,
+      'entryType': entryType,
+      'note': note,
+    });
+  }
+
+  @override
+  Future<void> deleteEntry(String id) async {
+    deletedIds.add(id);
+  }
 }

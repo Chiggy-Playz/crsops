@@ -75,4 +75,11 @@ class FakeAttendanceRepository implements AttendanceRepository {
   Future<void> markHoliday({required DateTime date, required List<String> employeeIds}) async {
     markedHolidayDates.add(date);
   }
+
+  final List<Map<String, Object?>> unmarkedDays = [];
+
+  @override
+  Future<void> unmarkDay({required String employeeId, required DateTime date}) async {
+    unmarkedDays.add({'employeeId': employeeId, 'date': date});
+  }
 }

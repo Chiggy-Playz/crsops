@@ -5,13 +5,17 @@ part 'timeline_entry.mapper.dart';
 @MappableClass()
 class TimelineEntry with TimelineEntryMappable {
   const TimelineEntry({
+    required this.id,
     required this.employeeId,
     required this.entryDate,
     required this.kind,
     required this.label,
     this.note,
+    this.amount,
   });
 
+  @MappableField(key: 'id')
+  final String id;
   @MappableField(key: 'employee_id')
   final String employeeId;
   @MappableField(key: 'entry_date')
@@ -22,4 +26,6 @@ class TimelineEntry with TimelineEntryMappable {
   final String label;
   @MappableField(key: 'note')
   final String? note;
+  @MappableField(key: 'amount')
+  final double? amount;
 }

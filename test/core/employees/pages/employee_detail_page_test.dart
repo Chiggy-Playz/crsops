@@ -19,8 +19,15 @@ void main() {
       statusById: {'1': 'active'},
     );
     final eventRepo = FakeEmployeeEventRepository(seed: [
-      TimelineEntry(employeeId: '1', entryDate: DateTime(2024, 1, 10), kind: 'event', label: 'joined'),
-      TimelineEntry(employeeId: '1', entryDate: DateTime(2024, 2, 1), kind: 'ledger', label: 'advance'),
+      TimelineEntry(id: 'e1', employeeId: '1', entryDate: DateTime(2024, 1, 10), kind: 'event', label: 'joined'),
+      TimelineEntry(
+        id: 'l1',
+        employeeId: '1',
+        entryDate: DateTime(2024, 2, 1),
+        kind: 'ledger',
+        label: 'advance',
+        amount: 5000,
+      ),
     ]);
 
     await tester.pumpWidget(
@@ -35,9 +42,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Ramesh'), findsOneWidget);
-    expect(find.text('joined'), findsOneWidget);
-    expect(find.text('advance'), findsOneWidget);
+    // Appears twice now: app bar title + the profile card.
+    expect(find.text('Ramesh'), findsNWidgets(2));
+    expect(find.text('Joined'), findsOneWidget);
+    expect(find.text('Advance'), findsOneWidget);
   });
 
   testWidgets('Add event button opens a dialog that inserts a new descriptive type inline', (tester) async {
@@ -89,9 +97,7 @@ void main() {
 
     await tester.enterText(find.byKey(const Key('payment-amount-field')), '5000');
     await tester.pump();
-    await tester.tap(find.byType(DropdownButton<String>));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('advance').last);
+    await tester.enterText(find.byKey(const Key('payment-category-field')), 'advance');
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('payment-save-button')));
     await tester.pumpAndSettle();

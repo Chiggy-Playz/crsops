@@ -22,6 +22,8 @@ class TimelineEntryMapper extends ClassMapperBase<TimelineEntry> {
   @override
   final String id = 'TimelineEntry';
 
+  static String _$id(TimelineEntry v) => v.id;
+  static const Field<TimelineEntry, String> _f$id = Field('id', _$id);
   static String _$employeeId(TimelineEntry v) => v.employeeId;
   static const Field<TimelineEntry, String> _f$employeeId = Field(
     'employeeId',
@@ -44,23 +46,33 @@ class TimelineEntryMapper extends ClassMapperBase<TimelineEntry> {
     _$note,
     opt: true,
   );
+  static double? _$amount(TimelineEntry v) => v.amount;
+  static const Field<TimelineEntry, double> _f$amount = Field(
+    'amount',
+    _$amount,
+    opt: true,
+  );
 
   @override
   final MappableFields<TimelineEntry> fields = const {
+    #id: _f$id,
     #employeeId: _f$employeeId,
     #entryDate: _f$entryDate,
     #kind: _f$kind,
     #label: _f$label,
     #note: _f$note,
+    #amount: _f$amount,
   };
 
   static TimelineEntry _instantiate(DecodingData data) {
     return TimelineEntry(
+      id: data.dec(_f$id),
       employeeId: data.dec(_f$employeeId),
       entryDate: data.dec(_f$entryDate),
       kind: data.dec(_f$kind),
       label: data.dec(_f$label),
       note: data.dec(_f$note),
+      amount: data.dec(_f$amount),
     );
   }
 
@@ -127,11 +139,13 @@ extension TimelineEntryValueCopy<$R, $Out>
 abstract class TimelineEntryCopyWith<$R, $In extends TimelineEntry, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   $R call({
+    String? id,
     String? employeeId,
     DateTime? entryDate,
     String? kind,
     String? label,
     String? note,
+    double? amount,
   });
   TimelineEntryCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -146,27 +160,33 @@ class _TimelineEntryCopyWithImpl<$R, $Out>
       TimelineEntryMapper.ensureInitialized();
   @override
   $R call({
+    String? id,
     String? employeeId,
     DateTime? entryDate,
     String? kind,
     String? label,
     Object? note = $none,
+    Object? amount = $none,
   }) => $apply(
     FieldCopyWithData({
+      if (id != null) #id: id,
       if (employeeId != null) #employeeId: employeeId,
       if (entryDate != null) #entryDate: entryDate,
       if (kind != null) #kind: kind,
       if (label != null) #label: label,
       if (note != $none) #note: note,
+      if (amount != $none) #amount: amount,
     }),
   );
   @override
   TimelineEntry $make(CopyWithData data) => TimelineEntry(
+    id: data.get(#id, or: $value.id),
     employeeId: data.get(#employeeId, or: $value.employeeId),
     entryDate: data.get(#entryDate, or: $value.entryDate),
     kind: data.get(#kind, or: $value.kind),
     label: data.get(#label, or: $value.label),
     note: data.get(#note, or: $value.note),
+    amount: data.get(#amount, or: $value.amount),
   );
 
   @override

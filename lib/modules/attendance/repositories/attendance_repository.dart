@@ -39,6 +39,10 @@ abstract class AttendanceRepository {
   /// Bulk action: marks every active employee's day as a company holiday (both
   /// halves) for [date]. Same overwrite/confirm-dialog caveat as markAllPresent.
   Future<void> markHoliday({required DateTime date, required List<String> employeeIds});
+
+  /// Clears an explicit mark entirely — deletes the row so the day goes back
+  /// to computed-unmarked/week-off, rather than setting some "blank" status.
+  Future<void> unmarkDay({required String employeeId, required DateTime date});
 }
 
 class SupabaseAttendanceRepository implements AttendanceRepository {
@@ -149,6 +153,20 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
               })
           .toList();
       await _client.schema('attendance').from('attendance_days').upsert(rows, onConflict: 'employee_id,date');
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> unmarkDay({required String employeeId, required DateTime date}) async {
+    try {
+      await _client
+          .schema('attendance')
+          .from('attendance_days')
+          .delete()
+          .eq('employee_id', employeeId)
+          .eq('date', _dateOnly(date));
     } catch (error) {
       throw translateException(error);
     }

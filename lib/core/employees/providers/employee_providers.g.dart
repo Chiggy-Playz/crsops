@@ -383,6 +383,48 @@ final class EmployeeCurrentStatusFamily extends $Family
   String toString() => r'employeeCurrentStatusProvider';
 }
 
+@ProviderFor(employeeCurrentStatuses)
+final employeeCurrentStatusesProvider = EmployeeCurrentStatusesProvider._();
+
+final class EmployeeCurrentStatusesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, String>>,
+          Map<String, String>,
+          FutureOr<Map<String, String>>
+        >
+    with
+        $FutureModifier<Map<String, String>>,
+        $FutureProvider<Map<String, String>> {
+  EmployeeCurrentStatusesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'employeeCurrentStatusesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$employeeCurrentStatusesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, String>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, String>> create(Ref ref) {
+    return employeeCurrentStatuses(ref);
+  }
+}
+
+String _$employeeCurrentStatusesHash() =>
+    r'1784590d429dc1e857f269f76cef4df8c51cc4e7';
+
 @ProviderFor(employeeTimeline)
 final employeeTimelineProvider = EmployeeTimelineFamily._();
 

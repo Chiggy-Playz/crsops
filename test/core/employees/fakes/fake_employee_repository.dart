@@ -43,4 +43,7 @@ class FakeEmployeeRepository implements EmployeeRepository {
 
   @override
   Future<String?> fetchCurrentStatus(String employeeId) async => _statusById[employeeId];
+
+  @override
+  Future<Map<String, String>> fetchAllCurrentStatuses() async => Map.of(_statusById);
 }

@@ -9,6 +9,7 @@ abstract class EmployeeRepository {
   Future<Employee> create({required String name, required int color, double? salary, String? notes});
   Future<Employee> update(Employee employee);
   Future<String?> fetchCurrentStatus(String employeeId);
+  Future<Map<String, String>> fetchAllCurrentStatuses();
 }
 
 class SupabaseEmployeeRepository implements EmployeeRepository {
@@ -86,6 +87,16 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
           .eq('employee_id', employeeId);
       if (rows.isEmpty) return null;
       return rows.first['status'] as String?;
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<Map<String, String>> fetchAllCurrentStatuses() async {
+    try {
+      final rows = await _client.schema('core').from('employee_current_status').select('employee_id, status');
+      return {for (final row in rows) row['employee_id'] as String: row['status'] as String};
     } catch (error) {
       throw translateException(error);
     }
