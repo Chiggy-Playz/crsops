@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/providers/auth_providers.dart';
 import 'pages/attendance_day_page.dart';
 import 'pages/calendar_page.dart';
+import 'pages/report_page.dart';
 import 'pages/shift_defaults_manager_page.dart';
 import 'pages/status_types_manager_page.dart';
 
@@ -20,6 +21,10 @@ List<RouteBase> attendanceRoutes(Ref ref) => [
         path: '/attendance/:date',
         builder: (context, state) =>
             AttendanceDayPage(date: DateTime.parse(state.pathParameters['date']!)),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportPage(),
       ),
       GoRoute(
         path: '/attendance/shift-defaults',

@@ -21,7 +21,16 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
     final gapDates = gapsAsync.value?.map((g) => g.date.toIso8601String().split('T').first).toSet() ?? {};
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar')),
+      appBar: AppBar(
+        title: const Text('Calendar'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            tooltip: 'Reports',
+            onPressed: () => Navigator.of(context).pushNamed('/reports'),
+          ),
+        ],
+      ),
       body: TableCalendar(
         firstDay: DateTime(2000, 1, 1),
         lastDay: DateTime(2100, 12, 31),
