@@ -10,6 +10,7 @@ import '../auth/pages/sign_in_page.dart';
 import '../auth/pages/unauthorized_page.dart';
 import '../auth/providers/auth_providers.dart';
 import 'redirect_logic.dart';
+import 'route_names.dart';
 
 part 'app_router.g.dart';
 
@@ -30,9 +31,13 @@ GoRouter appRouter(Ref ref) {
     },
     refreshListenable: refreshNotifier,
     routes: [
-      GoRoute(path: loadingPath, builder: (context, state) => const LoadingPage()),
-      GoRoute(path: signInPath, builder: (context, state) => const SignInPage()),
-      GoRoute(path: unauthorizedPath, builder: (context, state) => const UnauthorizedPage()),
+      GoRoute(path: loadingPath, name: RouteNames.loading, builder: (context, state) => const LoadingPage()),
+      GoRoute(path: signInPath, name: RouteNames.signIn, builder: (context, state) => const SignInPage()),
+      GoRoute(
+        path: unauthorizedPath,
+        name: RouteNames.unauthorized,
+        builder: (context, state) => const UnauthorizedPage(),
+      ),
       ...employeeRoutes(ref),
       ...attendanceRoutes(ref),
       ...settingsRoutes(ref),

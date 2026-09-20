@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../../../core/router/route_names.dart';
 import '../providers/attendance_providers.dart';
 import 'widgets/day_cell.dart';
 
@@ -27,17 +29,17 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           IconButton(
             icon: const Icon(Icons.people_outline),
             tooltip: 'Employees',
-            onPressed: () => Navigator.of(context).pushNamed('/employees'),
+            onPressed: () => context.pushNamed(RouteNames.employees),
           ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Reports',
-            onPressed: () => Navigator.of(context).pushNamed('/reports'),
+            onPressed: () => context.pushNamed(RouteNames.reports),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             tooltip: 'Settings',
-            onPressed: () => Navigator.of(context).pushNamed('/settings'),
+            onPressed: () => context.pushNamed(RouteNames.settings),
           ),
         ],
       ),
@@ -49,8 +51,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         onPageChanged: (day) => setState(() => _focusedDay = day),
         onDaySelected: (selectedDay, focusedDay) {
           setState(() => _focusedDay = focusedDay);
-          Navigator.of(context).pushNamed(
-            '/attendance/${selectedDay.toIso8601String().split('T').first}',
+          context.pushNamed(
+            RouteNames.attendanceDay,
+            pathParameters: {'date': selectedDay.toIso8601String().split('T').first},
           );
         },
         calendarBuilders: CalendarBuilders(

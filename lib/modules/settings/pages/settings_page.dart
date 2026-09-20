@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/auth/providers/auth_providers.dart';
+import '../../../core/router/route_names.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
@@ -20,37 +22,37 @@ class SettingsPage extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.mail_outline),
               title: const Text('Signup allow-list'),
-              onTap: () => Navigator.of(context).pushNamed('/settings/allow-list'),
+              onTap: () => context.pushNamed(RouteNames.allowList),
             ),
           if (isSuperadmin)
             ListTile(
               leading: const Icon(Icons.admin_panel_settings_outlined),
               title: const Text('Roles'),
-              onTap: () => Navigator.of(context).pushNamed('/settings/roles'),
+              onTap: () => context.pushNamed(RouteNames.roles),
             ),
           if (isAdminOrAbove)
             ListTile(
               leading: const Icon(Icons.apps_outlined),
               title: const Text('Module access'),
-              onTap: () => Navigator.of(context).pushNamed('/settings/module-access'),
+              onTap: () => context.pushNamed(RouteNames.moduleAccess),
             ),
           if (isSuperadmin)
             ListTile(
               leading: const Icon(Icons.event_note_outlined),
               title: const Text('Event types'),
-              onTap: () => Navigator.of(context).pushNamed('/employees/event-types'),
+              onTap: () => context.pushNamed(RouteNames.eventTypes),
             ),
           if (isAdminOrAbove)
             ListTile(
               leading: const Icon(Icons.schedule_outlined),
               title: const Text('Shift defaults'),
-              onTap: () => Navigator.of(context).pushNamed('/attendance/shift-defaults'),
+              onTap: () => context.pushNamed(RouteNames.shiftDefaults),
             ),
           if (isAdminOrAbove)
             ListTile(
               leading: const Icon(Icons.label_outline),
               title: const Text('Attendance status types'),
-              onTap: () => Navigator.of(context).pushNamed('/attendance/status-types'),
+              onTap: () => context.pushNamed(RouteNames.statusTypes),
             ),
           const Divider(),
           ListTile(

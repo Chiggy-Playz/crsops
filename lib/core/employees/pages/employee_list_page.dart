@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../router/route_names.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
@@ -59,7 +61,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).pushNamed('/employees/new'),
+        onPressed: () => context.pushNamed(RouteNames.employeeNew),
         child: const Icon(Icons.add),
       ),
     );
@@ -88,7 +90,7 @@ class _EmployeeTile extends ConsumerWidget {
                 backgroundColor: colorFor(status == 'active' ? '#4CAF50' : '#F44336').withValues(alpha: 0.2),
               ),
       ),
-      onTap: () => Navigator.of(context).pushNamed('/employees/${employee.id}'),
+      onTap: () => context.pushNamed(RouteNames.employeeDetail, pathParameters: {'id': employee.id}),
     );
   }
 }
