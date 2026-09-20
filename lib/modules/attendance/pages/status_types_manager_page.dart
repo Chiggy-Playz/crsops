@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/color_swatch_picker.dart';
+import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
 
@@ -84,6 +86,8 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
           );
       ref.invalidate(statusTypesProvider);
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

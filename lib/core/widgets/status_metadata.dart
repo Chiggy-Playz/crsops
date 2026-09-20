@@ -9,11 +9,18 @@ const _iconByName = <String, IconData>{
   // extend as new icon needs come up; an unrecognized name falls through below
 };
 
-IconData iconFor(String? iconName) => _iconByName[iconName] ?? Icons.help_outline;
+IconData iconFor(String? iconName) =>
+    _iconByName[iconName] ?? Icons.help_outline;
 
-Color colorFor(String? colorHex) => colorHex == null
-    ? Colors.grey
-    : Color(int.parse('FF${colorHex.replaceFirst('#', '')}', radix: 16));
+Color colorFor(String? colorHex) {
+  // One malformed color_hex row must never crash every screen that renders
+  // a color — fall back to grey on anything that isn't #RRGGBB.
+  final hex = colorHex?.replaceFirst('#', '');
+  final value = hex != null && RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hex)
+      ? int.tryParse('FF$hex', radix: 16)
+      : null;
+  return value == null ? Colors.grey : Color(value);
+}
 
 /// Ids/entry types are stored as lowercase slugs (`rehired`, `salary_payment`)
 /// so they stay stable as FK/lookup keys — this only affects how they're shown.
@@ -32,4 +39,6 @@ String initialsFor(String name) => name
     .join();
 
 Color contrastingTextColor(Color background) =>
-    ThemeData.estimateBrightnessForColor(background) == Brightness.dark ? Colors.white : Colors.black;
+    ThemeData.estimateBrightnessForColor(background) == Brightness.dark
+    ? Colors.white
+    : Colors.black;

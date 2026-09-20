@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
+import '../../errors/app_exception.dart';
+import '../../widgets/error_snackbar.dart';
 import 'widgets/employee_color_picker.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
@@ -44,36 +46,40 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
     final employeeRepo = ref.read(employeeRepositoryProvider);
     final salary = double.tryParse(_salaryController.text);
 
-    if (_isEditing) {
-      await employeeRepo.update(
-        Employee(
-          id: widget.existing!.id,
-          userId: widget.existing!.userId,
+    try {
+      if (_isEditing) {
+        await employeeRepo.update(
+          Employee(
+            id: widget.existing!.id,
+            userId: widget.existing!.userId,
+            name: _nameController.text,
+            color: _color,
+            salary: salary,
+            notes: _notesController.text.isEmpty ? null : _notesController.text,
+            createdAt: widget.existing!.createdAt,
+          ),
+        );
+      } else {
+        final created = await employeeRepo.create(
           name: _nameController.text,
           color: _color,
           salary: salary,
           notes: _notesController.text.isEmpty ? null : _notesController.text,
-          createdAt: widget.existing!.createdAt,
-        ),
-      );
-    } else {
-      final created = await employeeRepo.create(
-        name: _nameController.text,
-        color: _color,
-        salary: salary,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
-      await ref
-          .read(employeeEventRepositoryProvider)
-          .addEvent(
-            employeeId: created.id,
-            eventType: 'joined',
-            eventDate: _joinDate,
-          );
-    }
+        );
+        await ref
+            .read(employeeEventRepositoryProvider)
+            .addEvent(
+              employeeId: created.id,
+              eventType: 'joined',
+              eventDate: _joinDate,
+            );
+      }
 
-    ref.invalidate(employeeListProvider);
-    if (mounted) Navigator.of(context).pop();
+      ref.invalidate(employeeListProvider);
+      if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
+    }
   }
 
   @override

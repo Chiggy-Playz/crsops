@@ -6,6 +6,7 @@ import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/error_snackbar.dart';
 import '../providers/attendance_providers.dart';
 import 'widgets/employee_marking_tile.dart';
 
@@ -37,8 +38,7 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
 
   void _showError(AppException e) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(e.message)));
+    showErrorSnackBar(context, e);
   }
 
   Future<void> _markAllPresent(List<String> employeeIds) async {

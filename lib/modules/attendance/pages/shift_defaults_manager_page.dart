@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../providers/attendance_providers.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/error_snackbar.dart';
 
 const _kWeekdayNames = {
   1: 'Monday',
@@ -49,7 +51,10 @@ class ShiftDefaultsManagerPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialog<void>(context: context, builder: (context) => const _AddShiftDefaultDialog()),
+        onPressed: () => showDialog<void>(
+          context: context,
+          builder: (context) => const _AddShiftDefaultDialog(),
+        ),
         child: const Icon(Icons.add),
       ),
     );
@@ -60,22 +65,27 @@ class _AddShiftDefaultDialog extends ConsumerStatefulWidget {
   const _AddShiftDefaultDialog();
 
   @override
-  ConsumerState<_AddShiftDefaultDialog> createState() => _AddShiftDefaultDialogState();
+  ConsumerState<_AddShiftDefaultDialog> createState() =>
+      _AddShiftDefaultDialogState();
 }
 
-class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> {
+class _AddShiftDefaultDialogState
+    extends ConsumerState<_AddShiftDefaultDialog> {
   DateTime _effectiveFrom = DateTime.now();
   TimeOfDay _start = const TimeOfDay(hour: 10, minute: 30);
   TimeOfDay _end = const TimeOfDay(hour: 18, minute: 30);
   final Set<int> _weekOffDays = {7};
   bool _saving = false;
 
-  String _fmt(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+  String _fmt(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(shiftDefaultsRepositoryProvider).addEffectiveFrom(
+      await ref
+          .read(shiftDefaultsRepositoryProvider)
+          .addEffectiveFrom(
             effectiveFrom: _effectiveFrom,
             defaultStart: _fmt(_start),
             defaultEnd: _fmt(_end),
@@ -83,6 +93,8 @@ class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> 
           );
       ref.invalidate(shiftDefaultsHistoryProvider);
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -99,7 +111,10 @@ class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> 
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'Effective from', suffixIcon: Icon(Icons.calendar_month)),
+              decoration: const InputDecoration(
+                labelText: 'Effective from',
+                suffixIcon: Icon(Icons.calendar_month),
+              ),
               child: InkWell(
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -115,10 +130,16 @@ class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> 
             ),
             const SizedBox(height: 12),
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'Start time', suffixIcon: Icon(Icons.access_time)),
+              decoration: const InputDecoration(
+                labelText: 'Start time',
+                suffixIcon: Icon(Icons.access_time),
+              ),
               child: InkWell(
                 onTap: () async {
-                  final picked = await showTimePicker(context: context, initialTime: _start);
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _start,
+                  );
                   if (picked != null) setState(() => _start = picked);
                 },
                 child: Text(_start.format(context)),
@@ -126,10 +147,16 @@ class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> 
             ),
             const SizedBox(height: 12),
             InputDecorator(
-              decoration: const InputDecoration(labelText: 'End time', suffixIcon: Icon(Icons.access_time)),
+              decoration: const InputDecoration(
+                labelText: 'End time',
+                suffixIcon: Icon(Icons.access_time),
+              ),
               child: InkWell(
                 onTap: () async {
-                  final picked = await showTimePicker(context: context, initialTime: _end);
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: _end,
+                  );
                   if (picked != null) setState(() => _end = picked);
                 },
                 child: Text(_end.format(context)),
@@ -166,7 +193,11 @@ class _AddShiftDefaultDialogState extends ConsumerState<_AddShiftDefaultDialog> 
         FilledButton(
           onPressed: _saving ? null : _save,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Save'),
         ),
       ],

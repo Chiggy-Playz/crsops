@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/status_metadata.dart';
 
 class RolesManagerPage extends ConsumerWidget {
@@ -98,6 +100,8 @@ class _EditRoleDialogState extends ConsumerState<_EditRoleDialog> {
       await repo.grantRole(userId: widget.profileId, roleId: _selectedRole!);
       ref.invalidate(userRolesProvider);
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

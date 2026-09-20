@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../errors/app_exception.dart';
+import '../../widgets/error_snackbar.dart';
 import '../../widgets/color_swatch_picker.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/event_type.dart';
@@ -30,7 +32,9 @@ class EventTypesManagerPage extends ConsumerWidget {
                 child: Icon(iconFor(type.iconName), color: Colors.white),
               ),
               title: Text(displayLabel(type.id)),
-              subtitle: type.isStructural ? Text('Structural: ${displayLabel(type.statusEffect!)}') : null,
+              subtitle: type.isStructural
+                  ? Text('Structural: ${displayLabel(type.statusEffect!)}')
+                  : null,
               onTap: () => showDialog<void>(
                 context: context,
                 builder: (context) => _EditEventTypeDialog(type: type),
@@ -48,7 +52,8 @@ class _EditEventTypeDialog extends ConsumerStatefulWidget {
   final EventType type;
 
   @override
-  ConsumerState<_EditEventTypeDialog> createState() => _EditEventTypeDialogState();
+  ConsumerState<_EditEventTypeDialog> createState() =>
+      _EditEventTypeDialogState();
 }
 
 class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
@@ -59,13 +64,17 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await ref.read(eventTypeRepositoryProvider).updateDisplay(
+      await ref
+          .read(eventTypeRepositoryProvider)
+          .updateDisplay(
             widget.type.id,
             iconName: _iconName,
             colorHex: _colorHex,
           );
       ref.invalidate(eventTypesProvider);
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -87,7 +96,13 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
               expandedInsets: EdgeInsets.zero,
               hintText: 'Icon',
               dropdownMenuEntries: _kIconNames
-                  .map((name) => DropdownMenuEntry(value: name, label: name, leadingIcon: Icon(iconFor(name))))
+                  .map(
+                    (name) => DropdownMenuEntry(
+                      value: name,
+                      label: name,
+                      leadingIcon: Icon(iconFor(name)),
+                    ),
+                  )
                   .toList(),
               onSelected: (value) => setState(() => _iconName = value),
             ),
@@ -109,7 +124,11 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
         FilledButton(
           onPressed: _saving ? null : _save,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Save'),
         ),
       ],

@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../router/route_names.dart';
+import '../../errors/app_exception.dart';
 import '../../widgets/confirm_dialog.dart';
+import '../../widgets/error_snackbar.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/employee.dart';
 import '../models/event_type.dart';
@@ -14,7 +16,11 @@ import 'widgets/add_event_dialog.dart';
 import 'widgets/add_payment_dialog.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
-final _currencyFormat = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+final _currencyFormat = NumberFormat.currency(
+  locale: 'en_IN',
+  symbol: '₹',
+  decimalDigits: 0,
+);
 
 String _tenureText(DateTime since) {
   final days = DateTime.now().difference(since).inDays;
@@ -54,10 +60,10 @@ class EmployeeDetailPage extends ConsumerWidget {
             onPressed: employeeAsync.value == null
                 ? null
                 : () => context.pushNamed(
-                      RouteNames.employeeEdit,
-                      pathParameters: {'id': employeeId},
-                      extra: employeeAsync.value,
-                    ),
+                    RouteNames.employeeEdit,
+                    pathParameters: {'id': employeeId},
+                    extra: employeeAsync.value,
+                  ),
           ),
         ],
       ),
@@ -66,9 +72,18 @@ class EmployeeDetailPage extends ConsumerWidget {
         error: (error, _) => Center(child: Text('$error')),
         data: (employee) {
           final joinedSince = timelineAsync.value
-              ?.where((e) => e.kind == 'event' && (e.label == 'joined' || e.label == 'rehired'))
+              ?.where(
+                (e) =>
+                    e.kind == 'event' &&
+                    (e.label == 'joined' || e.label == 'rehired'),
+              )
               .map((e) => e.entryDate)
-              .fold<DateTime?>(null, (earliest, date) => earliest == null || date.isBefore(earliest) ? date : earliest);
+              .fold<DateTime?>(
+                null,
+                (earliest, date) => earliest == null || date.isBefore(earliest)
+                    ? date
+                    : earliest,
+              );
 
           return Column(
             children: [
@@ -79,19 +94,25 @@ class EmployeeDetailPage extends ConsumerWidget {
               ),
               Expanded(
                 child: timelineAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (error, _) => Center(child: Text('$error')),
                   data: (entries) {
                     if (entries.isEmpty) {
                       return const Center(child: Text('No history yet'));
                     }
-                    final eventTypesById = {for (final t in eventTypesAsync.value ?? const []) t.id: t};
+                    final eventTypesById = {
+                      for (final t in eventTypesAsync.value ?? const [])
+                        t.id: t,
+                    };
                     return ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       itemCount: entries.length,
                       itemBuilder: (context, index) => _TimelineRow(
                         entry: entries[index],
-                        eventType: entries[index].kind == 'event' ? eventTypesById[entries[index].label] : null,
+                        eventType: entries[index].kind == 'event'
+                            ? eventTypesById[entries[index].label]
+                            : null,
                         isFirst: index == 0,
                         isLast: index == entries.length - 1,
                       ),
@@ -130,7 +151,11 @@ class EmployeeDetailPage extends ConsumerWidget {
 }
 
 class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({required this.employee, required this.status, required this.joinedSince});
+  const _ProfileCard({
+    required this.employee,
+    required this.status,
+    required this.joinedSince,
+  });
 
   final Employee employee;
   final String? status;
@@ -154,7 +179,11 @@ class _ProfileCard extends StatelessWidget {
               backgroundColor: color,
               child: Text(
                 initialsFor(employee.name),
-                style: TextStyle(color: contrastingTextColor(color), fontWeight: FontWeight.bold, fontSize: 20),
+                style: TextStyle(
+                  color: contrastingTextColor(color),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -173,23 +202,34 @@ class _ProfileCard extends StatelessWidget {
                         Chip(
                           avatar: Icon(
                             isActive ? Icons.check_circle : Icons.cancel,
-                            color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                            color: isActive
+                                ? Colors.green.shade700
+                                : Colors.red.shade700,
                             size: 18,
                           ),
                           label: Text(displayLabel(status!)),
-                          backgroundColor: (isActive ? Colors.green : Colors.red).withValues(alpha: 0.12),
+                          backgroundColor:
+                              (isActive ? Colors.green : Colors.red).withValues(
+                                alpha: 0.12,
+                              ),
                         ),
                       Text(
                         _tenureText(joinedSince),
-                        style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),
                   if (employee.salary != null) ...[
                     const SizedBox(height: 8),
-                    Text('Salary: ${_currencyFormat.format(employee.salary)}', style: theme.textTheme.bodyMedium),
+                    Text(
+                      'Salary: ${_currencyFormat.format(employee.salary)}',
+                      style: theme.textTheme.bodyMedium,
+                    ),
                   ],
-                  if (employee.notes != null && employee.notes!.trim().isNotEmpty) ...[
+                  if (employee.notes != null &&
+                      employee.notes!.trim().isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Text(employee.notes!, style: theme.textTheme.bodyMedium),
                   ],
@@ -204,7 +244,12 @@ class _ProfileCard extends StatelessWidget {
 }
 
 class _TimelineRow extends ConsumerWidget {
-  const _TimelineRow({required this.entry, required this.eventType, required this.isFirst, required this.isLast});
+  const _TimelineRow({
+    required this.entry,
+    required this.eventType,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   final TimelineEntry entry;
   final EventType? eventType;
@@ -223,26 +268,35 @@ class _TimelineRow extends ConsumerWidget {
     final confirmed = await showConfirmDialog(
       context,
       title: entry.kind == 'ledger' ? 'Delete payment?' : 'Delete event?',
-      message: 'This removes "${displayLabel(entry.label)}" on ${_dateFormat.format(entry.entryDate)} entirely.',
+      message:
+          'This removes "${displayLabel(entry.label)}" on ${_dateFormat.format(entry.entryDate)} entirely.',
       confirmLabel: 'Delete',
       isDestructive: true,
     );
     if (!confirmed) return;
 
-    if (entry.kind == 'ledger') {
-      await ref.read(employeeLedgerEntryRepositoryProvider).deleteEntry(entry.id);
-    } else {
-      await ref.read(employeeEventRepositoryProvider).deleteEvent(entry.id);
+    try {
+      if (entry.kind == 'ledger') {
+        await ref
+            .read(employeeLedgerEntryRepositoryProvider)
+            .deleteEntry(entry.id);
+      } else {
+        await ref.read(employeeEventRepositoryProvider).deleteEvent(entry.id);
+      }
+      ref.invalidate(employeeTimelineProvider(entry.employeeId));
+      ref.invalidate(employeeCurrentStatusProvider(entry.employeeId));
+    } on AppException catch (e) {
+      if (context.mounted) showErrorSnackBar(context, e);
     }
-    ref.invalidate(employeeTimelineProvider(entry.employeeId));
-    ref.invalidate(employeeCurrentStatusProvider(entry.employeeId));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final isLedger = entry.kind == 'ledger';
-    final dotColor = isLedger ? theme.colorScheme.tertiary : colorFor(eventType?.colorHex);
+    final dotColor = isLedger
+        ? theme.colorScheme.tertiary
+        : colorFor(eventType?.colorHex);
     final icon = isLedger ? Icons.payments : iconFor(eventType?.iconName);
 
     return IntrinsicHeight(
@@ -254,7 +308,12 @@ class _TimelineRow extends ConsumerWidget {
             child: Column(
               children: [
                 Expanded(
-                  child: Container(width: 2, color: isFirst ? Colors.transparent : theme.colorScheme.outlineVariant),
+                  child: Container(
+                    width: 2,
+                    color: isFirst
+                        ? Colors.transparent
+                        : theme.colorScheme.outlineVariant,
+                  ),
                 ),
                 Container(
                   width: 14,
@@ -262,11 +321,19 @@ class _TimelineRow extends ConsumerWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: dotColor,
-                    border: Border.all(color: theme.colorScheme.surface, width: 2),
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 2,
+                    ),
                   ),
                 ),
                 Expanded(
-                  child: Container(width: 2, color: isLast ? Colors.transparent : theme.colorScheme.outlineVariant),
+                  child: Container(
+                    width: 2,
+                    color: isLast
+                        ? Colors.transparent
+                        : theme.colorScheme.outlineVariant,
+                  ),
                 ),
               ],
             ),
@@ -280,19 +347,26 @@ class _TimelineRow extends ConsumerWidget {
                 children: [
                   Text(
                     _dateFormat.format(entry.entryDate),
-                    style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
                       Icon(icon, size: 16, color: dotColor),
                       const SizedBox(width: 6),
-                      Text(displayLabel(entry.label), style: theme.textTheme.bodyLarge),
+                      Text(
+                        displayLabel(entry.label),
+                        style: theme.textTheme.bodyLarge,
+                      ),
                       if (entry.amount != null) ...[
                         const SizedBox(width: 8),
                         Text(
                           _currencyFormat.format(entry.amount),
-                          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ],
@@ -300,7 +374,10 @@ class _TimelineRow extends ConsumerWidget {
                   if (entry.note != null && entry.note!.trim().isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
-                      child: Text(entry.note!, style: theme.textTheme.bodySmall),
+                      child: Text(
+                        entry.note!,
+                        style: theme.textTheme.bodySmall,
+                      ),
                     ),
                 ],
               ),

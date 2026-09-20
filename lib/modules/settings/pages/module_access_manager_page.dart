@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/error_snackbar.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
   const ModuleAccessManagerPage({super.key});
@@ -19,7 +21,9 @@ class ModuleAccessManagerPage extends ConsumerWidget {
         error: (error, _) => Center(child: Text('$error')),
         data: (profiles) {
           if (profiles.isEmpty) {
-            return const Center(child: Text('No profiles yet — nobody has signed in'));
+            return const Center(
+              child: Text('No profiles yet — nobody has signed in'),
+            );
           }
           final access = accessAsync.value ?? const {};
           final modules = modulesAsync.value ?? const [];
@@ -30,14 +34,21 @@ class ModuleAccessManagerPage extends ConsumerWidget {
               final granted = access[profile.id] ?? const <String>{};
               return ListTile(
                 title: Text(profile.email),
-                subtitle: Text(granted.isEmpty ? 'No module access granted' : granted.join(', ')),
+                subtitle: Text(
+                  granted.isEmpty
+                      ? 'No module access granted'
+                      : granted.join(', '),
+                ),
                 trailing: const Icon(Icons.add),
                 onTap: modules.isEmpty
                     ? null
                     : () => showDialog<void>(
-                          context: context,
-                          builder: (context) => _GrantModuleAccessDialog(profileId: profile.id, modules: modules),
+                        context: context,
+                        builder: (context) => _GrantModuleAccessDialog(
+                          profileId: profile.id,
+                          modules: modules,
                         ),
+                      ),
               );
             },
           );
@@ -48,27 +59,36 @@ class ModuleAccessManagerPage extends ConsumerWidget {
 }
 
 class _GrantModuleAccessDialog extends ConsumerStatefulWidget {
-  const _GrantModuleAccessDialog({required this.profileId, required this.modules});
+  const _GrantModuleAccessDialog({
+    required this.profileId,
+    required this.modules,
+  });
   final String profileId;
   final List<({String id, String name})> modules;
 
   @override
-  ConsumerState<_GrantModuleAccessDialog> createState() => _GrantModuleAccessDialogState();
+  ConsumerState<_GrantModuleAccessDialog> createState() =>
+      _GrantModuleAccessDialogState();
 }
 
-class _GrantModuleAccessDialogState extends ConsumerState<_GrantModuleAccessDialog> {
+class _GrantModuleAccessDialogState
+    extends ConsumerState<_GrantModuleAccessDialog> {
   String? _selectedModuleId;
   bool _saving = false;
 
   Future<void> _grant() async {
     setState(() => _saving = true);
     try {
-      await ref.read(adminRepositoryProvider).grantModuleAccess(
+      await ref
+          .read(adminRepositoryProvider)
+          .grantModuleAccess(
             userId: widget.profileId,
             moduleId: _selectedModuleId!,
           );
       ref.invalidate(moduleAccessProvider);
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -84,8 +104,9 @@ class _GrantModuleAccessDialogState extends ConsumerState<_GrantModuleAccessDial
           initialSelection: _selectedModuleId,
           expandedInsets: EdgeInsets.zero,
           hintText: 'Select a module',
-          dropdownMenuEntries:
-              widget.modules.map((m) => DropdownMenuEntry(value: m.id, label: m.name)).toList(),
+          dropdownMenuEntries: widget.modules
+              .map((m) => DropdownMenuEntry(value: m.id, label: m.name))
+              .toList(),
           onSelected: (value) => setState(() => _selectedModuleId = value),
         ),
       ),
@@ -97,7 +118,11 @@ class _GrantModuleAccessDialogState extends ConsumerState<_GrantModuleAccessDial
         FilledButton(
           onPressed: _saving || _selectedModuleId == null ? null : _grant,
           child: _saving
-              ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Text('Grant'),
         ),
       ],

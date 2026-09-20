@@ -3,6 +3,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../errors/exception_translator.dart';
 import '../models/event_type.dart';
 
+/// Normalizes a typed event-type label to its id slug (`Salary Revision` →
+/// `salary_revision`), matching the lowercase-underscore ids used by seeds
+/// and `displayLabel`. Without this, `Warning` and `warning` become two
+/// different PKs. Pure so it stays unit tested.
+String slugifyEventType(String input) => input
+    .trim()
+    .toLowerCase()
+    .split(RegExp(r'[^a-z0-9]+'))
+    .where((w) => w.isNotEmpty)
+    .join('_');
+
 abstract class EventTypeRepository {
   Future<List<EventType>> fetchAll();
 
@@ -13,7 +24,11 @@ abstract class EventTypeRepository {
 
   /// Superadmin-only in the UI (see event_types_manager_page.dart) — icon/color
   /// edit on any existing type.
-  Future<EventType> updateDisplay(String id, {String? iconName, String? colorHex});
+  Future<EventType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  });
 }
 
 class SupabaseEventTypeRepository implements EventTypeRepository {
@@ -23,7 +38,11 @@ class SupabaseEventTypeRepository implements EventTypeRepository {
   @override
   Future<List<EventType>> fetchAll() async {
     try {
-      final rows = await _client.schema('core').from('event_types').select().order('id');
+      final rows = await _client
+          .schema('core')
+          .from('event_types')
+          .select()
+          .order('id');
       return rows.map(EventTypeMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);
@@ -46,7 +65,11 @@ class SupabaseEventTypeRepository implements EventTypeRepository {
   }
 
   @override
-  Future<EventType> updateDisplay(String id, {String? iconName, String? colorHex}) async {
+  Future<EventType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  }) async {
     try {
       final row = await _client
           .schema('core')

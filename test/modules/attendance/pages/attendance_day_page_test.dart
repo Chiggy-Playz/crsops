@@ -1,5 +1,6 @@
 import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/providers/employee_providers.dart';
+import 'package:crs_ops/core/errors/app_exception.dart';
 import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/models/status_type.dart';
 import 'package:crs_ops/modules/attendance/pages/attendance_day_page.dart';
@@ -90,6 +91,24 @@ Future<void> _expandTimes(WidgetTester tester) async {
 Future<void> _acceptTimePicker(WidgetTester tester) async {
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
+}
+
+/// Fails every markDay write so the page's error path can be tested.
+class _ThrowingMarkRepository extends FakeAttendanceRepository {
+  _ThrowingMarkRepository({super.rangeStatusSeed});
+
+  @override
+  Future<void> markDay({
+    required String employeeId,
+    required DateTime date,
+    String? firstHalfStatus,
+    String? secondHalfStatus,
+    String? timeIn,
+    String? timeOut,
+    String? note,
+  }) async {
+    throw const DataException('mark failed');
+  }
 }
 
 void main() {
@@ -370,6 +389,24 @@ void main() {
 
         expect(find.textContaining('99:99'), findsOneWidget);
       });
+
+      testWidgets(
+        'a failed marking shows an error instead of failing silently',
+        (tester) async {
+          final attendanceRepo = _ThrowingMarkRepository(
+            rangeStatusSeed: [_activeUnmarkedRow],
+          );
+          await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+          await tester.pumpAndSettle();
+
+          await _openSheet(tester);
+          await tester.tap(_sheetText('Present'));
+          await tester.pumpAndSettle();
+
+          expect(attendanceRepo.markedDays, isEmpty);
+          expect(find.text('mark failed'), findsOneWidget);
+        },
+      );
     });
   });
 }

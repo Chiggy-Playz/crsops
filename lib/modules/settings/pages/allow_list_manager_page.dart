@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/auth/providers/admin_providers.dart';
+import '../../../core/errors/app_exception.dart';
 import '../../../core/widgets/busy_overlay.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/widgets/error_snackbar.dart';
 
 class AllowListManagerPage extends ConsumerStatefulWidget {
   const AllowListManagerPage({super.key});
@@ -17,62 +19,57 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
   bool _busy = false;
 
   Future<void> _openAddDialog() async {
+    // Method-local controllers: they live and die with this dialog — nothing
+    // outlives the popped route, so the GC reclaims them and an explicit
+    // dispose() would race the dialog's own exit-animation rebuilds (a
+    // dispose-in-finally here crashes with "used after dispose").
     final emailController = TextEditingController();
     final noteController = TextEditingController();
-    // Captured before disposal below — the controllers are unreadable after.
-    var added = false;
-    var email = '';
-    String? note;
-    try {
-      added =
-          await showDialog<bool>(
-            context: context,
-            builder: (context) => StatefulBuilder(
-              builder: (context, setDialogState) => AlertDialog(
-                title: const Text('Add allowed email'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: emailController,
-                      decoration: const InputDecoration(labelText: 'Email'),
-                      autofocus: true,
-                      onChanged: (_) => setDialogState(() {}),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Note (optional)',
-                      ),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('Cancel'),
+    final added =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => StatefulBuilder(
+            builder: (context, setDialogState) => AlertDialog(
+              title: const Text('Add allowed email'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(labelText: 'Email'),
+                    autofocus: true,
+                    onChanged: (_) => setDialogState(() {}),
                   ),
-                  FilledButton(
-                    onPressed: emailController.text.trim().isEmpty
-                        ? null
-                        : () => Navigator.of(context).pop(true),
-                    child: const Text('Add'),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Note (optional)',
+                    ),
                   ),
                 ],
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: emailController.text.trim().isEmpty
+                      ? null
+                      : () => Navigator.of(context).pop(true),
+                  child: const Text('Add'),
+                ),
+              ],
             ),
-          ) ??
-          false;
-      email = emailController.text.trim();
-      final noteText = noteController.text.trim();
-      note = noteText.isEmpty ? null : noteText;
-    } finally {
-      // Method-local controllers: the dialog is gone once showDialog
-      // returns, so release them here instead of a State.dispose.
-      emailController.dispose();
-      noteController.dispose();
-    }
+          ),
+        ) ??
+        false;
+    // Captured while the dialog's controllers are still alive; the dialog
+    // route (and its controllers) is dropped on pop.
+    final email = emailController.text.trim().toLowerCase();
+    final noteText = noteController.text.trim();
+    final String? note = noteText.isEmpty ? null : noteText;
     if (!added || !mounted) return;
 
     setState(() => _busy = true);
@@ -81,6 +78,8 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
           .read(adminRepositoryProvider)
           .addAllowedEmail(email: email, note: note);
       ref.invalidate(allowedEmailsProvider);
+    } on AppException catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -100,6 +99,8 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
     try {
       await ref.read(adminRepositoryProvider).removeAllowedEmail(email);
       ref.invalidate(allowedEmailsProvider);
+    } on AppException catch (e) {
+      if (mounted) showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _busy = false);
     }

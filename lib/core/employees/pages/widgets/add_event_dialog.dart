@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../errors/app_exception.dart';
+import '../../../widgets/error_snackbar.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
+import '../../repositories/event_type_repository.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -47,7 +50,7 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
   }
 
   Future<void> _save(List<String> existingTypeIds) async {
-    final typed = _typedType.trim();
+    final typed = slugifyEventType(_typedType);
     if (typed.isEmpty || _saving) return;
 
     setState(() => _saving = true);
@@ -83,6 +86,8 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
       }
       ref.invalidate(employeeTimelineProvider(widget.employeeId));
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }

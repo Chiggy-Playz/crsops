@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../errors/app_exception.dart';
+import '../../../widgets/error_snackbar.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
@@ -87,6 +89,8 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
       ref.invalidate(distinctEntryTypesProvider);
       ref.invalidate(employeeTimelineProvider(widget.employeeId));
       if (mounted) Navigator.of(context).pop();
+    } on AppException catch (e) {
+      if (mounted)       showErrorSnackBar(context, e);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
