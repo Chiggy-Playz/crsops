@@ -14,17 +14,24 @@ class App extends ConsumerWidget {
     final isOnline = ref.watch(isOnlineProvider).value ?? true;
     final router = ref.watch(appRouterProvider);
 
-    if (!isOnline) {
-      return MaterialApp(
-        theme: buildAppTheme(brightness: Brightness.light),
-        home: OfflineScreen(onRetry: () => ref.invalidate(isOnlineProvider)),
-      );
-    }
-
+    // One router, always mounted: the offline treatment is an overlay above
+    // it, never a replacement MaterialApp — swapping the root on every
+    // connectivity blip discarded dialogs, form input, and scroll state.
     return MaterialApp.router(
       routerConfig: router,
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
+      builder: (context, child) => Stack(
+        children: [
+          child!,
+          if (!isOnline)
+            Positioned.fill(
+              child: OfflineScreen(
+                onRetry: () => ref.read(isOnlineProvider.notifier).retry(),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

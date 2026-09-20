@@ -8,13 +8,29 @@ part of 'connectivity_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Online state with an explicit initial check, live broadcast updates, and
+/// a manual re-check for the offline screen's Retry button.
+///
+/// A bare broadcast stream was not enough: it emits nothing on first listen
+/// (so the UI only ever saw "online" until the first *change*), and
+/// invalidating it for Retry just re-subscribed to the same silent stream.
 
-@ProviderFor(isOnline)
+@ProviderFor(IsOnline)
 final isOnlineProvider = IsOnlineProvider._();
 
-final class IsOnlineProvider
-    extends $FunctionalProvider<AsyncValue<bool>, bool, Stream<bool>>
-    with $FutureModifier<bool>, $StreamProvider<bool> {
+/// Online state with an explicit initial check, live broadcast updates, and
+/// a manual re-check for the offline screen's Retry button.
+///
+/// A bare broadcast stream was not enough: it emits nothing on first listen
+/// (so the UI only ever saw "online" until the first *change*), and
+/// invalidating it for Retry just re-subscribed to the same silent stream.
+final class IsOnlineProvider extends $AsyncNotifierProvider<IsOnline, bool> {
+  /// Online state with an explicit initial check, live broadcast updates, and
+  /// a manual re-check for the offline screen's Retry button.
+  ///
+  /// A bare broadcast stream was not enough: it emits nothing on first listen
+  /// (so the UI only ever saw "online" until the first *change*), and
+  /// invalidating it for Retry just re-subscribed to the same silent stream.
   IsOnlineProvider._()
     : super(
         from: null,
@@ -31,13 +47,32 @@ final class IsOnlineProvider
 
   @$internal
   @override
-  $StreamProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
-
-  @override
-  Stream<bool> create(Ref ref) {
-    return isOnline(ref);
-  }
+  IsOnline create() => IsOnline();
 }
 
-String _$isOnlineHash() => r'0e640db0a5d910a50f2e4e84fe0db9473fac4658';
+String _$isOnlineHash() => r'0cf68033f2af61e31a68a0122120b4aabaaf3e41';
+
+/// Online state with an explicit initial check, live broadcast updates, and
+/// a manual re-check for the offline screen's Retry button.
+///
+/// A bare broadcast stream was not enough: it emits nothing on first listen
+/// (so the UI only ever saw "online" until the first *change*), and
+/// invalidating it for Retry just re-subscribed to the same silent stream.
+
+abstract class _$IsOnline extends $AsyncNotifier<bool> {
+  FutureOr<bool> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
