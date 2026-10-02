@@ -6,10 +6,20 @@ import '../../tool/generate_legacy_import.dart';
 
 void main() {
   group('correctAttendanceDate', () {
-    test('adds 5:30 to recover the IST calendar date', () {
+    test(
+      'adds 5:30 to recover the IST calendar date across a day rollover',
+      () {
+        expect(
+          correctAttendanceDate('2024-12-31T18:30:00.000Z'),
+          DateTime.utc(2025, 1, 1),
+        );
+      },
+    );
+
+    test('adds 5:30 without crossing a day boundary', () {
       expect(
-        correctAttendanceDate('2024-12-31T18:30:00.000Z'),
-        DateTime.utc(2025, 1, 1),
+        correctAttendanceDate('2025-06-15T10:00:00.000Z'),
+        DateTime.utc(2025, 6, 15),
       );
     });
   });
@@ -36,6 +46,17 @@ void main() {
         throwsFormatException,
       );
     });
+
+    test('throws on a key whose date prefix is not 3 dash-separated parts', () {
+      expect(
+        () => assertKeyDateMatches(
+          '1-2025-At9udibSIegWWpAoKk8I', // missing the month segment
+          'At9udibSIegWWpAoKk8I',
+          DateTime.utc(2025, 1, 1),
+        ),
+        throwsFormatException,
+      );
+    });
   });
 
   group('mapSalary', () {
@@ -58,6 +79,10 @@ void main() {
 
     test('doubles embedded single quotes', () {
       expect(sqlEscapeName("O'Brien"), "O''Brien");
+    });
+
+    test('trims a whitespace-only name down to empty', () {
+      expect(sqlEscapeName('   '), '');
     });
   });
 
@@ -103,6 +128,18 @@ void main() {
       expect(events.left, DateTime.utc(2025, 3, 1));
     });
 
+    test(
+      'a single attendance record for a disabled employee makes joined == left',
+      () {
+        final events = deriveEvents(
+          attendanceDates: [DateTime.utc(2025, 6, 1)],
+          disabled: true,
+        );
+        expect(events.joined, DateTime.utc(2025, 6, 1));
+        expect(events.left, DateTime.utc(2025, 6, 1));
+      },
+    );
+
     test('throws when there is no attendance to derive a join date from', () {
       expect(
         () => deriveEvents(attendanceDates: [], disabled: false),
@@ -123,11 +160,46 @@ void main() {
         ),
       );
     });
+
+    test('advances the generator so repeated calls differ', () {
+      final rng = Random(0);
+      expect(generateUuidV4(rng), isNot(generateUuidV4(rng)));
+    });
   });
 
   group('formatDate', () {
-    test('zero-pads month and day', () {
+    test('zero-pads a single-digit month and day', () {
       expect(formatDate(DateTime.utc(2025, 1, 9)), '2025-01-09');
+    });
+
+    test('leaves an already-two-digit month and day unchanged', () {
+      expect(formatDate(DateTime.utc(2025, 12, 25)), '2025-12-25');
+    });
+  });
+
+  group('valuesBlock', () {
+    test('terminates every row but the last with a comma', () {
+      final block = valuesBlock([('(1)', null), ('(2)', null), ('(3)', null)]);
+      expect(block, '  (1),\n  (2),\n  (3);\n');
+    });
+
+    test('a single row still gets a semicolon, not a comma', () {
+      expect(valuesBlock([('(1)', null)]), '  (1);\n');
+    });
+
+    test('a comment never swallows the terminator, for a middle row', () {
+      final block = valuesBlock([('(1)', '-- note'), ('(2)', null)]);
+      expect(block, '  (1), -- note\n  (2);\n');
+    });
+
+    test('a comment on the LAST row still leaves the semicolon outside the comment', () {
+      final block = valuesBlock([
+        ('(1)', null),
+        ('(2)', '-- halfDay, verify manually'),
+      ]);
+      // The semicolon must come before "--", or it would be swallowed by
+      // the line comment and the INSERT statement would never terminate.
+      expect(block, '  (1),\n  (2); -- halfDay, verify manually\n');
     });
   });
 }

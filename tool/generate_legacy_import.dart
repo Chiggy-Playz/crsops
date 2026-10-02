@@ -12,6 +12,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:intl/intl.dart';
+
+final _dateFormat = DateFormat('yyyy-MM-dd');
+
 /// Old Firestore `attendance.date` fields are local IST midnight stored as
 /// UTC (confirmed: every record in the real export ends in exactly
 /// T18:30:00.000Z). Adding 5:30 recovers the correct calendar date.
@@ -47,8 +51,17 @@ void assertKeyDateMatches(String key, String employeeId, DateTime corrected) {
 /// User decision: 0 means "never recorded," not a real ₹0 salary.
 num? mapSalary(num salary) => salary == 0 ? null : salary;
 
-/// Trims and SQL-escapes a name for a single-quoted literal.
+/// Trims and SQL-escapes a name for a single-quoted literal. Use the
+/// trimmed-but-unescaped name (just `raw.trim()`) for anything
+/// human-facing -- this output is for a SQL literal only.
 String sqlEscapeName(String raw) => raw.trim().replaceAll("'", "''");
+
+/// Firestore doc ids are alphanumeric in every real export seen so far, but
+/// this value lands inside a `-- comment`, so defensively strip anything
+/// that could break out of a line comment (a quote is harmless there, but
+/// a newline is not) before trusting it in generated SQL.
+String sanitizeForComment(String raw) =>
+    raw.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '?');
 
 /// Old statuses map 1:1 onto both halves of a day, except `halfDay`: there's
 /// no time data anywhere in the export to say which half was worked, so it
@@ -84,7 +97,10 @@ String sqlEscapeName(String raw) => raw.trim().replaceAll("'", "''");
   return (joined: sorted.first, left: disabled ? sorted.last : null);
 }
 
-/// Hand-rolled v4 UUID -- no new pubspec dependency for a one-off script.
+/// Hand-rolled v4 UUID. Still no new pubspec dependency: the format is
+/// simple, fully covered by tests below, and correct -- a `uuid` package
+/// would trade a few lines here for a dependency that buys no more
+/// correctness.
 String generateUuidV4(Random rng) {
   final bytes = List<int>.generate(16, (_) => rng.nextInt(256));
   bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
@@ -96,37 +112,27 @@ String generateUuidV4(Random rng) {
   return '${hex(0, 4)}-${hex(4, 6)}-${hex(6, 8)}-${hex(8, 10)}-${hex(10, 16)}';
 }
 
-String formatDate(DateTime d) =>
-    '${d.year.toString().padLeft(4, '0')}-'
-    '${d.month.toString().padLeft(2, '0')}-'
-    '${d.day.toString().padLeft(2, '0')}';
-
-class _HalfDayFlag {
-  _HalfDayFlag(this.name, this.date);
-  final String name;
-  final DateTime date;
-}
+String formatDate(DateTime d) => _dateFormat.format(d);
 
 /// One VALUES row plus an optional trailing `-- comment`. Kept separate from
 /// the row's own comma/semicolon so a comment can never swallow either --
 /// SQL line comments run to end of line, so `value, -- comment` followed by
 /// `;` on the next line is fine, but `value, -- comment;` is not: the `;`
 /// would be part of the comment and the statement would never terminate.
-class _Row {
-  _Row(this.value, [this.comment]);
-  final String value;
-  final String? comment;
-}
+typedef SqlRow = (String value, String? comment);
+
+/// Employee name + date for the manual-review report printed to stdout.
+typedef HalfDayFlag = (String employeeName, DateTime date);
 
 /// Renders rows with the comma/semicolon placed before any trailing
-/// comment, never after.
-String _valuesBlock(List<_Row> rows) {
+/// comment, never after -- see [SqlRow].
+String valuesBlock(List<SqlRow> rows) {
   final buffer = StringBuffer();
   for (var i = 0; i < rows.length; i++) {
-    final row = rows[i];
+    final (value, comment) = rows[i];
     final terminator = i == rows.length - 1 ? ';' : ',';
-    final suffix = row.comment == null ? '' : ' ${row.comment}';
-    buffer.writeln('  ${row.value}$terminator$suffix');
+    final suffix = comment == null ? '' : ' $comment';
+    buffer.writeln('  $value$terminator$suffix');
   }
   return buffer.toString();
 }
@@ -146,12 +152,28 @@ void main(List<String> args) {
     exit(66);
   }
 
-  final data = jsonDecode(input.readAsStringSync()) as Map<String, dynamic>;
-  final employees = (data['employees'] as Map<String, dynamic>);
-  final attendance = (data['attendance'] as Map<String, dynamic>);
+  final data = jsonDecode(input.readAsStringSync());
+  if (data is! Map<String, dynamic>) {
+    throw const FormatException('Expected a top-level JSON object.');
+  }
+  final employeesRaw = data['employees'];
+  if (employeesRaw is! Map<String, dynamic>) {
+    throw const FormatException(
+      'Missing or malformed top-level "employees" key.',
+    );
+  }
+  final attendanceRaw = data['attendance'];
+  if (attendanceRaw is! Map<String, dynamic>) {
+    throw const FormatException(
+      'Missing or malformed top-level "attendance" key.',
+    );
+  }
+  final employees = employeesRaw;
+  final attendance = attendanceRaw;
 
   // employeeId -> sorted (date, oldStatus) pairs.
   final attendanceByEmployee = <String, List<(DateTime, String)>>{};
+  final seenEmployeeDates = <(String, DateTime)>{};
   for (final entry in attendance.entries) {
     final record = entry.value as Map<String, dynamic>;
     final employeeId = record['employeeId'] as String;
@@ -163,6 +185,18 @@ void main(List<String> args) {
     }
     final corrected = correctAttendanceDate(record['date'] as String);
     assertKeyDateMatches(entry.key, employeeId, corrected);
+
+    // attendance.attendance_days has unique(employee_id, date); catching a
+    // collision here gives a clear diagnostic instead of a generic
+    // Postgres unique-violation at execution time.
+    if (!seenEmployeeDates.add((employeeId, corrected))) {
+      throw StateError(
+        'Duplicate attendance record for employee $employeeId on '
+        '${formatDate(corrected)} (record ${entry.key}) -- '
+        'attendance_days requires one row per (employee, date).',
+      );
+    }
+
     attendanceByEmployee.putIfAbsent(employeeId, () => []).add((
       corrected,
       record['status'] as String,
@@ -170,16 +204,16 @@ void main(List<String> args) {
   }
 
   final rng = Random.secure();
-  final employeeRows = <_Row>[];
-  final eventRows = <_Row>[];
-  final attendanceRows = <_Row>[];
-  final halfDayFlags = <_HalfDayFlag>[];
-  var leftEventCount = 0;
+  final employeeRows = <SqlRow>[];
+  final eventRows = <SqlRow>[];
+  final attendanceRows = <SqlRow>[];
+  final halfDayFlags = <HalfDayFlag>[];
 
   for (final entry in employees.entries) {
     final oldId = entry.key;
     final employee = entry.value as Map<String, dynamic>;
-    final name = sqlEscapeName(employee['name'] as String);
+    final rawName = (employee['name'] as String).trim();
+    final sqlName = sqlEscapeName(rawName);
     final disabled = employee['disabled'] as bool;
     final color = employee['color'] as int;
     final salary = mapSalary(employee['salary'] as num);
@@ -187,55 +221,51 @@ void main(List<String> args) {
     final dates = attendanceByEmployee[oldId];
     if (dates == null || dates.isEmpty) {
       throw StateError(
-        'Employee $oldId ($name) has zero attendance records -- cannot '
+        'Employee $oldId ($rawName) has zero attendance records -- cannot '
         'derive a join date. Refusing to generate a partial import.',
       );
     }
 
     final newId = generateUuidV4(rng);
 
-    employeeRows.add(
-      _Row("('$newId', '$name', $color, ${salary ?? 'null'})", '-- was $oldId'),
-    );
+    employeeRows.add((
+      "('$newId', '$sqlName', $color, ${salary ?? 'null'})",
+      '-- was ${sanitizeForComment(oldId)}',
+    ));
 
     final events = deriveEvents(
       attendanceDates: dates.map((d) => d.$1).toList(),
       disabled: disabled,
     );
-    eventRows.add(
-      _Row(
-        "('$newId', 'joined', '${formatDate(events.joined)}', "
-        "'Imported from legacy app (first attendance record)', "
-        "'${formatDate(events.joined)}T00:00:00Z')",
-      ),
-    );
+    eventRows.add((
+      "('$newId', 'joined', '${formatDate(events.joined)}', "
+          "'Imported from legacy app (first attendance record)', "
+          "'${formatDate(events.joined)}T00:00:00Z')",
+      null,
+    ));
     if (events.left != null) {
-      leftEventCount++;
-      eventRows.add(
-        _Row(
-          "('$newId', 'left', '${formatDate(events.left!)}', "
-          "'Imported from legacy app (last attendance record; "
-          "disabled=true)', '${formatDate(events.left!)}T00:00:01Z')",
-        ),
-      );
+      eventRows.add((
+        "('$newId', 'left', '${formatDate(events.left!)}', "
+            "'Imported from legacy app (last attendance record; "
+            "disabled=true)', '${formatDate(events.left!)}T00:00:01Z')",
+        null,
+      ));
     }
 
     for (final (date, oldStatus) in dates) {
       final (firstHalf, secondHalf, flagged) = statusesFor(oldStatus);
-      attendanceRows.add(
-        _Row(
-          "('$newId', '${formatDate(date)}', '$firstHalf', '$secondHalf')",
-          flagged
-              ? '-- halfDay, no time data to disambiguate, verify manually'
-              : null,
-        ),
-      );
-      if (flagged) halfDayFlags.add(_HalfDayFlag(name, date));
+      attendanceRows.add((
+        "('$newId', '${formatDate(date)}', '$firstHalf', '$secondHalf')",
+        flagged
+            ? '-- halfDay, no time data to disambiguate, verify manually'
+            : null,
+      ));
+      if (flagged) halfDayFlags.add((rawName, date));
     }
   }
 
   final employeeCount = employees.length;
-  final eventCount = employeeCount + leftEventCount;
+  final eventCount = eventRows.length;
   final attendanceCount = attendance.length;
 
   final finalSql =
@@ -244,8 +274,12 @@ begin;
 
 -- Refuses to run against a non-empty table, so a second accidental run (or
 -- a stale test-run's leftovers) can never silently double-insert.
--- Deliberate wipe is supabase/legacy_imports/undo.sql, run first and on
--- purpose when re-importing fresh data.
+-- Checking core.employees alone is sufficient, not a shortcut: every table
+-- this import writes (core.employee_events, attendance.attendance_days)
+-- has employee_id references core.employees(id) on delete cascade, so an
+-- empty core.employees already guarantees both are empty too. Deliberate
+-- wipe is supabase/legacy_imports/undo.sql, run first and on purpose when
+-- re-importing fresh data.
 do \$\$
 begin
   if exists (select 1 from core.employees) then
@@ -254,11 +288,11 @@ begin
 end \$\$;
 
 insert into core.employees (id, name, color, salary) values
-${_valuesBlock(employeeRows)}
+${valuesBlock(employeeRows)}
 insert into core.employee_events (employee_id, event_type, event_date, note, created_at) values
-${_valuesBlock(eventRows)}
+${valuesBlock(eventRows)}
 insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status) values
-${_valuesBlock(attendanceRows)}
+${valuesBlock(attendanceRows)}
 -- Self-describing verification, computed from this run's own input --
 -- never hardcoded, so it always matches whatever export was fed in. Aborts
 -- the whole transaction (rolling back everything above) on any mismatch.
@@ -287,16 +321,16 @@ commit;
 
   stdout.writeln('Wrote $outputPath');
   stdout.writeln(
-    '$employeeCount employees, $eventCount events '
-    '($leftEventCount left), $attendanceCount attendance_days.',
+    '$employeeCount employees, $eventCount events, '
+    '$attendanceCount attendance_days.',
   );
   if (halfDayFlags.isNotEmpty) {
     stdout.writeln(
       '\n${halfDayFlags.length} halfDay rows defaulted to present/absent '
       '-- verify manually:',
     );
-    for (final flag in halfDayFlags) {
-      stdout.writeln('  ${flag.name} — ${formatDate(flag.date)}');
+    for (final (employeeName, date) in halfDayFlags) {
+      stdout.writeln('  $employeeName — ${formatDate(date)}');
     }
   }
 }

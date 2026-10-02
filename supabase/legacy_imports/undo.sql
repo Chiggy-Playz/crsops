@@ -1,6 +1,13 @@
 -- Deliberate, manual wipe before re-importing fresh legacy data. Run this
--- by hand, on purpose -- never automatically. These three tables hold only
--- data from tool/generate_legacy_import.dart today; if real app usage ever
--- starts writing to them before a future re-import, this blunt truncate
--- stops being safe and needs revisiting then, not before.
-truncate core.employees, core.employee_events, attendance.attendance_days cascade;
+-- by hand, on purpose -- never automatically.
+--
+-- No CASCADE: core.employee_ledger_entries also has an FK into
+-- core.employees (on delete cascade), but this tool never writes ledger
+-- entries, so it has no business deleting them. Truncating the three
+-- tables this tool DOES write, child-to-parent, with no cascade, errors
+-- loudly instead if a real ledger entry exists by the time this runs --
+-- exactly what should happen, rather than silently destroying finance data
+-- this script doesn't own.
+truncate attendance.attendance_days;
+truncate core.employee_events;
+truncate core.employees;

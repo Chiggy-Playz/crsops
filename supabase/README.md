@@ -62,6 +62,10 @@ Imports the old `crs_attendance` Firestore export into `core`/`attendance`. See
 3. To re-import with a fresher export later, run `supabase/legacy_imports/undo.sql`
    first — deliberately, by hand — then repeat step 1 with the new export. The import
    refuses to run a second time without this (an empty-table guard), so this is the
-   only way to re-run it.
+   only way to re-run it. `undo.sql` truncates exactly three tables —
+   `core.employees`, `core.employee_events`, `attendance.attendance_days` — the ones
+   this tool writes. It deliberately does **not** use `CASCADE` and will error instead
+   of running if `core.employee_ledger_entries` (the finance ledger, which this tool
+   never touches) has any real rows by then.
 
 - [ ] Ran the legacy data import (date: ______, export file: ______)
