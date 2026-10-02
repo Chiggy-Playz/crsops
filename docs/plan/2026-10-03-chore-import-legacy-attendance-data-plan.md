@@ -203,7 +203,7 @@ GOAL: A reusable, re-runnable Dart tool exists that turns a Firestore crs_attend
 SUCCESS CRITERIA:
 - tool/generate_legacy_import.dart parses ~/Downloads/backup.json without error and writes one self-contained .sql file | verify: dart run tool/generate_legacy_import.dart ~/Downloads/backup.json /tmp/test_import.sql
 - Generated script is valid Dart, analysis-clean | verify: dart analyze tool/generate_legacy_import.dart && dart format --output=none --set-exit-if-changed tool/generate_legacy_import.dart
-- Pure transform logic (date correction, join/left derivation, salary-null mapping, name escaping) is unit-tested | verify: dart test test/tool/generate_legacy_import_test.dart
+- Pure transform logic (date correction, join/left derivation, salary-null mapping, name escaping) is unit-tested | verify: flutter test test/tool/generate_legacy_import_test.dart
 - Generated SQL refuses to run twice without an explicit undo first | verify: manual 1. Run the generated .sql against the hosted project once via Studio's SQL editor. 2. Re-run the same file. 3. Confirm the second run raises the "core.employees is not empty" exception and makes no changes (transaction aborts). 4. Confirm supabase/legacy_imports/undo.sql, run deliberately, clears all three tables and allows a clean re-run.
 - supabase/README.md documents how to run the import and the static undo | verify: manual confirm the README has a section naming tool/generate_legacy_import.dart, supabase/legacy_imports/undo.sql, and a checklist line for this run
 - Row counts after import match the source file exactly: 16 employees, 27 employee_events (16 joined + 11 left), 1950 attendance_days | verify: manual run the verification block already embedded in the generated SQL (it raises and rolls back on mismatch, so a clean commit is itself the proof) — additionally spot-check `select count(*) from core.employees` etc. in Studio
@@ -217,7 +217,7 @@ NON-GOALS:
 - Any time-in/time-out or late/early/overtime backfill — the source data has zero time-of-day fields across all 1950 records, so derived_flags simply produces no rows for imported history, which is correct, not a gap.
 - Automatic execution against the hosted database from the script — every run against the real project is a manual, reviewed, human-triggered action.
 
-VERIFICATION COMMAND: dart run tool/generate_legacy_import.dart ~/Downloads/backup.json /tmp/test_import.sql && dart analyze tool/generate_legacy_import.dart && dart format --output=none --set-exit-if-changed tool/generate_legacy_import.dart && dart test test/tool/generate_legacy_import_test.dart
+VERIFICATION COMMAND: dart run tool/generate_legacy_import.dart ~/Downloads/backup.json /tmp/test_import.sql && dart analyze tool/generate_legacy_import.dart && dart format --output=none --set-exit-if-changed tool/generate_legacy_import.dart && flutter test test/tool/generate_legacy_import_test.dart
 ```
 
 ## Success Metrics

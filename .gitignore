@@ -50,3 +50,9 @@ app.*.map.json
 # Local --dart-define-from-file values (per-machine, not secret but not
 # worth committing — see env.json.example for the keys this app needs).
 env.json
+
+# Generated legacy-data import SQL contains real employee names/salaries —
+# never commit it. undo.sql is static and has no row data, so it stays
+# tracked. See supabase/README.md for how to run the import.
+/supabase/legacy_imports/*.sql
+!/supabase/legacy_imports/undo.sql

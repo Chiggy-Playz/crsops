@@ -47,3 +47,21 @@ for every grant *after* this one-time step.
 sign-in screen (Task 19, written but not end-to-end tested — no real OAuth client
 exists yet) to both work first, so you and your dad have something to sign in with.
 Revisit once those exist.
+
+## Legacy data import (one-time per cutover, manual — run against the HOSTED project)
+
+Imports the old `crs_attendance` Firestore export into `core`/`attendance`. See
+`docs/plan/2026-10-03-chore-import-legacy-attendance-data-plan.md` for the full design.
+
+1. Generate the SQL from a fresh export: `dart run tool/generate_legacy_import.dart
+   <path-to-export.json>` → writes `supabase/legacy_imports/<timestamp>.sql`
+   (gitignored — contains real employee names/salaries, never commit it).
+2. Review the generated file by hand, then paste it into Studio's SQL editor (or
+   `supabase db execute -f <file>`). It's one transaction and self-verifies row counts
+   against the source file before committing.
+3. To re-import with a fresher export later, run `supabase/legacy_imports/undo.sql`
+   first — deliberately, by hand — then repeat step 1 with the new export. The import
+   refuses to run a second time without this (an empty-table guard), so this is the
+   only way to re-run it.
+
+- [ ] Ran the legacy data import (date: ______, export file: ______)
