@@ -10,49 +10,73 @@ class ModuleAccessManagerPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(profilesProvider);
+    final rolesAsync = ref.watch(userRolesProvider);
     final accessAsync = ref.watch(moduleAccessProvider);
     final modulesAsync = ref.watch(modulesProvider);
 
+    // Gate on both together, same reasoning as RolesManagerPage: roles decide
+    // which profiles even render below, so a row must never flash before
+    // roles finish loading.
+    if (profilesAsync.isLoading || rolesAsync.isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Module access')),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (profilesAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Module access')),
+        body: Center(child: Text('${profilesAsync.error}')),
+      );
+    }
+    if (rolesAsync.hasError) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Module access')),
+        body: Center(child: Text('${rolesAsync.error}')),
+      );
+    }
+
+    final roles = rolesAsync.value ?? const {};
+    // Admin-or-above always passes hasModuleAccess() regardless of any grant
+    // row (see AppSession.hasModuleAccess) — granting them one is a no-op
+    // that only confuses whoever's using this screen, so they're not listed.
+    final profiles = profilesAsync.value!
+        .where((p) => roles[p.id] != 'admin' && roles[p.id] != 'superadmin')
+        .toList();
+    final access = accessAsync.value ?? const {};
+    final modules = modulesAsync.value ?? const [];
+
     return Scaffold(
       appBar: AppBar(title: const Text('Module access')),
-      body: profilesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (profiles) {
-          if (profiles.isEmpty) {
-            return const Center(
-              child: Text('No profiles yet — nobody has signed in'),
-            );
-          }
-          final access = accessAsync.value ?? const {};
-          final modules = modulesAsync.value ?? const [];
-          return ListView.builder(
-            itemCount: profiles.length,
-            itemBuilder: (context, index) {
-              final profile = profiles[index];
-              final granted = access[profile.id] ?? const <String>{};
-              return ListTile(
-                title: Text(profile.email),
-                subtitle: Text(
-                  granted.isEmpty
-                      ? 'No module access granted'
-                      : granted.join(', '),
-                ),
-                trailing: const Icon(Icons.add),
-                onTap: modules.isEmpty
-                    ? null
-                    : () => showDialog<void>(
-                        context: context,
-                        builder: (context) => _GrantModuleAccessDialog(
-                          profileId: profile.id,
-                          modules: modules,
+      body: profiles.isEmpty
+          ? const Center(
+              child: Text('No employee logins yet to grant module access to'),
+            )
+          : ListView.builder(
+              itemCount: profiles.length,
+              itemBuilder: (context, index) {
+                final profile = profiles[index];
+                final granted = access[profile.id] ?? const <String>{};
+                return ListTile(
+                  title: Text(profile.email),
+                  subtitle: Text(
+                    granted.isEmpty
+                        ? 'No module access granted'
+                        : granted.join(', '),
+                  ),
+                  trailing: const Icon(Icons.add),
+                  onTap: modules.isEmpty
+                      ? null
+                      : () => showDialog<void>(
+                          context: context,
+                          builder: (context) => _GrantModuleAccessDialog(
+                            profileId: profile.id,
+                            modules: modules,
+                          ),
                         ),
-                      ),
-              );
-            },
-          );
-        },
-      ),
+                );
+              },
+            ),
     );
   }
 }
