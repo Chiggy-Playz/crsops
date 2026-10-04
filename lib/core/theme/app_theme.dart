@@ -4,7 +4,9 @@ import 'custom_colors.dart';
 
 ThemeData buildAppTheme({required Brightness brightness}) {
   final colorScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF3F51B5),
+    // Material blue, with the default tonalSpot variant: a calm steel blue.
+    // (fidelity keeps the seed's full saturation — tried, too loud.)
+    seedColor: const Color(0xFF2196F3),
     brightness: brightness,
   );
 
