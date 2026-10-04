@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../../widgets/status_metadata.dart';
 
-/// Initials on the theme's neutral container colour — the same for everyone,
-/// as M3 suggests when there are no photos. [dimmed] for inactive employees.
+/// Initials on the theme's primaryContainer — one colour for everyone,
+/// matching the nav pill and Flutter's M3 CircleAvatar default (the quieter
+/// secondaryContainer read as dull grey in dark mode). [dimmed] for inactive
+/// employees.
 class EmployeeAvatar extends StatelessWidget {
   const EmployeeAvatar({
     super.key,
@@ -24,10 +26,10 @@ class EmployeeAvatar extends StatelessWidget {
       radius: radius,
       backgroundColor: dimmed
           ? scheme.surfaceContainerHighest
-          : scheme.secondaryContainer,
+          : scheme.primaryContainer,
       foregroundColor: dimmed
           ? scheme.onSurfaceVariant
-          : scheme.onSecondaryContainer,
+          : scheme.onPrimaryContainer,
       child: Text(
         initialsFor(name),
         style: TextStyle(
