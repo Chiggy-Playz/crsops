@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
@@ -39,6 +40,7 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
   );
   late DateTime _eventDate = widget.existing?.entryDate ?? DateTime.now();
   bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   bool get _isEditing => widget.existing != null;
 
@@ -49,8 +51,8 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
   }
 
   Future<void> _save(List<String> existingTypeIds) async {
+    if (!_formKey.currentState!.validate() || _saving) return;
     final typed = slugifyEventType(_typedType);
-    if (typed.isEmpty || _saving) return;
 
     var typeId = typed;
     await runGuardedSave(
@@ -96,65 +98,42 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
   Widget build(BuildContext context) {
     final eventTypesAsync = ref.watch(eventTypesProvider);
 
-    return AlertDialog(
+    return FormDialog(
       key: const Key('add-event-dialog'),
-      title: Text(_isEditing ? 'Edit event' : 'Add event'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          eventTypesAsync.when(
-            loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text('$error'),
-            data: (types) => TypeaheadPickerField(
-              options: types.map((t) => t.id).toList(),
-              labelText: 'Type (existing or new)',
-              initialValue: widget.existing?.label,
-              onChanged: (value) => _typedType = value,
-            ),
+      title: _isEditing ? 'Edit event' : 'Add event',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: () {
+        final types = eventTypesAsync.value;
+        if (types != null) _save(types.map((t) => t.id).toList());
+      },
+      children: [
+        eventTypesAsync.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (error, _) => Text('$error'),
+          data: (types) => TypeaheadPickerField(
+            options: types.map((t) => t.id).toList(),
+            labelText: 'Type',
+            helperText: 'Pick one, or type a new name',
+            initialValue: widget.existing?.label,
+            autofocus: !FormDialog.isCompact(context),
+            validator: (value) =>
+                slugifyEventType(value ?? '').isEmpty ? 'Choose a type' : null,
+            onChanged: (value) => _typedType = value,
           ),
-          const SizedBox(height: 8),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Date',
-              suffixIcon: Icon(Icons.calendar_month),
-            ),
-            child: InkWell(
-              key: const Key('event-date-field'),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _eventDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) setState(() => _eventDate = picked);
-              },
-              child: Text(_dateFormat.format(_eventDate)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _noteController,
-            decoration: const InputDecoration(labelText: 'Note (optional)'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
         ),
-        FilledButton(
-          onPressed: _saving || !eventTypesAsync.hasValue
-              ? null
-              : () => _save(eventTypesAsync.value!.map((t) => t.id).toList()),
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_isEditing ? 'Save' : 'Add'),
+        DateFormField(
+          fieldKey: const Key('event-date-field'),
+          label: 'Date',
+          value: _eventDate,
+          format: _dateFormat.format,
+          onChanged: (d) => setState(() => _eventDate = d),
+        ),
+        TextFormField(
+          controller: _noteController,
+          decoration: const InputDecoration(labelText: 'Note (optional)'),
+          minLines: 1,
+          maxLines: 4,
         ),
       ],
     );

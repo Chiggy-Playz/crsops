@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
 import '../../../widgets/typeahead_picker_field.dart';
 import '../../models/timeline_entry.dart';
@@ -41,6 +42,7 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
   late String _typedEntryType = widget.existing?.label ?? '';
   late DateTime _entryDate = widget.existing?.entryDate ?? DateTime.now();
   bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   bool get _isEditing => widget.existing != null;
 
@@ -51,15 +53,10 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
     super.dispose();
   }
 
-  bool get _canSave =>
-      !_saving &&
-      double.tryParse(_amountController.text) != null &&
-      _typedEntryType.trim().isNotEmpty;
-
   Future<void> _save() async {
-    final amount = double.parse(_amountController.text);
+    if (!_formKey.currentState!.validate() || _saving) return;
+    final amount = double.parse(_amountController.text.trim());
     final entryType = _typedEntryType.trim();
-    if (entryType.isEmpty || _saving) return;
 
     await runGuardedSave(
       context,
@@ -100,72 +97,55 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
   Widget build(BuildContext context) {
     final entryTypesAsync = ref.watch(distinctEntryTypesProvider);
 
-    return AlertDialog(
+    return FormDialog(
       key: const Key('add-payment-dialog'),
-      title: Text(_isEditing ? 'Edit payment' : 'Add payment'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            key: const Key('payment-amount-field'),
-            controller: _amountController,
-            decoration: const InputDecoration(labelText: 'Amount'),
-            keyboardType: TextInputType.number,
-            onChanged: (_) => setState(() {}),
+      title: _isEditing ? 'Edit payment' : 'Add payment',
+      formKey: _formKey,
+      saving: _saving,
+      saveButtonKey: const Key('payment-save-button'),
+      onSave: _save,
+      children: [
+        entryTypesAsync.when(
+          loading: () => const LinearProgressIndicator(),
+          error: (error, _) => Text('$error'),
+          data: (types) => TypeaheadPickerField(
+            fieldKey: const Key('payment-category-field'),
+            options: types,
+            labelText: 'Category',
+            helperText: 'Pick one, or type a new name',
+            initialValue: widget.existing?.label,
+            autofocus: !FormDialog.isCompact(context),
+            validator: (value) =>
+                (value ?? '').trim().isEmpty ? 'Choose a category' : null,
+            onChanged: (value) => _typedEntryType = value,
           ),
-          const SizedBox(height: 8),
-          InputDecorator(
-            decoration: const InputDecoration(
-              labelText: 'Date',
-              suffixIcon: Icon(Icons.calendar_month),
-            ),
-            child: InkWell(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: _entryDate,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) setState(() => _entryDate = picked);
-              },
-              child: Text(_dateFormat.format(_entryDate)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          entryTypesAsync.when(
-            loading: () => const CircularProgressIndicator(),
-            error: (error, _) => Text('$error'),
-            data: (types) => TypeaheadPickerField(
-              fieldKey: const Key('payment-category-field'),
-              options: types,
-              labelText: 'Category (existing or new)',
-              initialValue: widget.existing?.label,
-              onChanged: (value) => setState(() => _typedEntryType = value),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _noteController,
-            decoration: const InputDecoration(labelText: 'Note (optional)'),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
         ),
-        FilledButton(
-          key: const Key('payment-save-button'),
-          onPressed: _canSave ? _save : null,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_isEditing ? 'Save' : 'Add'),
+        TextFormField(
+          key: const Key('payment-amount-field'),
+          controller: _amountController,
+          decoration: const InputDecoration(
+            labelText: 'Amount',
+            prefixText: '₹ ',
+          ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            if (text.isEmpty) return 'Enter an amount';
+            if (double.tryParse(text) == null) return 'Enter a number';
+            return null;
+          },
+        ),
+        DateFormField(
+          label: 'Date',
+          value: _entryDate,
+          format: _dateFormat.format,
+          onChanged: (d) => setState(() => _entryDate = d),
+        ),
+        TextFormField(
+          controller: _noteController,
+          decoration: const InputDecoration(labelText: 'Note (optional)'),
+          minLines: 1,
+          maxLines: 4,
         ),
       ],
     );
