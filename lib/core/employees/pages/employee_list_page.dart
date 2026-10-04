@@ -23,7 +23,22 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   Widget build(BuildContext context) {
     final employeesAsync = ref.watch(employeeListProvider);
     final statusesAsync = ref.watch(employeeCurrentStatusesProvider);
-    final statuses = statusesAsync.value ?? const <String, String>{};
+
+    // Wait for statuses too: rendering with an empty status map treats
+    // everyone as active, so inactive employees flashed in for a moment.
+    final error = employeesAsync.error ?? statusesAsync.error;
+    final employees = employeesAsync.value;
+    final statuses = statusesAsync.value;
+    final isLoaded = employees != null && statuses != null;
+
+    final Widget body;
+    if (error != null) {
+      body = Center(child: Text('$error'));
+    } else if (isLoaded) {
+      body = _buildList(employees, statuses);
+    } else {
+      body = const Center(child: CircularProgressIndicator());
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -50,45 +65,42 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
           ),
         ),
       ),
-      body: employeesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('$error')),
-        data: (employees) {
-          if (employees.isEmpty) {
-            return const Center(child: Text('No employees yet'));
-          }
-
-          bool isInactive(Employee e) => statuses[e.id] == 'inactive';
-          final matching = employees
-              .where((e) => e.name.toLowerCase().contains(_query))
-              .toList();
-          final active = matching.where((e) => !isInactive(e)).toList();
-          final inactive = _showInactive
-              ? matching.where(isInactive).toList()
-              : const <Employee>[];
-
-          if (active.isEmpty && inactive.isEmpty) {
-            return const Center(child: Text('No employees match your search'));
-          }
-
-          // Active first, then former employees under their own header —
-          // each group keeps the repository's alphabetical order.
-          return ListView(
-            children: [
-              for (final e in active) _EmployeeTile(employee: e),
-              if (inactive.isNotEmpty) ...[
-                const _SectionHeader('Inactive'),
-                for (final e in inactive)
-                  _EmployeeTile(employee: e, inactive: true),
-              ],
-            ],
-          );
-        },
-      ),
+      body: body,
       floatingActionButton: FloatingActionButton(
         onPressed: () => const EmployeeNewRoute().push(context),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  Widget _buildList(List<Employee> employees, Map<String, String> statuses) {
+    if (employees.isEmpty) {
+      return const Center(child: Text('No employees yet'));
+    }
+
+    bool isInactive(Employee e) => statuses[e.id] == 'inactive';
+    final matching = employees
+        .where((e) => e.name.toLowerCase().contains(_query))
+        .toList();
+    final active = matching.where((e) => !isInactive(e)).toList();
+    final inactive = _showInactive
+        ? matching.where(isInactive).toList()
+        : const <Employee>[];
+
+    if (active.isEmpty && inactive.isEmpty) {
+      return const Center(child: Text('No employees match your search'));
+    }
+
+    // Active first, then former employees under their own header —
+    // each group keeps the repository's alphabetical order.
+    return ListView(
+      children: [
+        for (final e in active) _EmployeeTile(employee: e),
+        if (inactive.isNotEmpty) ...[
+          const _SectionHeader('Inactive'),
+          for (final e in inactive) _EmployeeTile(employee: e, inactive: true),
+        ],
+      ],
     );
   }
 }
