@@ -56,7 +56,7 @@ void main() {
       await tester.tap(find.text('Attendance').last);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Grant'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(

@@ -48,7 +48,7 @@ void main() {
 
       await tester.tap(find.byType(DropdownMenu<String>));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('employee').last);
+      await tester.tap(find.text('Employee').last);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Save'));

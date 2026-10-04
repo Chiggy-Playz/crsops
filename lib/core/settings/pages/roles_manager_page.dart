@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/admin_providers.dart';
+import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
 import '../../widgets/status_metadata.dart';
 
@@ -58,10 +59,13 @@ class RolesManagerPage extends ConsumerWidget {
             subtitle: Text(
               role == null ? 'No role granted' : 'Role: ${displayLabel(role)}',
             ),
-            onTap: () => showDialog<void>(
+            onTap: () => showFormDialog<void>(
               context: context,
-              builder: (context) =>
-                  _EditRoleDialog(profileId: profile.id, currentRole: role),
+              builder: (context) => _EditRoleDialog(
+                profileId: profile.id,
+                email: profile.email,
+                currentRole: role,
+              ),
             ),
           );
         },
@@ -71,8 +75,13 @@ class RolesManagerPage extends ConsumerWidget {
 }
 
 class _EditRoleDialog extends ConsumerStatefulWidget {
-  const _EditRoleDialog({required this.profileId, required this.currentRole});
+  const _EditRoleDialog({
+    required this.profileId,
+    required this.email,
+    required this.currentRole,
+  });
   final String profileId;
+  final String email;
   final String? currentRole;
 
   @override
@@ -82,11 +91,10 @@ class _EditRoleDialog extends ConsumerStatefulWidget {
 class _EditRoleDialogState extends ConsumerState<_EditRoleDialog> {
   late String? _selectedRole = widget.currentRole;
   bool _saving = false;
-
-  bool get _canSave =>
-      !_saving && _selectedRole != null && _selectedRole != widget.currentRole;
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
     await runGuardedSave(
       context,
       setSaving: (v) => setState(() => _saving = v),
@@ -109,36 +117,31 @@ class _EditRoleDialogState extends ConsumerState<_EditRoleDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Change role'),
-      content: SizedBox(
-        width: 280,
-        child: DropdownMenu<String>(
+    return FormDialog(
+      title: 'Change role',
+      description: 'For ${widget.email}',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      children: [
+        DropdownMenuFormField<String>(
           initialSelection: _selectedRole,
           expandedInsets: EdgeInsets.zero,
-          hintText: 'Select a role',
-          dropdownMenuEntries: const [
-            'superadmin',
-            'admin',
-            'employee',
-          ].map((role) => DropdownMenuEntry(value: role, label: role)).toList(),
+          label: const Text('Role'),
+          dropdownMenuEntries: const ['superadmin', 'admin', 'employee']
+              .map(
+                (role) =>
+                    DropdownMenuEntry(value: role, label: displayLabel(role)),
+              )
+              .toList(),
           onSelected: (value) => setState(() => _selectedRole = value),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _canSave ? _save : null,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Save'),
+          validator: (value) {
+            if (value == null) return 'Choose a role';
+            if (value == widget.currentRole) {
+              return 'They already have this role';
+            }
+            return null;
+          },
         ),
       ],
     );

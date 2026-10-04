@@ -58,7 +58,7 @@ void main() {
       await tester.tap(find.byType(DropdownMenu<String>));
       await tester.pumpAndSettle();
       // The menu overlay renders on top, i.e. last in the tree.
-      await tester.tap(find.text('check').last);
+      await tester.tap(find.text('Check').last);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Save'));

@@ -14,7 +14,7 @@ Future<void> showAddPaymentDialog(
   String employeeId, {
   TimelineEntry? existing,
 }) {
-  return showDialog<void>(
+  return showFormDialog<void>(
     context: context,
     builder: (context) =>
         _AddPaymentDialog(employeeId: employeeId, existing: existing),

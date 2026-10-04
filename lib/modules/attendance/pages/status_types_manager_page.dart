@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/color_swatch_picker.dart';
+import '../../../core/widgets/form_dialog.dart';
 import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
@@ -31,7 +32,7 @@ class StatusTypesManagerPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialog<void>(
+        onPressed: () => showFormDialog<void>(
           context: context,
           builder: (context) => const _AddStatusTypeDialog(),
         ),
@@ -56,10 +57,7 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
   String? _colorHex;
   bool _saving = false;
 
-  bool get _canSave =>
-      !_saving &&
-      _idController.text.trim().isNotEmpty &&
-      _labelController.text.trim().isNotEmpty;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -69,6 +67,7 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
   }
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
     await runGuardedSave(
       context,
       setSaving: (v) => setState(() => _saving = v),
@@ -89,68 +88,53 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('New status type'),
-      content: SizedBox(
-        width: 280,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _idController,
-              decoration: const InputDecoration(
-                labelText: 'Id (e.g. leave_sick)',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _labelController,
-              decoration: const InputDecoration(
-                labelText: 'Label (e.g. Sick leave)',
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
-            DropdownMenu<String>(
-              expandedInsets: EdgeInsets.zero,
-              hintText: 'Icon',
-              dropdownMenuEntries: knownIconNames
-                  .map(
-                    (name) => DropdownMenuEntry(
-                      value: name,
-                      label: name,
-                      leadingIcon: Icon(iconFor(name)),
-                    ),
-                  )
-                  .toList(),
-              onSelected: (value) => setState(() => _iconName = value),
-            ),
-            const SizedBox(height: 16),
-            const Text('Color'),
-            const SizedBox(height: 8),
-            ColorSwatchPicker(
-              selectedHex: _colorHex,
-              onChanged: (hex) => setState(() => _colorHex = hex),
-            ),
-          ],
+    String? required(String? value, String what) =>
+        (value ?? '').trim().isEmpty ? 'Enter $what' : null;
+
+    return FormDialog(
+      title: 'New status type',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      children: [
+        TextFormField(
+          controller: _labelController,
+          autofocus: !FormDialog.isCompact(context),
+          decoration: const InputDecoration(
+            labelText: 'Label',
+            helperText: 'Shown in the app, e.g. Sick leave',
+          ),
+          validator: (v) => required(v, 'a label'),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+        TextFormField(
+          controller: _idController,
+          decoration: const InputDecoration(
+            labelText: 'Id',
+            helperText:
+                'Stored key, lowercase with underscores, e.g. sick_leave',
+          ),
+          validator: (v) => required(v, 'an id'),
         ),
-        FilledButton(
-          onPressed: _canSave ? _save : null,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Add'),
+        DropdownMenuFormField<String>(
+          expandedInsets: EdgeInsets.zero,
+          label: const Text('Icon'),
+          dropdownMenuEntries: knownIconNames
+              .map(
+                (name) => DropdownMenuEntry(
+                  value: name,
+                  label: displayLabel(name),
+                  leadingIcon: Icon(iconFor(name)),
+                ),
+              )
+              .toList(),
+          onSelected: (value) => setState(() => _iconName = value),
+        ),
+        LabelledFieldBox(
+          label: 'Color',
+          child: ColorSwatchPicker(
+            selectedHex: _colorHex,
+            onChanged: (hex) => setState(() => _colorHex = hex),
+          ),
         ),
       ],
     );

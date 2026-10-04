@@ -67,11 +67,11 @@ void main() {
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField).at(0), 'leave_sick');
-    await tester.enterText(find.byType(TextField).at(1), 'Sick leave');
+    await tester.enterText(find.byType(TextField).at(0), 'Sick leave');
+    await tester.enterText(find.byType(TextField).at(1), 'leave_sick');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Add'));
+    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final types = await repo.fetchAll();

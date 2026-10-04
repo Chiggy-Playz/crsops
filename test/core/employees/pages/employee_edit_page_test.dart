@@ -8,7 +8,9 @@ import '../fakes/fake_employee_event_repository.dart';
 import '../fakes/fake_employee_repository.dart';
 
 void main() {
-  testWidgets('creating an employee saves it and inserts a joined event', (tester) async {
+  testWidgets('creating an employee saves it and inserts a joined event', (
+    tester,
+  ) async {
     final employeeRepo = FakeEmployeeRepository();
     final eventRepo = FakeEmployeeEventRepository();
 
@@ -22,7 +24,10 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byKey(const Key('employee-name-field')), 'Ramesh');
+    await tester.enterText(
+      find.byKey(const Key('employee-name-field')),
+      'Ramesh',
+    );
     await tester.pump();
     await tester.tap(find.byKey(const Key('employee-save-button')));
     await tester.pumpAndSettle();
@@ -34,18 +39,26 @@ void main() {
     expect(eventRepo.addedEvents.first['eventType'], 'joined');
   });
 
-  testWidgets('save button is disabled until a name is entered', (tester) async {
+  testWidgets('saving without a name says so instead of saving', (
+    tester,
+  ) async {
+    final employeeRepo = FakeEmployeeRepository();
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          employeeRepositoryProvider.overrideWithValue(FakeEmployeeRepository()),
-          employeeEventRepositoryProvider.overrideWithValue(FakeEmployeeEventRepository()),
+          employeeRepositoryProvider.overrideWithValue(employeeRepo),
+          employeeEventRepositoryProvider.overrideWithValue(
+            FakeEmployeeEventRepository(),
+          ),
         ],
         child: const MaterialApp(home: EmployeeEditPage(existing: null)),
       ),
     );
 
-    final saveButton = tester.widget<FilledButton>(find.byKey(const Key('employee-save-button')));
-    expect(saveButton.onPressed, isNull);
+    await tester.tap(find.byKey(const Key('employee-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter a name'), findsOneWidget);
+    expect(await employeeRepo.fetchAll(), isEmpty);
   });
 }

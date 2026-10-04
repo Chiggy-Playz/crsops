@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/guarded_save.dart';
 import '../../widgets/color_swatch_picker.dart';
+import '../../widgets/form_dialog.dart';
+import '../../widgets/guarded_save.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/event_type.dart';
 import '../providers/employee_providers.dart';
@@ -32,7 +33,7 @@ class EventTypesManagerPage extends ConsumerWidget {
               subtitle: type.isStructural
                   ? Text('Structural: ${displayLabel(type.statusEffect!)}')
                   : null,
-              onTap: () => showDialog<void>(
+              onTap: () => showFormDialog<void>(
                 context: context,
                 builder: (context) => _EditEventTypeDialog(type: type),
               ),
@@ -57,8 +58,10 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
   late String? _iconName = widget.type.iconName;
   late String? _colorHex = widget.type.colorHex;
   bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _save() async {
+    if (_saving) return;
     await runGuardedSave(
       context,
       setSaving: (v) => setState(() => _saving = v),
@@ -78,54 +81,34 @@ class _EditEventTypeDialogState extends ConsumerState<_EditEventTypeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
+    return FormDialog(
       key: const Key('event-type-edit-dialog'),
-      title: Text('Edit ${displayLabel(widget.type.id)}'),
-      content: SizedBox(
-        width: 280,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DropdownMenu<String>(
-              initialSelection: _iconName,
-              expandedInsets: EdgeInsets.zero,
-              hintText: 'Icon',
-              dropdownMenuEntries: knownIconNames
-                  .map(
-                    (name) => DropdownMenuEntry(
-                      value: name,
-                      label: name,
-                      leadingIcon: Icon(iconFor(name)),
-                    ),
-                  )
-                  .toList(),
-              onSelected: (value) => setState(() => _iconName = value),
-            ),
-            const SizedBox(height: 16),
-            const Text('Color'),
-            const SizedBox(height: 8),
-            ColorSwatchPicker(
-              selectedHex: _colorHex,
-              onChanged: (hex) => setState(() => _colorHex = hex),
-            ),
-          ],
+      title: 'Edit ${displayLabel(widget.type.id)}',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      children: [
+        DropdownMenuFormField<String>(
+          initialSelection: _iconName,
+          expandedInsets: EdgeInsets.zero,
+          label: const Text('Icon'),
+          dropdownMenuEntries: knownIconNames
+              .map(
+                (name) => DropdownMenuEntry(
+                  value: name,
+                  label: displayLabel(name),
+                  leadingIcon: Icon(iconFor(name)),
+                ),
+              )
+              .toList(),
+          onSelected: (value) => setState(() => _iconName = value),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Save'),
+        LabelledFieldBox(
+          label: 'Color',
+          child: ColorSwatchPicker(
+            selectedHex: _colorHex,
+            onChanged: (hex) => setState(() => _colorHex = hex),
+          ),
         ),
       ],
     );

@@ -72,7 +72,7 @@ void main() {
         'DAD@Example.COM',
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Add'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(adminRepo.addedEmail, 'dad@example.com');

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/admin_providers.dart';
+import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
@@ -57,6 +58,7 @@ class ModuleAccessManagerPage extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final profile = profiles[index];
                 final granted = access[profile.id] ?? const <String>{};
+                final hasAll = modules.every((m) => granted.contains(m.id));
                 return ListTile(
                   title: Text(profile.email),
                   subtitle: Text(
@@ -64,13 +66,16 @@ class ModuleAccessManagerPage extends ConsumerWidget {
                         ? 'No module access granted'
                         : granted.join(', '),
                   ),
-                  trailing: const Icon(Icons.add),
-                  onTap: modules.isEmpty
+                  // Nothing left to grant → no form that would open empty.
+                  trailing: Icon(hasAll ? Icons.check : Icons.add),
+                  onTap: modules.isEmpty || hasAll
                       ? null
-                      : () => showDialog<void>(
+                      : () => showFormDialog<void>(
                           context: context,
                           builder: (context) => _GrantModuleAccessDialog(
                             profileId: profile.id,
+                            email: profile.email,
+                            granted: granted,
                             modules: modules,
                           ),
                         ),
@@ -84,9 +89,13 @@ class ModuleAccessManagerPage extends ConsumerWidget {
 class _GrantModuleAccessDialog extends ConsumerStatefulWidget {
   const _GrantModuleAccessDialog({
     required this.profileId,
+    required this.email,
+    required this.granted,
     required this.modules,
   });
   final String profileId;
+  final String email;
+  final Set<String> granted;
   final List<({String id, String name})> modules;
 
   @override
@@ -98,8 +107,10 @@ class _GrantModuleAccessDialogState
     extends ConsumerState<_GrantModuleAccessDialog> {
   String? _selectedModuleId;
   bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   Future<void> _grant() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
     await runGuardedSave(
       context,
       setSaving: (v) => setState(() => _saving = v),
@@ -118,34 +129,25 @@ class _GrantModuleAccessDialogState
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Grant module access'),
-      content: SizedBox(
-        width: 280,
-        child: DropdownMenu<String>(
+    return FormDialog(
+      title: 'Grant module access',
+      description: 'For ${widget.email}',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _grant,
+      children: [
+        DropdownMenuFormField<String>(
           initialSelection: _selectedModuleId,
           expandedInsets: EdgeInsets.zero,
-          hintText: 'Select a module',
-          dropdownMenuEntries: widget.modules
-              .map((m) => DropdownMenuEntry(value: m.id, label: m.name))
-              .toList(),
+          label: const Text('Module'),
+          // Only modules they don't already have.
+          dropdownMenuEntries: [
+            for (final m in widget.modules)
+              if (!widget.granted.contains(m.id))
+                DropdownMenuEntry(value: m.id, label: m.name),
+          ],
           onSelected: (value) => setState(() => _selectedModuleId = value),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving || _selectedModuleId == null ? null : _grant,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Grant'),
+          validator: (value) => value == null ? 'Choose a module' : null,
         ),
       ],
     );

@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../providers/attendance_providers.dart';
+import '../../../core/widgets/form_dialog.dart';
 import '../../../core/widgets/guarded_save.dart';
+import '../providers/attendance_providers.dart';
 
 const _kWeekdayNames = {
   1: 'Monday',
@@ -50,7 +51,7 @@ class ShiftDefaultsManagerPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialog<void>(
+        onPressed: () => showFormDialog<void>(
           context: context,
           builder: (context) => const _AddShiftDefaultDialog(),
         ),
@@ -75,11 +76,13 @@ class _AddShiftDefaultDialogState
   TimeOfDay _end = const TimeOfDay(hour: 18, minute: 30);
   final Set<int> _weekOffDays = {7};
   bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   String _fmt(TimeOfDay t) =>
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   Future<void> _save() async {
+    if (_saving) return;
     await runGuardedSave(
       context,
       setSaving: (v) => setState(() => _saving = v),
@@ -100,107 +103,48 @@ class _AddShiftDefaultDialogState
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('New shift default'),
-      content: SizedBox(
-        width: 300,
-        // Scrollable: the date/time/chips stack overflows short screens
-        // (and the test window) otherwise.
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return FormDialog(
+      title: 'New shift default',
+      formKey: _formKey,
+      saving: _saving,
+      onSave: _save,
+      children: [
+        DateFormField(
+          label: 'Effective from',
+          value: _effectiveFrom,
+          format: _dateFormat.format,
+          onChanged: (d) => setState(() => _effectiveFrom = d),
+        ),
+        TimeFormField(
+          label: 'Start time',
+          value: _start,
+          onChanged: (t) => setState(() => _start = t),
+        ),
+        TimeFormField(
+          label: 'End time',
+          value: _end,
+          onChanged: (t) => setState(() => _end = t),
+        ),
+        LabelledFieldBox(
+          label: 'Week off days',
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Effective from',
-                  suffixIcon: Icon(Icons.calendar_month),
+              for (final entry in _kWeekdayNames.entries)
+                FilterChip(
+                  label: Text(entry.value),
+                  selected: _weekOffDays.contains(entry.key),
+                  onSelected: (selected) => setState(() {
+                    if (selected) {
+                      _weekOffDays.add(entry.key);
+                    } else {
+                      _weekOffDays.remove(entry.key);
+                    }
+                  }),
                 ),
-                child: InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _effectiveFrom,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) setState(() => _effectiveFrom = picked);
-                  },
-                  child: Text(_dateFormat.format(_effectiveFrom)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Start time',
-                  suffixIcon: Icon(Icons.access_time),
-                ),
-                child: InkWell(
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: _start,
-                    );
-                    if (picked != null) setState(() => _start = picked);
-                  },
-                  child: Text(_start.format(context)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'End time',
-                  suffixIcon: Icon(Icons.access_time),
-                ),
-                child: InkWell(
-                  onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: _end,
-                    );
-                    if (picked != null) setState(() => _end = picked);
-                  },
-                  child: Text(_end.format(context)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text('Week off days'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final entry in _kWeekdayNames.entries)
-                    FilterChip(
-                      label: Text(entry.value),
-                      selected: _weekOffDays.contains(entry.key),
-                      onSelected: (selected) => setState(() {
-                        if (selected) {
-                          _weekOffDays.add(entry.key);
-                        } else {
-                          _weekOffDays.remove(entry.key);
-                        }
-                      }),
-                    ),
-                ],
-              ),
             ],
           ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Save'),
         ),
       ],
     );

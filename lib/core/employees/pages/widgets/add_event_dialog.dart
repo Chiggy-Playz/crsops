@@ -17,7 +17,7 @@ Future<void> showAddEventDialog(
   String employeeId, {
   TimelineEntry? existing,
 }) {
-  return showDialog<void>(
+  return showFormDialog<void>(
     context: context,
     builder: (context) =>
         _AddEventDialog(employeeId: employeeId, existing: existing),

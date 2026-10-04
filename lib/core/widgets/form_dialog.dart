@@ -11,6 +11,14 @@ import 'package:flutter/services.dart';
 /// Keyboard: Esc closes (dialog default), Ctrl/⌘+Enter saves, Tab walks the
 /// fields. Save stays enabled; [onSave] validates and the fields show what's
 /// missing, rather than a greyed-out button that can't say why.
+/// Opens a [FormDialog]-based form. Always use this (not bare showDialog):
+/// `useSafeArea: false` lets the full-screen form paint under the status and
+/// navigation bars — otherwise the dimmed scrim shows in those strips.
+Future<T?> showFormDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) => showDialog<T>(context: context, useSafeArea: false, builder: builder);
+
 class FormDialog extends StatelessWidget {
   const FormDialog({
     super.key,
@@ -19,6 +27,7 @@ class FormDialog extends StatelessWidget {
     required this.saving,
     required this.onSave,
     required this.children,
+    this.description,
     this.saveButtonKey,
   });
 
@@ -30,6 +39,10 @@ class FormDialog extends StatelessWidget {
   final bool saving;
   final VoidCallback onSave;
   final List<Widget> children;
+
+  /// One line of context under the title — who or what the form is about
+  /// (e.g. "For dad@example.com · currently Admin").
+  final String? description;
   final Key? saveButtonKey;
 
   /// Whether forms open full-screen at this size — callers use it to skip
@@ -52,6 +65,15 @@ class FormDialog extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
         shrinkWrap: true,
         children: [
+          if (description != null) ...[
+            Text(
+              description!,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           for (final (i, child) in children.indexed) ...[
             if (i > 0) const SizedBox(height: 16),
             child,
@@ -89,11 +111,16 @@ class FormDialog extends StatelessWidget {
               ),
             ],
           ),
-          body: form,
+          // The app bar already pads for the status bar; this keeps the
+          // last field clear of the gesture/navigation bar.
+          body: SafeArea(top: false, child: form),
         ),
       );
     } else {
       dialog = Dialog(
+        insetPadding:
+            MediaQuery.paddingOf(context) +
+            const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: maxWidth),
           child: Column(
@@ -212,6 +239,92 @@ class _DateFormFieldState extends State<DateFormField> {
           onPressed: _pick,
         ),
       ),
+    );
+  }
+}
+
+/// Time counterpart of [DateFormField]: same look, keyboard-reachable picker.
+class TimeFormField extends StatefulWidget {
+  const TimeFormField({
+    super.key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final TimeOfDay value;
+  final ValueChanged<TimeOfDay> onChanged;
+
+  @override
+  State<TimeFormField> createState() => _TimeFormFieldState();
+}
+
+class _TimeFormFieldState extends State<TimeFormField> {
+  final _controller = TextEditingController();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _controller.text = widget.value.format(context);
+  }
+
+  @override
+  void didUpdateWidget(TimeFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _controller.text = widget.value.format(context);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: widget.value,
+    );
+    if (picked != null) widget.onChanged(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: _controller,
+      readOnly: true,
+      onTap: _pick,
+      decoration: InputDecoration(
+        labelText: widget.label,
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.access_time),
+          tooltip: 'Pick time',
+          onPressed: _pick,
+        ),
+      ),
+    );
+  }
+}
+
+/// An outlined, labelled box for non-text inputs (swatches, chips) so they
+/// line up with the text fields around them instead of floating under a
+/// plain Text label.
+class LabelledFieldBox extends StatelessWidget {
+  const LabelledFieldBox({super.key, required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        contentPadding: const EdgeInsets.fromLTRB(12, 20, 12, 12),
+      ),
+      child: child,
     );
   }
 }

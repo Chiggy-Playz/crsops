@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../widgets/form_dialog.dart';
+import '../../widgets/guarded_save.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
-import '../../errors/app_exception.dart';
-import '../../widgets/error_snackbar.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -32,6 +32,8 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
   // new employees get a fixed value and existing ones keep theirs.
   late final int _color = widget.existing?.color ?? 0xFF3F51B5;
   DateTime _joinDate = DateTime.now();
+  bool _saving = false;
+  final _formKey = GlobalKey<FormState>();
 
   bool get _isEditing => widget.existing != null;
 
@@ -44,102 +46,99 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
   }
 
   Future<void> _save() async {
+    if (!_formKey.currentState!.validate() || _saving) return;
     final employeeRepo = ref.read(employeeRepositoryProvider);
-    final salary = double.tryParse(_salaryController.text);
+    final name = _nameController.text.trim();
+    final salary = double.tryParse(_salaryController.text.trim());
+    final notes = _notesController.text.trim();
 
-    try {
-      if (_isEditing) {
-        await employeeRepo.update(
-          Employee(
-            id: widget.existing!.id,
-            userId: widget.existing!.userId,
-            name: _nameController.text,
+    await runGuardedSave(
+      context,
+      setSaving: (v) => setState(() => _saving = v),
+      action: () async {
+        if (_isEditing) {
+          await employeeRepo.update(
+            Employee(
+              id: widget.existing!.id,
+              userId: widget.existing!.userId,
+              name: name,
+              color: _color,
+              salary: salary,
+              notes: notes.isEmpty ? null : notes,
+              createdAt: widget.existing!.createdAt,
+            ),
+          );
+        } else {
+          final created = await employeeRepo.create(
+            name: name,
             color: _color,
             salary: salary,
-            notes: _notesController.text.isEmpty ? null : _notesController.text,
-            createdAt: widget.existing!.createdAt,
-          ),
-        );
-      } else {
-        final created = await employeeRepo.create(
-          name: _nameController.text,
-          color: _color,
-          salary: salary,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
-        );
-        await ref
-            .read(employeeEventRepositoryProvider)
-            .addEvent(
-              employeeId: created.id,
-              eventType: 'joined',
-              eventDate: _joinDate,
-            );
-      }
-
-      ref.invalidate(employeeListProvider);
-      if (mounted) Navigator.of(context).pop();
-    } on AppException catch (e) {
-      if (mounted) showErrorSnackBar(context, e);
-    }
+            notes: notes.isEmpty ? null : notes,
+          );
+          await ref
+              .read(employeeEventRepositoryProvider)
+              .addEvent(
+                employeeId: created.id,
+                eventType: 'joined',
+                eventDate: _joinDate,
+              );
+        }
+      },
+      onSuccess: () {
+        ref.invalidate(employeeListProvider);
+        if (_isEditing) ref.invalidate(employeeProvider(widget.existing!.id));
+        Navigator.of(context).pop();
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Edit employee' : 'New employee'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          TextField(
-            key: const Key('employee-name-field'),
-            controller: _nameController,
-            decoration: const InputDecoration(labelText: 'Name'),
-            onChanged: (_) => setState(() {}),
+    return FormDialog(
+      title: _isEditing ? 'Edit employee' : 'New employee',
+      formKey: _formKey,
+      saving: _saving,
+      saveButtonKey: const Key('employee-save-button'),
+      onSave: _save,
+      children: [
+        TextFormField(
+          key: const Key('employee-name-field'),
+          controller: _nameController,
+          autofocus: !FormDialog.isCompact(context),
+          textCapitalization: TextCapitalization.words,
+          decoration: const InputDecoration(labelText: 'Name'),
+          validator: (value) =>
+              (value ?? '').trim().isEmpty ? 'Enter a name' : null,
+        ),
+        if (!_isEditing)
+          DateFormField(
+            fieldKey: const Key('employee-join-date-field'),
+            label: 'Join date',
+            value: _joinDate,
+            format: _dateFormat.format,
+            onChanged: (d) => setState(() => _joinDate = d),
           ),
-          const SizedBox(height: 16),
-          if (!_isEditing) ...[
-            InputDecorator(
-              decoration: const InputDecoration(
-                labelText: 'Join date',
-                suffixIcon: Icon(Icons.calendar_month),
-              ),
-              child: InkWell(
-                key: const Key('employee-join-date-field'),
-                onTap: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: _joinDate,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) setState(() => _joinDate = picked);
-                },
-                child: Text(_dateFormat.format(_joinDate)),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          TextField(
-            controller: _salaryController,
-            decoration: const InputDecoration(labelText: 'Salary (optional)'),
-            keyboardType: TextInputType.number,
+        TextFormField(
+          controller: _salaryController,
+          decoration: const InputDecoration(
+            labelText: 'Salary (optional)',
+            prefixText: '₹ ',
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(labelText: 'Notes (optional)'),
-            maxLines: 3,
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            key: const Key('employee-save-button'),
-            onPressed: _nameController.text.trim().isEmpty ? null : _save,
-            child: const Text('Save'),
-          ),
-        ],
-      ),
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          validator: (value) {
+            final text = value?.trim() ?? '';
+            return text.isNotEmpty && double.tryParse(text) == null
+                ? 'Enter a number'
+                : null;
+          },
+        ),
+        TextFormField(
+          controller: _notesController,
+          decoration: const InputDecoration(labelText: 'Notes (optional)'),
+          minLines: 1,
+          maxLines: 4,
+        ),
+      ],
     );
   }
 }

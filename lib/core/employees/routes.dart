@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../router/dialog_page.dart';
 import '../router/navigator_keys.dart';
 import 'models/employee.dart';
 import 'pages/employee_detail_page.dart';
@@ -33,12 +34,14 @@ class EmployeesRoute extends GoRouteData with $EmployeesRoute {
 class EmployeeNewRoute extends GoRouteData with $EmployeeNewRoute {
   const EmployeeNewRoute();
 
-  // A focused task: pushed above the nav shell so it covers the bar.
+  // A focused task: pushed above the nav shell, as a form dialog.
   static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const EmployeeEditPage(existing: null);
+  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
+    key: state.pageKey,
+    child: const EmployeeEditPage(existing: null),
+  );
 }
 
 class EmployeeDetailRoute extends GoRouteData with $EmployeeDetailRoute {
@@ -55,7 +58,7 @@ class EmployeeEditRoute extends GoRouteData with $EmployeeEditRoute {
   final String id;
   final Employee? $extra;
 
-  // A focused task: pushed above the nav shell so it covers the bar.
+  // A focused task: pushed above the nav shell, as a form dialog.
   static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
 
   // `extra` carries the already-fetched Employee so this doesn't need its
@@ -66,6 +69,8 @@ class EmployeeEditRoute extends GoRouteData with $EmployeeEditRoute {
       state.extra is Employee ? null : EmployeeDetailRoute(id).location;
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      EmployeeEditPage(existing: $extra as Employee);
+  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
+    key: state.pageKey,
+    child: EmployeeEditPage(existing: $extra as Employee),
+  );
 }
