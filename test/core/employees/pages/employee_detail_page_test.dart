@@ -61,12 +61,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // The name renders twice (app bar title + profile card) — scope to the
-    // card so app-bar changes don't break this assertion.
-    expect(
-      find.descendant(of: find.byType(Card), matching: find.text('Ramesh')),
-      findsOneWidget,
-    );
+    // Shown once, in the profile header (the app bar has no title).
+    expect(find.text('Ramesh'), findsOneWidget);
     expect(find.text('Joined'), findsOneWidget);
     expect(find.text('Advance'), findsOneWidget);
   });
@@ -102,6 +98,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byKey(const Key('add-button')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add-event-button')));
       await tester.pumpAndSettle();
 
@@ -142,6 +140,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      await tester.tap(find.byKey(const Key('add-button')));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(const Key('add-payment-button')));
       await tester.pumpAndSettle();
 

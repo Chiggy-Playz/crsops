@@ -23,21 +23,53 @@ final _currencyFormat = NumberFormat.currency(
   decimalDigits: 0,
 );
 
-String _tenureText(DateTime since) {
+/// "19 days" / "3 months" / "2 years" — how long ago [since] was.
+String _durationSince(DateTime since) {
   final days = DateTime.now().difference(since).inDays;
-  if (days < 30) return 'Joined $days day${days == 1 ? '' : 's'} ago';
+  if (days < 30) return '$days day${days == 1 ? '' : 's'}';
   if (days < 365) {
     final months = (days / 30).floor();
-    return 'Joined $months month${months == 1 ? '' : 's'} ago';
+    return '$months month${months == 1 ? '' : 's'}';
   }
   final years = (days / 365).floor();
-  return 'Joined $years year${years == 1 ? '' : 's'} ago';
+  return '$years year${years == 1 ? '' : 's'}';
 }
 
 class EmployeeDetailPage extends ConsumerWidget {
   const EmployeeDetailPage({super.key, required this.employeeId});
 
   final String employeeId;
+
+  Future<void> _showAddSheet(BuildContext context, WidgetRef ref) async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('add-event-button'),
+              leading: const Icon(Icons.event_note_outlined),
+              title: const Text('Event'),
+              subtitle: const Text('Joined, left, rehired, …'),
+              onTap: () => Navigator.of(context).pop('event'),
+            ),
+            ListTile(
+              key: const Key('add-payment-button'),
+              leading: const Icon(Icons.payments_outlined),
+              title: const Text('Payment'),
+              subtitle: const Text('Record money paid to them'),
+              onTap: () => Navigator.of(context).pop('payment'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    if (choice == 'event') showAddEventDialog(context, ref, employeeId);
+    if (choice == 'payment') showAddPaymentDialog(context, ref, employeeId);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,12 +79,8 @@ class EmployeeDetailPage extends ConsumerWidget {
     final eventTypesAsync = ref.watch(eventTypesProvider);
 
     return Scaffold(
+      // No title: the profile header below shows the name, once.
       appBar: AppBar(
-        title: employeeAsync.when(
-          data: (e) => Text(e.name),
-          loading: () => const Text(''),
-          error: (_, _) => const Text('Employee'),
-        ),
         actions: [
           IconButton(
             key: const Key('edit-employee-button'),
@@ -71,78 +99,125 @@ class EmployeeDetailPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
         data: (employee) {
-          final joinedSince = timelineAsync.value
-              ?.where(
+          final eventTypesById = {
+            for (final t in eventTypesAsync.value ?? const <EventType>[])
+              t.id: t,
+          };
+          final entries = timelineAsync.value ?? const <TimelineEntry>[];
+
+          // When the current status started: the latest event whose type sets
+          // it (joined/rehired → active, left → inactive).
+          DateTime? latestWithEffect(String effect) => entries
+              .where(
                 (e) =>
                     e.kind == 'event' &&
-                    (e.label == 'joined' || e.label == 'rehired'),
+                    eventTypesById[e.label]?.statusEffect == effect,
               )
               .map((e) => e.entryDate)
               .fold<DateTime?>(
                 null,
-                (earliest, date) => earliest == null || date.isBefore(earliest)
-                    ? date
-                    : earliest,
+                (latest, d) => latest == null || d.isAfter(latest) ? d : latest,
               );
 
-          return Column(
+          final status = statusAsync.value;
+          final statusSince = status == 'active'
+              ? latestWithEffect('active') ?? employee.createdAt
+              : status == 'inactive'
+              ? latestWithEffect('inactive')
+              : null;
+
+          return ListView(
+            padding: const EdgeInsets.only(bottom: 96), // clear of the FAB
             children: [
-              _ProfileCard(
+              _ProfileHeader(
                 employee: employee,
-                status: statusAsync.value,
-                joinedSince: joinedSince ?? employee.createdAt,
+                isActive: status != 'inactive',
               ),
-              Expanded(
-                child: timelineAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (error, _) => Center(child: Text('$error')),
-                  data: (entries) {
-                    if (entries.isEmpty) {
-                      return const Center(child: Text('No history yet'));
-                    }
-                    final eventTypesById = {
-                      for (final t in eventTypesAsync.value ?? const [])
-                        t.id: t,
-                    };
-                    return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: entries.length,
-                      itemBuilder: (context, index) => _TimelineRow(
-                        entry: entries[index],
-                        eventType: entries[index].kind == 'event'
-                            ? eventTypesById[entries[index].label]
-                            : null,
-                        isFirst: index == 0,
-                        isLast: index == entries.length - 1,
-                      ),
-                    );
-                  },
+              if (status != null)
+                _StatusRow(isActive: status == 'active', since: statusSince),
+              if (employee.salary != null)
+                ListTile(
+                  leading: const Icon(Icons.currency_rupee),
+                  title: Text(_currencyFormat.format(employee.salary)),
+                  subtitle: const Text('Salary'),
                 ),
+              if (employee.notes?.trim().isNotEmpty == true)
+                ListTile(
+                  leading: const Icon(Icons.notes),
+                  title: Text(employee.notes!.trim()),
+                  subtitle: const Text('Notes'),
+                ),
+              const _SectionHeader('History'),
+              ...timelineAsync.when(
+                loading: () => const [
+                  Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ],
+                error: (error, _) => [
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text('$error'),
+                  ),
+                ],
+                data: (entries) => entries.isEmpty
+                    ? const [
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text('No history yet'),
+                        ),
+                      ]
+                    : [
+                        for (var i = 0; i < entries.length; i++)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _TimelineRow(
+                              entry: entries[i],
+                              eventType: entries[i].kind == 'event'
+                                  ? eventTypesById[entries[i].label]
+                                  : null,
+                              isFirst: i == 0,
+                              isLast: i == entries.length - 1,
+                            ),
+                          ),
+                      ],
               ),
             ],
           );
         },
       ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
+      // One FAB per screen (M3): "Add" asks what to add.
+      floatingActionButton: FloatingActionButton.extended(
+        key: const Key('add-button'),
+        onPressed: () => _showAddSheet(context, ref),
+        icon: const Icon(Icons.add),
+        label: const Text('Add'),
+      ),
+    );
+  }
+}
+
+/// Contacts-style header: large centred avatar, then the name. Sits on the
+/// page surface — no card — and replaces the name in the app bar.
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({required this.employee, required this.isActive});
+
+  final Employee employee;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
         children: [
-          FloatingActionButton(
-            key: const Key('add-payment-button'),
-            heroTag: 'add-payment',
-            mini: true,
-            tooltip: 'Add payment',
-            onPressed: () => showAddPaymentDialog(context, ref, employeeId),
-            child: const Icon(Icons.payments),
-          ),
+          EmployeeAvatar(name: employee.name, radius: 40, dimmed: !isActive),
           const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            key: const Key('add-event-button'),
-            heroTag: 'add-event',
-            onPressed: () => showAddEventDialog(context, ref, employeeId),
-            icon: const Icon(Icons.add),
-            label: const Text('Add event'),
+          Text(
+            employee.name,
+            style: Theme.of(context).textTheme.headlineSmall,
+            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -150,89 +225,59 @@ class EmployeeDetailPage extends ConsumerWidget {
   }
 }
 
-class _ProfileCard extends StatelessWidget {
-  const _ProfileCard({
-    required this.employee,
-    required this.status,
-    required this.joinedSince,
-  });
+/// Read-only status as a list row (M3 chips are interactive, so a chip read
+/// as a button). Active uses the custom "success" colour; inactive isn't an
+/// error, so it's neutral rather than red.
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({required this.isActive, required this.since});
 
-  final Employee employee;
-  final String? status;
-  final DateTime joinedSince;
+  final bool isActive;
+  final DateTime? since;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive
+        ? context.appColors.success.color
+        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final date = since;
+
+    return ListTile(
+      leading: Icon(
+        isActive ? Icons.check_circle : Icons.remove_circle_outline,
+        color: color,
+      ),
+      title: Text(
+        isActive ? 'Active' : 'Inactive',
+        style: TextStyle(color: color),
+      ),
+      subtitle: date == null
+          ? null
+          : Text(
+              isActive
+                  ? 'Since ${_dateFormat.format(date)} · ${_durationSince(date)}'
+                  : 'Left ${_dateFormat.format(date)}',
+            ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
+
+  final String title;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isActive = status == 'active';
-    // Active uses the M3 custom "success" roles; inactive isn't an error, so it
-    // gets the theme's neutral container rather than red.
-    final success = context.appColors.success;
-    final chipBackground = isActive
-        ? success.colorContainer
-        : theme.colorScheme.surfaceContainerHighest;
-    final chipForeground = isActive
-        ? success.onColorContainer
-        : theme.colorScheme.onSurfaceVariant;
-
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            EmployeeAvatar(name: employee.name, radius: 28, dimmed: !isActive),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(employee.name, style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      if (status != null)
-                        Chip(
-                          avatar: Icon(
-                            isActive
-                                ? Icons.check_circle
-                                : Icons.remove_circle_outline,
-                            color: chipForeground,
-                            size: 18,
-                          ),
-                          label: Text(displayLabel(status!)),
-                          labelStyle: TextStyle(color: chipForeground),
-                          backgroundColor: chipBackground,
-                          side: BorderSide.none,
-                        ),
-                      Text(
-                        _tenureText(joinedSince),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (employee.salary != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      'Salary: ${_currencyFormat.format(employee.salary)}',
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                  if (employee.notes != null &&
-                      employee.notes!.trim().isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(employee.notes!, style: theme.textTheme.bodyMedium),
-                  ],
-                ],
-              ),
-            ),
-          ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Semantics(
+        header: true,
+        child: Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
         ),
       ),
     );
@@ -289,108 +334,145 @@ class _TimelineRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isLedger = entry.kind == 'ledger';
-    final dotColor = isLedger
-        ? theme.colorScheme.tertiary
-        : colorFor(eventType?.colorHex);
-    final icon = isLedger ? Icons.payments : iconFor(eventType?.iconName);
+    // The node carries the colour and icon (it used to be a dot *plus* a
+    // same-coloured icon). Event colours go through the M3 custom-colour
+    // roles like the status badges; payments use the theme's tertiary.
+    final roles = isLedger
+        ? null
+        : context.customColor(colorFor(eventType?.colorHex));
+    final nodeBackground = roles?.colorContainer ?? scheme.tertiaryContainer;
+    final nodeForeground =
+        roles?.onColorContainer ?? scheme.onTertiaryContainer;
+    final icon = isLedger
+        ? Icons.payments_outlined
+        : iconFor(eventType?.iconName);
+    final note = entry.note?.trim();
+
+    const nodeSize = 28.0;
+    const topPadding = 10.0;
 
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Rail: line in, node, line out. The node sits a fixed distance from
+          // the top so it lines up with the title, however long the note is.
           SizedBox(
-            width: 28,
+            width: nodeSize,
             child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isFirst
-                        ? Colors.transparent
-                        : theme.colorScheme.outlineVariant,
-                  ),
+                Container(
+                  width: 2,
+                  height: topPadding,
+                  color: isFirst ? Colors.transparent : scheme.outlineVariant,
                 ),
                 Container(
-                  width: 14,
-                  height: 14,
+                  width: nodeSize,
+                  height: nodeSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: dotColor,
-                    border: Border.all(
-                      color: theme.colorScheme.surface,
-                      width: 2,
-                    ),
+                    color: nodeBackground,
                   ),
+                  child: Icon(icon, size: 16, color: nodeForeground),
                 ),
                 Expanded(
                   child: Container(
                     width: 2,
-                    color: isLast
-                        ? Colors.transparent
-                        : theme.colorScheme.outlineVariant,
+                    color: isLast ? Colors.transparent : scheme.outlineVariant,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+              padding: const EdgeInsets.only(top: topPadding + 2, bottom: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _dateFormat.format(entry.entryDate),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
+                  Wrap(
+                    spacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Icon(icon, size: 16, color: dotColor),
-                      const SizedBox(width: 6),
                       Text(
                         displayLabel(entry.label),
                         style: theme.textTheme.bodyLarge,
                       ),
-                      if (entry.amount != null) ...[
-                        const SizedBox(width: 8),
+                      if (entry.amount != null)
                         Text(
                           _currencyFormat.format(entry.amount),
                           style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ],
                     ],
                   ),
-                  if (entry.note != null && entry.note!.trim().isNotEmpty)
+                  const SizedBox(height: 2),
+                  Text(
+                    _dateFormat.format(entry.entryDate),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (note != null && note.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(
-                        entry.note!,
-                        style: theme.textTheme.bodySmall,
-                      ),
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(note, style: theme.textTheme.bodyMedium),
                     ),
                 ],
               ),
             ),
           ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, size: 20),
-            onSelected: (value) {
-              if (value == 'edit') _edit(context, ref);
-              if (value == 'delete') _delete(context, ref);
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
-            ],
+          Align(
+            alignment: Alignment.topCenter,
+            child: _EntryMenu(
+              onEdit: () => _edit(context, ref),
+              onDelete: () => _delete(context, ref),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Overflow menu for a history entry — M3 MenuAnchor (keyboard navigation,
+/// focus handling) rather than the older PopupMenuButton. Delete is in the
+/// error colour so it doesn't look as harmless as Edit.
+class _EntryMenu extends StatelessWidget {
+  const _EntryMenu({required this.onEdit, required this.onDelete});
+
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final error = Theme.of(context).colorScheme.error;
+
+    return MenuAnchor(
+      // Off by default in Flutter; turns on the M3 open/close motion.
+      animated: true,
+      menuChildren: [
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.edit_outlined),
+          onPressed: onEdit,
+          child: const Text('Edit'),
+        ),
+        MenuItemButton(
+          leadingIcon: Icon(Icons.delete_outline, color: error),
+          style: MenuItemButton.styleFrom(foregroundColor: error),
+          onPressed: onDelete,
+          child: const Text('Delete'),
+        ),
+      ],
+      builder: (context, controller, _) => IconButton(
+        icon: const Icon(Icons.more_vert),
+        tooltip: 'More options',
+        onPressed: () =>
+            controller.isOpen ? controller.close() : controller.open(),
       ),
     );
   }
