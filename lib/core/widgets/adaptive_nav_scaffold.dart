@@ -18,6 +18,10 @@ class AdaptiveNavScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A bar or rail with one destination is just noise (and NavigationBar
+    // asserts on fewer than two) — show the page alone.
+    if (destinations.length < 2) return child;
+
     final isCompact = MediaQuery.sizeOf(context).width < compactBreakpoint;
 
     if (isCompact) {
@@ -39,7 +43,13 @@ class AdaptiveNavScaffold extends StatelessWidget {
             onDestinationSelected: onDestinationSelected,
             labelType: NavigationRailLabelType.all,
             destinations: destinations
-                .map((d) => NavigationRailDestination(icon: d.icon, label: Text(d.label)))
+                .map(
+                  (d) => NavigationRailDestination(
+                    icon: d.icon,
+                    selectedIcon: d.selectedIcon,
+                    label: Text(d.label),
+                  ),
+                )
                 .toList(),
           ),
           const VerticalDivider(width: 1),

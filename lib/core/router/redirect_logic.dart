@@ -1,37 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../modules/attendance/routes.dart';
-import '../../modules/settings/routes.dart';
 import '../auth/models/app_session.dart';
-import '../employees/routes.dart';
-import '../modules/module_names.dart';
+import '../sections/app_section.dart';
 
 const signInPath = '/sign-in';
 const unauthorizedPath = '/unauthorized';
 const loadingPath = '/loading';
+const noModulesPath = '/no-modules';
 
-/// Locations that previously carried their own per-route superadmin guard.
-/// Moved here during the typed-routes migration (generated redirect has no
-/// Ref). Derived from the route classes' own locations, so the path strings
-/// below exist in exactly one place — the `@TypedGoRoute(path:)` annotations.
-/// Semantics preserved exactly: failures bounce to /unauthorized, which the
-/// auth-page block below then bounces to '/' for signed-in users.
-final _superadminPaths = {
-  const AllowListRoute().location,
-  const RolesRoute().location,
-  const EventTypesRoute().location,
-};
+const _authPaths = {signInPath, unauthorizedPath, loadingPath, noModulesPath};
 
-/// Same story as [_superadminPaths], for the admin-or-above guard.
-final _adminPaths = {
-  const ModuleAccessRoute().location,
-  const ShiftDefaultsRoute().location,
-  const StatusTypesRoute().location,
-};
+/// Where a signed-in user with a role belongs by default: the first landable
+/// section they can access, in nav order. Settings isn't landable, so a user
+/// who can only see Settings gets the no-modules page.
+String landingLocation(AppSession session, List<AppSection> sections) {
+  for (final section in sections) {
+    if (section.isLandingCandidate && section.canAccess(session)) {
+      return section.homeLocation;
+    }
+  }
+  return noModulesPath;
+}
 
 String? computeRedirect({
   required AsyncValue<AppSession?> sessionValue,
   required String currentLocation,
+  required List<AppSection> sections,
 }) {
   if (sessionValue.isLoading) {
     return currentLocation == loadingPath ? null : loadingPath;
@@ -51,27 +45,24 @@ String? computeRedirect({
     return currentLocation == unauthorizedPath ? null : unauthorizedPath;
   }
 
-  if (_superadminPaths.contains(currentLocation)) {
-    return session.isSuperadmin ? null : unauthorizedPath;
-  }
-  if (_adminPaths.contains(currentLocation)) {
-    return session.isAdminOrAbove ? null : unauthorizedPath;
-  }
-  // Every attendance page lives under the '/attendance' prefix (calendar,
-  // reports, day view, managers), so one prefix check gates the whole
-  // module — including future nested pages. Tied to the prefix of the
-  // @TypedGoRoute annotations; if it ever changes, this must follow
-  // (there is exactly one place).
-  if (currentLocation.startsWith('/attendance/')) {
-    return session.hasModuleAccess(ModuleNames.attendance)
-        ? null
-        : unauthorizedPath;
+  final landing = landingLocation(session, sections);
+  String? toLanding() => currentLocation == landing ? null : landing;
+
+  // Guard failures go straight to the user's landing page. Nav visibility
+  // reads the same canAccess, so a hidden section is also a locked one —
+  // typing its URL (web) or opening an old bookmark lands you back home.
+  for (final section in sections) {
+    if (section.owns(currentLocation) && !section.canAccess(session)) {
+      return toLanding();
+    }
+    final roleCheck = section.roleGuards[currentLocation];
+    if (roleCheck != null && !roleCheck(session)) {
+      return toLanding();
+    }
   }
 
-  if (currentLocation == signInPath ||
-      currentLocation == unauthorizedPath ||
-      currentLocation == loadingPath) {
-    return const CalendarRoute().location;
+  if (_authPaths.contains(currentLocation) || currentLocation == '/') {
+    return toLanding();
   }
 
   return null;

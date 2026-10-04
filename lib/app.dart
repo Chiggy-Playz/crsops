@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'app_router.dart';
 import 'core/connectivity/connectivity_provider.dart';
-import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_mode_provider.dart';
 import 'core/widgets/offline_screen.dart';
 
 class App extends ConsumerWidget {
@@ -21,6 +22,7 @@ class App extends ConsumerWidget {
       routerConfig: router,
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
+      themeMode: ref.watch(themeModeControllerProvider),
       builder: (context, child) => Stack(
         children: [
           child!,

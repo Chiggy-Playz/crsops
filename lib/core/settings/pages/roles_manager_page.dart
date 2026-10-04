@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/widgets/guarded_save.dart';
-import '../../../core/widgets/status_metadata.dart';
+import '../../auth/providers/admin_providers.dart';
+import '../../widgets/guarded_save.dart';
+import '../../widgets/status_metadata.dart';
 
 class RolesManagerPage extends ConsumerWidget {
   const RolesManagerPage({super.key});

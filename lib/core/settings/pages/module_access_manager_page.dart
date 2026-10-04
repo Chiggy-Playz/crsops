@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/widgets/guarded_save.dart';
+import '../../auth/providers/admin_providers.dart';
+import '../../widgets/guarded_save.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
   const ModuleAccessManagerPage({super.key});

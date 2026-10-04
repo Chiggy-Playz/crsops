@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../auth/pages/loading_page.dart';
+import '../auth/pages/no_modules_page.dart';
 import '../auth/pages/sign_in_page.dart';
 import '../auth/pages/unauthorized_page.dart';
 import 'redirect_logic.dart';
@@ -32,4 +33,13 @@ class UnauthorizedRoute extends GoRouteData with $UnauthorizedRoute {
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const UnauthorizedPage();
+}
+
+@TypedGoRoute<NoModulesRoute>(path: noModulesPath)
+class NoModulesRoute extends GoRouteData with $NoModulesRoute {
+  const NoModulesRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const NoModulesPage();
 }

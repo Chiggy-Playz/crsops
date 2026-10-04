@@ -80,10 +80,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         'Last 7 days',
       ),
       '30d': (
-        DateTimeRange(
-          start: now.subtract(const Duration(days: 30)),
-          end: now,
-        ),
+        DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
         'Last 30 days',
       ),
       'month': (
@@ -249,7 +246,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
               label: 'Unmarked',
               count: summary['unmarked'] ?? 0,
               icon: Icons.help_outline,
-              color: Colors.grey,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ],
         ),

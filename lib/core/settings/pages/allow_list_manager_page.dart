@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/auth/providers/admin_providers.dart';
-import '../../../core/widgets/busy_overlay.dart';
-import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/guarded_save.dart';
+import '../../auth/providers/admin_providers.dart';
+import '../../widgets/busy_overlay.dart';
+import '../../widgets/confirm_dialog.dart';
+import '../../widgets/guarded_save.dart';
 
 class AllowListManagerPage extends ConsumerStatefulWidget {
   const AllowListManagerPage({super.key});

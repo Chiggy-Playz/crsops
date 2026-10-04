@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../router/navigator_keys.dart';
 import 'models/employee.dart';
 import 'pages/employee_detail_page.dart';
 import 'pages/employee_edit_page.dart';
 import 'pages/employee_list_page.dart';
-import 'pages/event_types_manager_page.dart';
 
 part 'routes.g.dart';
 
-@TypedGoRoute<EmployeesRoute>(path: '/employees')
+// new and :id/edit are nested (not top-level) because go_router only lets a
+// route under a shell branch target the root navigator if it's a sub-route —
+// they set $parentNavigatorKey to cover the nav bar. URLs are unchanged.
+@TypedGoRoute<EmployeesRoute>(
+  path: '/employees',
+  routes: [
+    TypedGoRoute<EmployeeNewRoute>(path: 'new'),
+    TypedGoRoute<EmployeeDetailRoute>(
+      path: ':id',
+      routes: [TypedGoRoute<EmployeeEditRoute>(path: 'edit')],
+    ),
+  ],
+)
 class EmployeesRoute extends GoRouteData with $EmployeesRoute {
   const EmployeesRoute();
 
@@ -18,25 +30,17 @@ class EmployeesRoute extends GoRouteData with $EmployeesRoute {
       const EmployeeListPage();
 }
 
-@TypedGoRoute<EmployeeNewRoute>(path: '/employees/new')
 class EmployeeNewRoute extends GoRouteData with $EmployeeNewRoute {
   const EmployeeNewRoute();
+
+  // A focused task: pushed above the nav shell so it covers the bar.
+  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       const EmployeeEditPage(existing: null);
 }
 
-@TypedGoRoute<EventTypesRoute>(path: '/employees/event-types')
-class EventTypesRoute extends GoRouteData with $EventTypesRoute {
-  const EventTypesRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const EventTypesManagerPage();
-}
-
-@TypedGoRoute<EmployeeDetailRoute>(path: '/employees/:id')
 class EmployeeDetailRoute extends GoRouteData with $EmployeeDetailRoute {
   const EmployeeDetailRoute(this.id);
   final String id;
@@ -46,11 +50,13 @@ class EmployeeDetailRoute extends GoRouteData with $EmployeeDetailRoute {
       EmployeeDetailPage(employeeId: id);
 }
 
-@TypedGoRoute<EmployeeEditRoute>(path: '/employees/:id/edit')
 class EmployeeEditRoute extends GoRouteData with $EmployeeEditRoute {
   const EmployeeEditRoute(this.id, {this.$extra});
   final String id;
   final Employee? $extra;
+
+  // A focused task: pushed above the nav shell so it covers the bar.
+  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
 
   // `extra` carries the already-fetched Employee so this doesn't need its
   // own async fetch. A deep link or reload arrives without extra — fall back

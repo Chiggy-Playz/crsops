@@ -6,18 +6,33 @@ part of 'routes.dart';
 // GoRouterGenerator
 // **************************************************************************
 
-List<RouteBase> get $appRoutes => [
-  $employeesRoute,
-  $employeeNewRoute,
-  $eventTypesRoute,
-  $employeeDetailRoute,
-  $employeeEditRoute,
-];
+List<RouteBase> get $appRoutes => [$employeesRoute];
 
 RouteBase get $employeesRoute => GoRouteData.$route(
   path: '/employees',
   hasOverriddenOnExit: false,
   factory: $EmployeesRoute._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: 'new',
+      hasOverriddenOnExit: false,
+      parentNavigatorKey: EmployeeNewRoute.$parentNavigatorKey,
+      factory: $EmployeeNewRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: ':id',
+      hasOverriddenOnExit: false,
+      factory: $EmployeeDetailRoute._fromState,
+      routes: [
+        GoRouteData.$route(
+          path: 'edit',
+          hasOverriddenOnExit: false,
+          parentNavigatorKey: EmployeeEditRoute.$parentNavigatorKey,
+          factory: $EmployeeEditRoute._fromState,
+        ),
+      ],
+    ),
+  ],
 );
 
 mixin $EmployeesRoute on GoRouteData {
@@ -41,12 +56,6 @@ mixin $EmployeesRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $employeeNewRoute => GoRouteData.$route(
-  path: '/employees/new',
-  hasOverriddenOnExit: false,
-  factory: $EmployeeNewRoute._fromState,
-);
-
 mixin $EmployeeNewRoute on GoRouteData {
   static EmployeeNewRoute _fromState(GoRouterState state) =>
       const EmployeeNewRoute();
@@ -67,39 +76,6 @@ mixin $EmployeeNewRoute on GoRouteData {
   @override
   void replace(BuildContext context) => context.replace(location);
 }
-
-RouteBase get $eventTypesRoute => GoRouteData.$route(
-  path: '/employees/event-types',
-  hasOverriddenOnExit: false,
-  factory: $EventTypesRoute._fromState,
-);
-
-mixin $EventTypesRoute on GoRouteData {
-  static EventTypesRoute _fromState(GoRouterState state) =>
-      const EventTypesRoute();
-
-  @override
-  String get location => GoRouteData.$location('/employees/event-types');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-RouteBase get $employeeDetailRoute => GoRouteData.$route(
-  path: '/employees/:id',
-  hasOverriddenOnExit: false,
-  factory: $EmployeeDetailRoute._fromState,
-);
 
 mixin $EmployeeDetailRoute on GoRouteData {
   static EmployeeDetailRoute _fromState(GoRouterState state) =>
@@ -124,12 +100,6 @@ mixin $EmployeeDetailRoute on GoRouteData {
   @override
   void replace(BuildContext context) => context.replace(location);
 }
-
-RouteBase get $employeeEditRoute => GoRouteData.$route(
-  path: '/employees/:id/edit',
-  hasOverriddenOnExit: false,
-  factory: $EmployeeEditRoute._fromState,
-);
 
 mixin $EmployeeEditRoute on GoRouteData {
   static EmployeeEditRoute _fromState(GoRouterState state) => EmployeeEditRoute(

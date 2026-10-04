@@ -4,8 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'pages/attendance_day_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/report_page.dart';
-import 'pages/shift_defaults_manager_page.dart';
-import 'pages/status_types_manager_page.dart';
 
 part 'routes.g.dart';
 
@@ -24,24 +22,6 @@ class ReportsRoute extends GoRouteData with $ReportsRoute {
 
   @override
   Widget build(BuildContext context, GoRouterState state) => const ReportPage();
-}
-
-@TypedGoRoute<ShiftDefaultsRoute>(path: '/attendance/shift-defaults')
-class ShiftDefaultsRoute extends GoRouteData with $ShiftDefaultsRoute {
-  const ShiftDefaultsRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const ShiftDefaultsManagerPage();
-}
-
-@TypedGoRoute<StatusTypesRoute>(path: '/attendance/status-types')
-class StatusTypesRoute extends GoRouteData with $StatusTypesRoute {
-  const StatusTypesRoute();
-
-  @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const StatusTypesManagerPage();
 }
 
 @TypedGoRoute<AttendanceDayRoute>(path: '/attendance/:date')

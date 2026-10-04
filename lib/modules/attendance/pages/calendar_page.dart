@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../core/employees/routes.dart';
 import '../../../core/utils/date_key.dart';
-import '../../settings/routes.dart';
 import '../attendance_calendar_colors.dart';
 import '../routes.dart';
 import '../models/effective_status_row.dart';
@@ -46,19 +44,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         title: const Text('Calendar'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.people_outline),
-            tooltip: 'Employees',
-            onPressed: () => const EmployeesRoute().push(context),
-          ),
-          IconButton(
             icon: const Icon(Icons.bar_chart),
             tooltip: 'Reports',
             onPressed: () => const ReportsRoute().push(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            tooltip: 'Settings',
-            onPressed: () => const SettingsRoute().push(context),
           ),
         ],
       ),

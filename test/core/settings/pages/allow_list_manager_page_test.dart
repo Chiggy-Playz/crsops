@@ -1,7 +1,7 @@
 import 'package:crs_ops/core/auth/models/profile.dart';
 import 'package:crs_ops/core/auth/providers/admin_providers.dart';
 import 'package:crs_ops/core/auth/repositories/admin_repository.dart';
-import 'package:crs_ops/modules/settings/pages/allow_list_manager_page.dart';
+import 'package:crs_ops/core/settings/pages/allow_list_manager_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

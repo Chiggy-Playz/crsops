@@ -1,3 +1,4 @@
+import 'package:crs_ops/app_sections.dart';
 import 'package:crs_ops/core/auth/models/app_session.dart';
 import 'package:crs_ops/core/router/redirect_logic.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: const AsyncLoading(),
         currentLocation: '/attendance/calendar',
+        sections: allSections,
       );
       expect(result, '/loading');
     });
@@ -17,6 +19,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: const AsyncLoading(),
         currentLocation: '/loading',
+        sections: allSections,
       );
       expect(result, isNull);
     });
@@ -25,6 +28,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: const AsyncData(null),
         currentLocation: '/attendance/calendar',
+        sections: allSections,
       );
       expect(result, '/sign-in');
     });
@@ -33,6 +37,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: const AsyncData(null),
         currentLocation: '/sign-in',
+        sections: allSections,
       );
       expect(result, isNull);
     });
@@ -47,6 +52,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: AsyncData(session),
         currentLocation: '/attendance/calendar',
+        sections: allSections,
       );
       expect(result, '/unauthorized');
     });
@@ -61,6 +67,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: AsyncData(session),
         currentLocation: '/sign-in',
+        sections: allSections,
       );
       expect(result, '/attendance/calendar');
     });
@@ -75,6 +82,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: AsyncData(session),
         currentLocation: '/attendance/calendar',
+        sections: allSections,
       );
       expect(result, isNull);
     });
@@ -83,6 +91,7 @@ void main() {
       final result = computeRedirect(
         sessionValue: AsyncError('boom', StackTrace.empty),
         currentLocation: '/attendance/calendar',
+        sections: allSections,
       );
       expect(result, '/sign-in');
     });
@@ -113,20 +122,22 @@ void main() {
         moduleAccess: {},
       );
 
-      test('admin on a superadmin route bounces to /unauthorized', () {
+      test('admin on a superadmin route bounces to their landing page', () {
         expect(
           computeRedirect(
             sessionValue: const AsyncData(admin),
             currentLocation: '/settings/roles',
+            sections: allSections,
           ),
-          '/unauthorized',
+          '/attendance/calendar',
         );
         expect(
           computeRedirect(
             sessionValue: const AsyncData(admin),
-            currentLocation: '/employees/event-types',
+            currentLocation: '/settings/employees/event-types',
+            sections: allSections,
           ),
-          '/unauthorized',
+          '/attendance/calendar',
         );
       });
 
@@ -135,18 +146,20 @@ void main() {
           computeRedirect(
             sessionValue: const AsyncData(superadmin),
             currentLocation: '/settings/roles',
+            sections: allSections,
           ),
           isNull,
         );
       });
 
-      test('non-admin on an admin route bounces to /unauthorized', () {
+      test('non-admin on an admin route bounces to their landing page', () {
         expect(
           computeRedirect(
             sessionValue: const AsyncData(employeeWithAccess),
-            currentLocation: '/attendance/shift-defaults',
+            currentLocation: '/settings/attendance/shift-defaults',
+            sections: allSections,
           ),
-          '/unauthorized',
+          '/attendance/calendar',
         );
       });
 
@@ -155,6 +168,7 @@ void main() {
           computeRedirect(
             sessionValue: const AsyncData(admin),
             currentLocation: '/settings/module-access',
+            sections: allSections,
           ),
           isNull,
         );
@@ -162,6 +176,7 @@ void main() {
           computeRedirect(
             sessionValue: const AsyncData(admin),
             currentLocation: '/attendance/reports',
+            sections: allSections,
           ),
           isNull,
         );
@@ -172,6 +187,7 @@ void main() {
           computeRedirect(
             sessionValue: const AsyncData(employeeWithAccess),
             currentLocation: '/attendance/calendar',
+            sections: allSections,
           ),
           isNull,
         );
@@ -179,8 +195,9 @@ void main() {
           computeRedirect(
             sessionValue: const AsyncData(employeeWithoutAccess),
             currentLocation: '/attendance/calendar',
+            sections: allSections,
           ),
-          '/unauthorized',
+          '/no-modules',
         );
       });
 
@@ -191,6 +208,7 @@ void main() {
             computeRedirect(
               sessionValue: const AsyncData(employeeWithAccess),
               currentLocation: '/attendance/reports',
+              sections: allSections,
             ),
             isNull,
           );
@@ -198,18 +216,90 @@ void main() {
             computeRedirect(
               sessionValue: const AsyncData(employeeWithoutAccess),
               currentLocation: '/attendance/reports',
+              sections: allSections,
             ),
-            '/unauthorized',
+            '/no-modules',
           );
           expect(
             computeRedirect(
               sessionValue: const AsyncData(employeeWithoutAccess),
               currentLocation: '/attendance/2024-06-03',
+              sections: allSections,
             ),
-            '/unauthorized',
+            '/no-modules',
           );
         },
       );
+    });
+
+    group('landing', () {
+      const staffWithAccess = AppSession(
+        userId: 'u3',
+        email: 'e@x.com',
+        role: AppRole.employee,
+        moduleAccess: {'attendance'},
+      );
+      const staffWithoutAccess = AppSession(
+        userId: 'u4',
+        email: 'f@x.com',
+        role: AppRole.employee,
+        moduleAccess: {},
+      );
+
+      String? redirect(AppSession session, String location) => computeRedirect(
+        sessionValue: AsyncData(session),
+        currentLocation: location,
+        sections: allSections,
+      );
+
+      test('lands on the first section the user can access', () {
+        expect(redirect(staffWithAccess, '/sign-in'), '/attendance/calendar');
+        expect(redirect(staffWithAccess, '/'), '/attendance/calendar');
+      });
+
+      test(
+        'a role without any module lands on /no-modules instead of looping',
+        () {
+          // Previously: calendar -> /unauthorized -> calendar -> ... until
+          // go_router's redirect limit.
+          expect(redirect(staffWithoutAccess, '/sign-in'), '/no-modules');
+          expect(redirect(staffWithoutAccess, '/unauthorized'), '/no-modules');
+          expect(redirect(staffWithoutAccess, '/no-modules'), isNull);
+        },
+      );
+
+      test('settings is open to everyone but never a landing spot', () {
+        expect(redirect(staffWithoutAccess, '/settings'), isNull);
+        expect(landingLocation(staffWithoutAccess, allSections), '/no-modules');
+      });
+
+      test('a user granted access moves off /no-modules', () {
+        expect(
+          redirect(staffWithAccess, '/no-modules'),
+          '/attendance/calendar',
+        );
+      });
+
+      test('a hidden section\'s URL lands the user back home', () {
+        expect(redirect(staffWithAccess, '/employees'), '/attendance/calendar');
+        expect(
+          redirect(staffWithAccess, '/employees/abc'),
+          '/attendance/calendar',
+        );
+      });
+    });
+  });
+
+  group('AppSection.owns', () {
+    final section = allSections.firstWhere((s) => s.pathPrefix == '/employees');
+
+    test('owns its prefix and everything under it', () {
+      expect(section.owns('/employees'), isTrue);
+      expect(section.owns('/employees/abc/edit'), isTrue);
+    });
+
+    test('does not own a path that merely starts with the same letters', () {
+      expect(section.owns('/employeesx'), isFalse);
     });
   });
 }
