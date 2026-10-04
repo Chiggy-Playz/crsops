@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
-import '../../../widgets/typeahead_picker_field.dart';
+import '../../../widgets/creatable_dropdown_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
 import '../../repositories/event_type_repository.dart';
@@ -111,10 +111,10 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
         eventTypesAsync.when(
           loading: () => const LinearProgressIndicator(),
           error: (error, _) => Text('$error'),
-          data: (types) => TypeaheadPickerField(
+          data: (types) => CreatableDropdownField(
             options: types.map((t) => t.id).toList(),
-            labelText: 'Type',
-            helperText: 'Pick one, or type a new name',
+            label: 'Type',
+            helperText: 'Pick one, or type to add a new one',
             initialValue: widget.existing?.label,
             autofocus: !FormDialog.isCompact(context),
             validator: (value) =>

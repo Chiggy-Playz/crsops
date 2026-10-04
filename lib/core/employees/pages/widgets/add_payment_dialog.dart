@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
-import '../../../widgets/typeahead_picker_field.dart';
+import '../../../widgets/creatable_dropdown_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
 
@@ -108,11 +108,11 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
         entryTypesAsync.when(
           loading: () => const LinearProgressIndicator(),
           error: (error, _) => Text('$error'),
-          data: (types) => TypeaheadPickerField(
+          data: (types) => CreatableDropdownField(
             fieldKey: const Key('payment-category-field'),
             options: types,
-            labelText: 'Category',
-            helperText: 'Pick one, or type a new name',
+            label: 'Category',
+            helperText: 'Pick one, or type to add a new one',
             initialValue: widget.existing?.label,
             autofocus: !FormDialog.isCompact(context),
             validator: (value) =>
