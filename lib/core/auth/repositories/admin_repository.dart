@@ -101,7 +101,7 @@ class SupabaseAdminRepository implements AdminRepository {
           .schema('core')
           .from('profiles')
           .select()
-          .order('email');
+          .order('email', ascending: true);
       return rows.map(ProfileMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);
@@ -169,7 +169,7 @@ class SupabaseAdminRepository implements AdminRepository {
           .schema('core')
           .from('modules')
           .select('id, name')
-          .order('id');
+          .order('id', ascending: true);
       return rows
           .map((r) => (id: r['id'] as String, name: r['name'] as String))
           .toList();

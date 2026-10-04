@@ -42,8 +42,3 @@ String initialsFor(String name) => name
     .take(2)
     .map((w) => w[0].toUpperCase())
     .join();
-
-Color contrastingTextColor(Color background) =>
-    ThemeData.estimateBrightnessForColor(background) == Brightness.dark
-    ? Colors.white
-    : Colors.black;

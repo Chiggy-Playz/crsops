@@ -42,7 +42,7 @@ class SupabaseEventTypeRepository implements EventTypeRepository {
           .schema('core')
           .from('event_types')
           .select()
-          .order('id');
+          .order('id', ascending: true);
       return rows.map(EventTypeMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);

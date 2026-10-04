@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/custom_colors.dart';
 import '../../../../core/utils/date_key.dart';
 
 /// Key for the gap-warning marker of a day, shared with tests so the format
@@ -12,6 +13,7 @@ class DayCell extends StatelessWidget {
     required this.day,
     required this.hasGap,
     this.statusDots = const [],
+    this.isToday = false,
   });
 
   final DateTime day;
@@ -23,19 +25,39 @@ class DayCell extends StatelessWidget {
   /// gap-warning icon already signals that separately.
   final List<Color> statusDots;
 
+  /// Today gets a primary-coloured ring. It's drawn by this cell (not the
+  /// package's own today style) so it keeps its dots and gap marker.
+  final bool isToday;
+
   String get _dateKey => dateOnly(day);
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       margin: const EdgeInsets.all(2),
+      decoration: isToday
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: scheme.primary, width: 1.5),
+            )
+          : null,
       child: Stack(
         children: [
           Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${day.day}'),
+                Text(
+                  '${day.day}',
+                  style: isToday
+                      ? TextStyle(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w700,
+                        )
+                      : null,
+                ),
                 if (statusDots.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Row(
@@ -49,7 +71,8 @@ class DayCell extends StatelessWidget {
                             height: 5,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: color,
+                              // Same tuned colour as the day page's badges.
+                              color: context.customColor(color).color,
                             ),
                           ),
                         ),
@@ -66,7 +89,7 @@ class DayCell extends StatelessWidget {
               child: Icon(
                 Icons.warning_amber,
                 size: 12,
-                color: Colors.orange,
+                color: context.appColors.warning.color,
                 key: gapMarkerKey(_dateKey),
               ),
             ),

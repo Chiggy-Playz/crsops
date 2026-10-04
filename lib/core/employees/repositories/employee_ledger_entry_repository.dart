@@ -60,7 +60,7 @@ class SupabaseEmployeeLedgerEntryRepository
           .schema('core')
           .from('employee_ledger_entries')
           .select('entry_type')
-          .order('entry_type');
+          .order('entry_type', ascending: true);
       final types = rows.map((r) => r['entry_type'] as String).toSet().toList()
         ..sort();
       return types;

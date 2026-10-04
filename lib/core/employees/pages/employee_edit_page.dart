@@ -6,7 +6,6 @@ import '../models/employee.dart';
 import '../providers/employee_providers.dart';
 import '../../errors/app_exception.dart';
 import '../../widgets/error_snackbar.dart';
-import 'widgets/employee_color_picker.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -29,7 +28,9 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
   late final _notesController = TextEditingController(
     text: widget.existing?.notes ?? '',
   );
-  late int _color = widget.existing?.color ?? employeeColorPalette.first;
+  // Colour is no longer shown or chosen anywhere; the column is NOT NULL, so
+  // new employees get a fixed value and existing ones keep theirs.
+  late final int _color = widget.existing?.color ?? 0xFF3F51B5;
   DateTime _joinDate = DateTime.now();
 
   bool get _isEditing => widget.existing != null;
@@ -78,7 +79,7 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
       ref.invalidate(employeeListProvider);
       if (mounted) Navigator.of(context).pop();
     } on AppException catch (e) {
-      if (mounted)       showErrorSnackBar(context, e);
+      if (mounted) showErrorSnackBar(context, e);
     }
   }
 
@@ -96,11 +97,6 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
             controller: _nameController,
             decoration: const InputDecoration(labelText: 'Name'),
             onChanged: (_) => setState(() {}),
-          ),
-          const SizedBox(height: 16),
-          EmployeeColorPicker(
-            selectedColor: _color,
-            onChanged: (c) => setState(() => _color = c),
           ),
           const SizedBox(height: 16),
           if (!_isEditing) ...[

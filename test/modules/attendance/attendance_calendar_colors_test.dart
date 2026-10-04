@@ -74,6 +74,23 @@ void main() {
       expect(dots, hasLength(2));
     });
 
+    test('dots follow status order, not row order', () {
+      final dots = statusDotsFor([
+        _row(
+          employeeId: '1',
+          date: DateTime(2024, 6, 3),
+          firstHalfStatus: 'absent',
+        ),
+        _row(
+          employeeId: '2',
+          date: DateTime(2024, 6, 3),
+          firstHalfStatus: 'present',
+        ),
+      ], colors);
+
+      expect(dots, [const Color(0xFF4CAF50), const Color(0xFFF44336)]);
+    });
+
     test('an explicit mark beats the week-off dot', () {
       final dots = statusDotsFor([
         _row(

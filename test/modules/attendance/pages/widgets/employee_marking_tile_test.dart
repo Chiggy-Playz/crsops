@@ -22,7 +22,7 @@ void main() {
       ),
     ];
 
-    testWidgets('renders an unmarked tile and opens the sheet on Mark', (
+    testWidgets('renders an unmarked tile and opens the sheet on tap', (
       tester,
     ) async {
       StatusPick? picked;
@@ -44,7 +44,7 @@ void main() {
       expect(find.text('Ramesh'), findsOneWidget);
       expect(find.text('Unmarked'), findsOneWidget);
 
-      await tester.tap(find.text('Mark'));
+      await tester.tap(find.text('Ramesh'));
       await tester.pumpAndSettle();
 
       expect(find.text('Mark Ramesh'), findsOneWidget);

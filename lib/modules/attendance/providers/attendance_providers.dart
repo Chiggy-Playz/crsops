@@ -29,8 +29,8 @@ Future<List<ShiftDefaults>> shiftDefaultsHistory(Ref ref) =>
     ref.watch(shiftDefaultsRepositoryProvider).fetchHistory();
 
 @Riverpod(keepAlive: true)
-Future<List<StatusType>> statusTypes(Ref ref) =>
-    ref.watch(statusTypeRepositoryProvider).fetchAll();
+Future<List<StatusType>> statusTypes(Ref ref) async =>
+    inDisplayOrder(await ref.watch(statusTypeRepositoryProvider).fetchAll());
 
 @riverpod
 Future<List<EffectiveStatusRow>> effectiveRangeStatus(

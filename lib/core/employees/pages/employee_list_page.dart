@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/status_metadata.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
 import '../routes.dart';
+import 'widgets/employee_avatar.dart';
 
 const employeeListRoutePath = '/employees';
 
@@ -58,21 +58,30 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
             return const Center(child: Text('No employees yet'));
           }
 
-          final filtered = employees
+          bool isInactive(Employee e) => statuses[e.id] == 'inactive';
+          final matching = employees
               .where((e) => e.name.toLowerCase().contains(_query))
-              .where((e) => _showInactive || statuses[e.id] != 'inactive')
               .toList();
+          final active = matching.where((e) => !isInactive(e)).toList();
+          final inactive = _showInactive
+              ? matching.where(isInactive).toList()
+              : const <Employee>[];
 
-          if (filtered.isEmpty) {
+          if (active.isEmpty && inactive.isEmpty) {
             return const Center(child: Text('No employees match your search'));
           }
 
-          return ListView.builder(
-            itemCount: filtered.length,
-            itemBuilder: (context, index) => _EmployeeTile(
-              employee: filtered[index],
-              status: statuses[filtered[index].id],
-            ),
+          // Active first, then former employees under their own header —
+          // each group keeps the repository's alphabetical order.
+          return ListView(
+            children: [
+              for (final e in active) _EmployeeTile(employee: e),
+              if (inactive.isNotEmpty) ...[
+                const _SectionHeader('Inactive'),
+                for (final e in inactive)
+                  _EmployeeTile(employee: e, inactive: true),
+              ],
+            ],
           );
         },
       ),
@@ -84,36 +93,45 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   }
 }
 
-class _EmployeeTile extends StatelessWidget {
-  const _EmployeeTile({required this.employee, required this.status});
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.title);
 
-  final Employee employee;
-  final String? status;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(employee.color);
-
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color,
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: Semantics(
+        header: true,
         child: Text(
-          initialsFor(employee.name),
-          style: TextStyle(
-            color: contrastingTextColor(color),
-            fontWeight: FontWeight.bold,
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.primary,
           ),
         ),
       ),
-      title: Text(employee.name),
-      trailing: status == null
-          ? null
-          : Chip(
-              label: Text(displayLabel(status!)),
-              backgroundColor: colorFor(
-                status == 'active' ? '#4CAF50' : '#F44336',
-              ).withValues(alpha: 0.2),
-            ),
+    );
+  }
+}
+
+class _EmployeeTile extends StatelessWidget {
+  const _EmployeeTile({required this.employee, this.inactive = false});
+
+  final Employee employee;
+  final bool inactive;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: EmployeeAvatar(name: employee.name, dimmed: inactive),
+      title: Text(
+        employee.name,
+        style: inactive
+            ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
+            : null,
+      ),
       onTap: () => EmployeeDetailRoute(employee.id).push(context),
     );
   }

@@ -23,3 +23,22 @@ class StatusType with StatusTypeMappable {
   @MappableField(key: 'description')
   final String? description;
 }
+
+/// The order statuses are offered in: the everyday ones first (what gets
+/// tapped most), then any custom types alphabetically by label.
+const _builtInOrder = ['present', 'absent', 'leave', 'holiday', 'week_off'];
+
+/// Built-ins by their fixed position; anything custom ranks after them.
+int statusDisplayRank(String statusId) {
+  final i = _builtInOrder.indexOf(statusId);
+  return i == -1 ? _builtInOrder.length : i;
+}
+
+List<StatusType> inDisplayOrder(Iterable<StatusType> types) {
+  return types.toList()..sort((a, b) {
+    final byRank = statusDisplayRank(a.id).compareTo(statusDisplayRank(b.id));
+    return byRank != 0
+        ? byRank
+        : a.label.toLowerCase().compareTo(b.label.toLowerCase());
+  });
+}

@@ -40,7 +40,7 @@ class SupabaseEmployeeRepository implements EmployeeRepository {
           .schema('core')
           .from('employees')
           .select()
-          .order('name');
+          .order('name', ascending: true);
       return rows.map(EmployeeMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);

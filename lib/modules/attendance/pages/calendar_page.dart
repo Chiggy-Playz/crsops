@@ -7,6 +7,7 @@ import '../attendance_calendar_colors.dart';
 import '../routes.dart';
 import '../models/effective_status_row.dart';
 import '../providers/attendance_providers.dart';
+import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
 
 class CalendarPage extends ConsumerStatefulWidget {
@@ -39,6 +40,19 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       monthStatusAsync.value ?? const <EffectiveStatusRow>[],
     );
 
+    Widget cell(DateTime day, {bool isToday = false}) {
+      final dateKey = dateOnly(day);
+      return DayCell(
+        day: day,
+        isToday: isToday,
+        hasGap: gapDates.contains(dateKey),
+        statusDots: statusDotsFor(
+          rowsByDate[dateKey] ?? const [],
+          colorHexByStatusId,
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Calendar'),
@@ -61,18 +75,11 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           setState(() => _focusedDay = focusedDay);
           AttendanceDayRoute(dateOnly(selectedDay)).push(context);
         },
+        daysOfWeekStyle: themedDaysOfWeekStyle(context),
+        calendarStyle: themedCalendarStyle(context),
         calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) {
-            final dateKey = dateOnly(day);
-            return DayCell(
-              day: day,
-              hasGap: gapDates.contains(dateKey),
-              statusDots: statusDotsFor(
-                rowsByDate[dateKey] ?? const [],
-                colorHexByStatusId,
-              ),
-            );
-          },
+          defaultBuilder: (context, day, focusedDay) => cell(day),
+          todayBuilder: (context, day, focusedDay) => cell(day, isToday: true),
         ),
       ),
     );

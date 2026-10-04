@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../errors/app_exception.dart';
+import '../../theme/custom_colors.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/error_snackbar.dart';
 import '../../widgets/status_metadata.dart';
@@ -13,6 +14,7 @@ import '../providers/employee_providers.dart';
 import '../routes.dart';
 import 'widgets/add_event_dialog.dart';
 import 'widgets/add_payment_dialog.dart';
+import 'widgets/employee_avatar.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 final _currencyFormat = NumberFormat.currency(
@@ -162,8 +164,16 @@ class _ProfileCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = Color(employee.color);
     final isActive = status == 'active';
+    // Active uses the M3 custom "success" roles; inactive isn't an error, so it
+    // gets the theme's neutral container rather than red.
+    final success = context.appColors.success;
+    final chipBackground = isActive
+        ? success.colorContainer
+        : theme.colorScheme.surfaceContainerHighest;
+    final chipForeground = isActive
+        ? success.onColorContainer
+        : theme.colorScheme.onSurfaceVariant;
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -172,18 +182,7 @@ class _ProfileCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: color,
-              child: Text(
-                initialsFor(employee.name),
-                style: TextStyle(
-                  color: contrastingTextColor(color),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
-            ),
+            EmployeeAvatar(name: employee.name, radius: 28, dimmed: !isActive),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
@@ -199,17 +198,16 @@ class _ProfileCard extends StatelessWidget {
                       if (status != null)
                         Chip(
                           avatar: Icon(
-                            isActive ? Icons.check_circle : Icons.cancel,
-                            color: isActive
-                                ? Colors.green.shade700
-                                : Colors.red.shade700,
+                            isActive
+                                ? Icons.check_circle
+                                : Icons.remove_circle_outline,
+                            color: chipForeground,
                             size: 18,
                           ),
                           label: Text(displayLabel(status!)),
-                          backgroundColor:
-                              (isActive ? Colors.green : Colors.red).withValues(
-                                alpha: 0.12,
-                              ),
+                          labelStyle: TextStyle(color: chipForeground),
+                          backgroundColor: chipBackground,
+                          side: BorderSide.none,
                         ),
                       Text(
                         _tenureText(joinedSince),

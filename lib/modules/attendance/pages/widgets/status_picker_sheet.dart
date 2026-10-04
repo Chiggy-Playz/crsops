@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/theme/custom_colors.dart';
 import '../../../../core/widgets/status_metadata.dart';
 import '../../models/status_type.dart';
 
@@ -204,7 +205,7 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
                 ListTile(
                   leading: Icon(
                     iconFor(type.iconName),
-                    color: colorFor(type.colorHex),
+                    color: context.customColor(colorFor(type.colorHex)).color,
                   ),
                   title: Text(type.label),
                   onTap: () => _pickFullDay(type.id),

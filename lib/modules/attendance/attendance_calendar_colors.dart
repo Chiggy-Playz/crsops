@@ -4,6 +4,7 @@ import '../../core/utils/date_key.dart';
 import '../../core/widgets/status_metadata.dart';
 import 'day_status.dart';
 import 'models/effective_status_row.dart';
+import 'models/status_type.dart';
 
 /// Groups rows by date (`yyyy-MM-dd` key) — shared by any calendar view that
 /// needs "what happened on this day" regardless of how many employees' rows
@@ -35,14 +36,10 @@ List<Color> statusDotsFor(
   List<EffectiveStatusRow> dayRows,
   Map<String, String> colorHexByStatusId,
 ) {
-  final seen = <String>{};
-  final dots = <Color>[];
-  for (final row in dayRows) {
-    final statusId = representativeStatus(row);
-    if (statusId == null) continue;
-    if (seen.add(statusId)) {
-      dots.add(colorFor(colorHexByStatusId[statusId]));
-    }
-  }
-  return dots;
+  // Always in status display order (Present first, …) so dots line up
+  // across days instead of following whatever order the rows came back in.
+  final statusIds =
+      {for (final row in dayRows) ?representativeStatus(row)}.toList()
+        ..sort((a, b) => statusDisplayRank(a).compareTo(statusDisplayRank(b)));
+  return [for (final id in statusIds) colorFor(colorHexByStatusId[id])];
 }

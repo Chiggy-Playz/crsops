@@ -77,4 +77,26 @@ void main() {
     expect(find.text('Ramesh'), findsOneWidget);
     expect(find.text('Suresh'), findsOneWidget);
   });
+
+  testWidgets('shown inactive employees sit below an Inactive header', (tester) async {
+    final repo = FakeEmployeeRepository(
+      seed: [
+        Employee(id: '1', name: 'Amit', color: 0, createdAt: DateTime(2024, 1, 1)),
+        Employee(id: '2', name: 'Bhanu', color: 0, createdAt: DateTime(2024, 1, 1)),
+        Employee(id: '3', name: 'Chetan', color: 0, createdAt: DateTime(2024, 1, 1)),
+      ],
+      statusById: {'1': 'inactive', '2': 'active', '3': 'active'},
+    );
+
+    await tester.pumpWidget(_wrap(const EmployeeListPage(), repo: repo));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.visibility_off));
+    await tester.pumpAndSettle();
+
+    double top(String text) => tester.getTopLeft(find.text(text)).dy;
+    // Amit sorts first alphabetically but is inactive, so goes last.
+    expect(top('Bhanu'), lessThan(top('Chetan')));
+    expect(top('Chetan'), lessThan(top('Inactive')));
+    expect(top('Inactive'), lessThan(top('Amit')));
+  });
 }

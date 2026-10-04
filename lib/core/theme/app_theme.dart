@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'custom_colors.dart';
+
 ThemeData buildAppTheme({required Brightness brightness}) {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: const Color(0xFF3F51B5),
@@ -9,6 +11,7 @@ ThemeData buildAppTheme({required Brightness brightness}) {
   return ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
+    extensions: [AppColors.forScheme(colorScheme)],
     // Bare TextField/DropdownMenu default to Material 2's underline style even
     // with useMaterial3: true — M3's outlined look is opt-in, not automatic.
     // Outlined variant: no fill, full border on all sides at rest (outline

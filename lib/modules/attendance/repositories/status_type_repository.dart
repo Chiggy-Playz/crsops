@@ -16,7 +16,7 @@ class SupabaseStatusTypeRepository implements StatusTypeRepository {
   @override
   Future<List<StatusType>> fetchAll() async {
     try {
-      final rows = await _client.schema('attendance').from('status_types').select().order('id');
+      final rows = await _client.schema('attendance').from('status_types').select().order('id', ascending: true);
       return rows.map(StatusTypeMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);

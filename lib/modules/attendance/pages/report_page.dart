@@ -5,6 +5,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
+import '../../../core/theme/custom_colors.dart';
 import '../../../core/utils/date_key.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../attendance_calendar_colors.dart';
@@ -14,6 +15,7 @@ import '../models/effective_status_row.dart';
 import '../models/status_type.dart';
 import '../providers/attendance_providers.dart';
 import '../report_calculations.dart';
+import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
 import 'widgets/employee_picker_dialog.dart';
 
@@ -240,7 +242,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                 label: type.label,
                 count: summary[type.id] ?? 0,
                 icon: iconFor(type.iconName),
-                color: colorFor(type.colorHex),
+                color: context.customColor(colorFor(type.colorHex)).color,
               ),
             _SummaryCard(
               label: 'Unmarked',
@@ -307,6 +309,19 @@ class _ReportCalendar extends StatelessWidget {
     };
     final rowsByDate = groupRowsByDate(rows);
 
+    Widget cell(DateTime day, {bool isToday = false}) {
+      final dateKey = dateOnly(day);
+      return DayCell(
+        day: day,
+        isToday: isToday,
+        hasGap: false,
+        statusDots: statusDotsFor(
+          rowsByDate[dateKey] ?? const [],
+          colorHexByStatusId,
+        ),
+      );
+    }
+
     return SizedBox(
       height: 400,
       child: TableCalendar(
@@ -316,18 +331,11 @@ class _ReportCalendar extends StatelessWidget {
         headerStyle: const HeaderStyle(formatButtonVisible: false),
         onDaySelected: (selectedDay, focusedDay) =>
             AttendanceDayRoute(dateOnly(selectedDay)).push(context),
+        daysOfWeekStyle: themedDaysOfWeekStyle(context),
+        calendarStyle: themedCalendarStyle(context),
         calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) {
-            final dateKey = dateOnly(day);
-            return DayCell(
-              day: day,
-              hasGap: false,
-              statusDots: statusDotsFor(
-                rowsByDate[dateKey] ?? const [],
-                colorHexByStatusId,
-              ),
-            );
-          },
+          defaultBuilder: (context, day, focusedDay) => cell(day),
+          todayBuilder: (context, day, focusedDay) => cell(day, isToday: true),
         ),
       ),
     );

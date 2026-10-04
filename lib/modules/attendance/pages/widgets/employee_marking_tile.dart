@@ -4,6 +4,7 @@ import '../../../../core/employees/models/employee.dart';
 import '../../../../core/widgets/status_metadata.dart';
 import '../../models/effective_status_row.dart';
 import '../../models/status_type.dart';
+import 'status_badge.dart';
 import 'status_picker_sheet.dart';
 
 class EmployeeMarkingTile extends StatelessWidget {
@@ -58,14 +59,7 @@ class EmployeeMarkingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Color(employee.color);
-    final iconByStatusId = {
-      for (final type in statusTypes)
-        if (type.iconName != null) type.id: type.iconName!,
-    };
-    final currentStatusId = status?.firstHalfStatus == status?.secondHalfStatus
-        ? status?.firstHalfStatus
-        : null;
+    final typeById = {for (final type in statusTypes) type.id: type};
     final isWeekOff = status?.isWeekOff == true;
     final isUnmarked = status?.firstHalfStatus == null;
     final currentLabel = !isUnmarked
@@ -85,16 +79,18 @@ class EmployeeMarkingTile extends StatelessWidget {
       if (note?.isNotEmpty == true) note!,
     ];
 
+    // An unmarked week-off day shows as Week off, same as its label.
+    final weekOffType = isUnmarked && isWeekOff ? typeById['week_off'] : null;
+
+    // The whole row opens the status sheet — the badge already shows the
+    // status, so a separate button only repeated it.
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color,
-        child: Text(
-          initialsFor(employee.name),
-          style: TextStyle(
-            color: contrastingTextColor(color),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+      key: Key('mark-status-${employee.id}'),
+      enabled: !busy && statusTypes.isNotEmpty,
+      onTap: () => _openStatusPicker(context),
+      leading: StatusBadge(
+        firstHalf: typeById[status?.firstHalfStatus] ?? weekOffType,
+        secondHalf: typeById[status?.secondHalfStatus] ?? weekOffType,
       ),
       title: Text(employee.name),
       subtitle: subtitleParts.isEmpty
@@ -106,20 +102,7 @@ class EmployeeMarkingTile extends StatelessWidget {
               height: 18,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
-          : OutlinedButton.icon(
-              key: Key('mark-status-${employee.id}'),
-              onPressed: statusTypes.isEmpty
-                  ? null
-                  : () => _openStatusPicker(context),
-              icon: currentStatusId != null
-                  ? Icon(iconFor(iconByStatusId[currentStatusId]), size: 18)
-                  : isWeekOff
-                  ? const Icon(Icons.weekend, size: 18)
-                  : const Icon(Icons.add, size: 18),
-              label: Text(
-                isUnmarked ? (isWeekOff ? 'Week off' : 'Mark') : currentLabel!,
-              ),
-            ),
+          : null,
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../../core/widgets/color_swatch_picker.dart';
 import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
+import 'widgets/status_badge.dart';
 
 class StatusTypesManagerPage extends ConsumerWidget {
   const StatusTypesManagerPage({super.key});
@@ -23,10 +24,7 @@ class StatusTypesManagerPage extends ConsumerWidget {
           itemBuilder: (context, index) {
             final type = types[index];
             return ListTile(
-              leading: CircleAvatar(
-                backgroundColor: colorFor(type.colorHex),
-                child: Icon(iconFor(type.iconName), color: Colors.white),
-              ),
+              leading: StatusBadge(firstHalf: type, secondHalf: type),
               title: Text(type.label),
             );
           },
