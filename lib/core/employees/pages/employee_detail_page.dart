@@ -225,9 +225,10 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// Read-only status as a list row (M3 chips are interactive, so a chip read
-/// as a button). Active uses the custom "success" colour; inactive isn't an
-/// error, so it's neutral rather than red.
+/// Read-only status (M3 chips are interactive, so a chip read as a button).
+/// Drawn exactly like a history row — same marker, left edge and text styles —
+/// so "Active" and the "Joined" entry below it don't look like two different
+/// green ticks. Inactive isn't an error, so it's neutral rather than red.
 class _StatusRow extends StatelessWidget {
   const _StatusRow({required this.isActive, required this.since});
 
@@ -236,27 +237,79 @@ class _StatusRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive
-        ? context.appColors.success.color
-        : Theme.of(context).colorScheme.onSurfaceVariant;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final success = context.appColors.success;
     final date = since;
 
-    return ListTile(
-      leading: Icon(
-        isActive ? Icons.check_circle : Icons.remove_circle_outline,
-        color: color,
-      ),
-      title: Text(
-        isActive ? 'Active' : 'Inactive',
-        style: TextStyle(color: color),
-      ),
-      subtitle: date == null
-          ? null
-          : Text(
-              isActive
-                  ? 'Since ${_dateFormat.format(date)} · ${_durationSince(date)}'
-                  : 'Left ${_dateFormat.format(date)}',
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Marker(
+            icon: isActive ? Icons.check : Icons.remove,
+            background: isActive
+                ? success.colorContainer
+                : scheme.surfaceContainerHighest,
+            foreground: isActive
+                ? success.onColorContainer
+                : scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: _markerGap),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isActive ? 'Active' : 'Inactive',
+                    style: theme.textTheme.bodyLarge,
+                  ),
+                  if (date != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      isActive
+                          ? 'Since ${_dateFormat.format(date)} · ${_durationSince(date)}'
+                          : 'Left ${_dateFormat.format(date)}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const _markerSize = 28.0;
+const _markerGap = 16.0;
+
+/// The round icon marker shared by the status row and history rows.
+class _Marker extends StatelessWidget {
+  const _Marker({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+  });
+
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: _markerSize,
+      height: _markerSize,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: background),
+      child: Icon(icon, size: 16, color: foreground),
     );
   }
 }
@@ -350,7 +403,6 @@ class _TimelineRow extends ConsumerWidget {
         : iconFor(eventType?.iconName);
     final note = entry.note?.trim();
 
-    const nodeSize = 28.0;
     const topPadding = 10.0;
 
     return IntrinsicHeight(
@@ -360,7 +412,7 @@ class _TimelineRow extends ConsumerWidget {
           // Rail: line in, node, line out. The node sits a fixed distance from
           // the top so it lines up with the title, however long the note is.
           SizedBox(
-            width: nodeSize,
+            width: _markerSize,
             child: Column(
               children: [
                 Container(
@@ -368,14 +420,10 @@ class _TimelineRow extends ConsumerWidget {
                   height: topPadding,
                   color: isFirst ? Colors.transparent : scheme.outlineVariant,
                 ),
-                Container(
-                  width: nodeSize,
-                  height: nodeSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: nodeBackground,
-                  ),
-                  child: Icon(icon, size: 16, color: nodeForeground),
+                _Marker(
+                  icon: icon,
+                  background: nodeBackground,
+                  foreground: nodeForeground,
                 ),
                 Expanded(
                   child: Container(
@@ -386,7 +434,7 @@ class _TimelineRow extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: _markerGap),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(top: topPadding + 2, bottom: 16),
