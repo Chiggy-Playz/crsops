@@ -68,4 +68,7 @@ Imports the old `crs_attendance` Firestore export into `core`/`attendance`. See
    of running if `core.employee_ledger_entries` (the finance ledger, which this tool
    never touches) has any real rows by then.
 
-- [ ] Ran the legacy data import (date: ______, export file: ______)
+- [x] Ran the legacy data import (date: 2026-10-05, export file: `~/Downloads/backup.json`)
+  — 16 employees, 27 events, 1950 attendance_days, verified against source counts and the
+  11-inactive/5-active split. This is a test-cutover run, not necessarily the final one —
+  re-run `undo.sql` + regenerate against a fresher export before going live for real.
