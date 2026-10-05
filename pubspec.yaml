@@ -69,6 +69,7 @@ dev_dependencies:
   dart_mappable_builder: ^4.10.0
   flutter_gen_runner: ^5.13.0+1
   go_router_builder: ^4.5.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -77,6 +78,28 @@ flutter_gen:
   output: lib/gen/
   integrations:
     flutter_svg: true
+
+# App icons for Android, web and Windows, generated from assets/branding/
+# (edit the SVGs, re-render the PNGs with rsvg-convert -w 1024 -h 1024,
+# then run `dart run flutter_launcher_icons`).
+flutter_launcher_icons:
+  image_path: assets/branding/icon.png
+  android: true
+  adaptive_icon_background: "#36618e"
+  adaptive_icon_foreground: assets/branding/icon_foreground.png
+  adaptive_icon_monochrome: assets/branding/icon_foreground.png
+  # The SVGs are already drawn on the 108-unit adaptive canvas; no extra padding.
+  adaptive_icon_foreground_inset: 0
+  ios: false
+  web:
+    generate: true
+    image_path: assets/branding/icon.png
+    background_color: "#f8f9ff"
+    theme_color: "#36618e"
+  windows:
+    generate: true
+    image_path: assets/branding/icon_windows.png
+    icon_size: 256
 
 # The following section is specific to Flutter packages.
 flutter:
