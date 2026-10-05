@@ -102,7 +102,7 @@ jobs:
             --dart-define=APP_VERSION=${{ needs.check.outputs.version }} \
             --dart-define=GIT_SHA=${{ needs.check.outputs.sha }}
       - name: Deploy to Cloudflare
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
