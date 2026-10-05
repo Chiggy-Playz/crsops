@@ -28,15 +28,15 @@ void main() {
     test('round-trips through a map', () {
       final row = DerivedFlagsRowMapper.fromMap(
         DerivedFlagsRow(
-              employeeId: '1',
-              date: DateTime(2024, 6, 3),
-              timeIn: '10:35',
-              timeOut: null,
-              workedMinutes: 0,
-              isLate: false,
-              isEarly: false,
-              overtimeMinutes: 0,
-            ).toMap(),
+          employeeId: '1',
+          date: DateTime(2024, 6, 3),
+          timeIn: '10:35',
+          timeOut: null,
+          workedMinutes: 0,
+          isLate: false,
+          isEarly: false,
+          overtimeMinutes: 0,
+        ).toMap(),
       );
 
       expect(row.employeeId, '1');

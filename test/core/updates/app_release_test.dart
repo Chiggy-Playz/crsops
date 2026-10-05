@@ -26,8 +26,16 @@ void main() {
   });
 
   group('pickApkAsset', () {
-    const arm64 = ReleaseAsset(name: 'crs-ops-1.0.2-arm64-v8a.apk', url: 'a', bytes: 1);
-    const armv7 = ReleaseAsset(name: 'crs-ops-1.0.2-armeabi-v7a.apk', url: 'b', bytes: 1);
+    const arm64 = ReleaseAsset(
+      name: 'crs-ops-1.0.2-arm64-v8a.apk',
+      url: 'a',
+      bytes: 1,
+    );
+    const armv7 = ReleaseAsset(
+      name: 'crs-ops-1.0.2-armeabi-v7a.apk',
+      url: 'b',
+      bytes: 1,
+    );
 
     test("follows the phone's ABI preference order", () {
       expect(pickApkAsset([armv7, arm64], ['arm64-v8a', 'armeabi-v7a']), arm64);

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/employee.dart';
-import '../providers/employee_providers.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../layout/window_size.dart';
 import '../../widgets/list_action_row.dart';
+import '../models/employee.dart';
+import '../providers/employee_providers.dart';
 import '../routes.dart';
 import 'widgets/employee_avatar.dart';
 

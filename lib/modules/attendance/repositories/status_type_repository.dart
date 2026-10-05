@@ -5,8 +5,17 @@ import '../models/status_type.dart';
 
 abstract class StatusTypeRepository {
   Future<List<StatusType>> fetchAll();
-  Future<StatusType> add({required String id, required String label, String? iconName, String? colorHex});
-  Future<StatusType> updateDisplay(String id, {String? iconName, String? colorHex});
+  Future<StatusType> add({
+    required String id,
+    required String label,
+    String? iconName,
+    String? colorHex,
+  });
+  Future<StatusType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  });
 }
 
 class SupabaseStatusTypeRepository implements StatusTypeRepository {
@@ -16,7 +25,11 @@ class SupabaseStatusTypeRepository implements StatusTypeRepository {
   @override
   Future<List<StatusType>> fetchAll() async {
     try {
-      final rows = await _client.schema('attendance').from('status_types').select().order('id', ascending: true);
+      final rows = await _client
+          .schema('attendance')
+          .from('status_types')
+          .select()
+          .order('id', ascending: true);
       return rows.map(StatusTypeMapper.fromMap).toList();
     } catch (error) {
       throw translateException(error);
@@ -34,7 +47,12 @@ class SupabaseStatusTypeRepository implements StatusTypeRepository {
       final row = await _client
           .schema('attendance')
           .from('status_types')
-          .insert({'id': id, 'label': label, 'icon_name': iconName, 'color_hex': colorHex})
+          .insert({
+            'id': id,
+            'label': label,
+            'icon_name': iconName,
+            'color_hex': colorHex,
+          })
           .select()
           .single();
       return StatusTypeMapper.fromMap(row);
@@ -44,7 +62,11 @@ class SupabaseStatusTypeRepository implements StatusTypeRepository {
   }
 
   @override
-  Future<StatusType> updateDisplay(String id, {String? iconName, String? colorHex}) async {
+  Future<StatusType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  }) async {
     try {
       final row = await _client
           .schema('attendance')

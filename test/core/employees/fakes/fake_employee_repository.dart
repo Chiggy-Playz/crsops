@@ -2,9 +2,11 @@ import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/repositories/employee_repository.dart';
 
 class FakeEmployeeRepository implements EmployeeRepository {
-  FakeEmployeeRepository({List<Employee>? seed, Map<String, String>? statusById})
-      : _employees = List.of(seed ?? const []),
-        _statusById = Map.of(statusById ?? const {});
+  FakeEmployeeRepository({
+    List<Employee>? seed,
+    Map<String, String>? statusById,
+  }) : _employees = List.of(seed ?? const []),
+       _statusById = Map.of(statusById ?? const {});
 
   final List<Employee> _employees;
   final Map<String, String> _statusById;
@@ -13,7 +15,8 @@ class FakeEmployeeRepository implements EmployeeRepository {
   Future<List<Employee>> fetchAll() async => List.of(_employees);
 
   @override
-  Future<Employee> fetchById(String id) async => _employees.firstWhere((e) => e.id == id);
+  Future<Employee> fetchById(String id) async =>
+      _employees.firstWhere((e) => e.id == id);
 
   @override
   Future<Employee> create({
@@ -42,8 +45,10 @@ class FakeEmployeeRepository implements EmployeeRepository {
   }
 
   @override
-  Future<String?> fetchCurrentStatus(String employeeId) async => _statusById[employeeId];
+  Future<String?> fetchCurrentStatus(String employeeId) async =>
+      _statusById[employeeId];
 
   @override
-  Future<Map<String, String>> fetchAllCurrentStatuses() async => Map.of(_statusById);
+  Future<Map<String, String>> fetchAllCurrentStatuses() async =>
+      Map.of(_statusById);
 }

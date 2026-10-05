@@ -12,19 +12,25 @@ void main() {
       expect(result, isA<NetworkException>());
     });
 
-    test('AuthException becomes AuthFailureException with the original message', () {
-      final result = translateException(AuthException('invalid credentials'));
-      expect(result, isA<AuthFailureException>());
-      expect(result.message, 'invalid credentials');
-    });
+    test(
+      'AuthException becomes AuthFailureException with the original message',
+      () {
+        final result = translateException(AuthException('invalid credentials'));
+        expect(result, isA<AuthFailureException>());
+        expect(result.message, 'invalid credentials');
+      },
+    );
 
-    test('PostgrestException becomes DataException with the original message', () {
-      final result = translateException(
-        PostgrestException(message: 'row-level security violation'),
-      );
-      expect(result, isA<DataException>());
-      expect(result.message, 'row-level security violation');
-    });
+    test(
+      'PostgrestException becomes DataException with the original message',
+      () {
+        final result = translateException(
+          PostgrestException(message: 'row-level security violation'),
+        );
+        expect(result, isA<DataException>());
+        expect(result.message, 'row-level security violation');
+      },
+    );
 
     test('an already-translated AppException passes through unchanged', () {
       const original = NetworkException();

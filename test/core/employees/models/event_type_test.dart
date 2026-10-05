@@ -3,8 +3,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('isStructural is true only when statusEffect is set', () {
-    const joined = EventType(id: 'joined', statusEffect: 'active', iconName: 'check', colorHex: '#4CAF50');
-    const promotion = EventType(id: 'promotion', description: 'Promoted to senior role');
+    const joined = EventType(
+      id: 'joined',
+      statusEffect: 'active',
+      iconName: 'check',
+      colorHex: '#4CAF50',
+    );
+    const promotion = EventType(
+      id: 'promotion',
+      description: 'Promoted to senior role',
+    );
 
     expect(joined.isStructural, isTrue);
     expect(promotion.isStructural, isFalse);

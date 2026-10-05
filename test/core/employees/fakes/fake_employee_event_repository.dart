@@ -2,7 +2,8 @@ import 'package:crs_ops/core/employees/models/timeline_entry.dart';
 import 'package:crs_ops/core/employees/repositories/employee_event_repository.dart';
 
 class FakeEmployeeEventRepository implements EmployeeEventRepository {
-  FakeEmployeeEventRepository({List<TimelineEntry>? seed}) : _entries = List.of(seed ?? const []);
+  FakeEmployeeEventRepository({List<TimelineEntry>? seed})
+    : _entries = List.of(seed ?? const []);
 
   final List<TimelineEntry> _entries;
   final List<Map<String, Object?>> addedEvents = [];
@@ -47,7 +48,11 @@ class FakeEmployeeEventRepository implements EmployeeEventRepository {
     String? note,
   }) async {
     final index = _entries.indexWhere((e) => e.id == id);
-    _entries[index] = _entries[index].copyWith(label: eventType, entryDate: eventDate, note: note);
+    _entries[index] = _entries[index].copyWith(
+      label: eventType,
+      entryDate: eventDate,
+      note: note,
+    );
   }
 
   @override

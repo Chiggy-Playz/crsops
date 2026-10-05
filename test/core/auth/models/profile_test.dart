@@ -17,10 +17,10 @@ void main() {
     test('round-trips through a map', () {
       final profile = ProfileMapper.fromMap(
         Profile(
-              id: 'u1',
-              email: 'dad@example.com',
-              createdAt: DateTime(2024, 1, 1),
-            ).toMap(),
+          id: 'u1',
+          email: 'dad@example.com',
+          createdAt: DateTime(2024, 1, 1),
+        ).toMap(),
       );
 
       expect(profile.id, 'u1');

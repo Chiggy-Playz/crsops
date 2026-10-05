@@ -1,8 +1,11 @@
 import 'package:crs_ops/core/employees/repositories/employee_ledger_entry_repository.dart';
 
-class FakeEmployeeLedgerEntryRepository implements EmployeeLedgerEntryRepository {
+class FakeEmployeeLedgerEntryRepository
+    implements EmployeeLedgerEntryRepository {
   FakeEmployeeLedgerEntryRepository({List<String>? entryTypesSeed})
-      : _entryTypes = List.of(entryTypesSeed ?? const ['advance', 'salary_payment']);
+    : _entryTypes = List.of(
+        entryTypesSeed ?? const ['advance', 'salary_payment'],
+      );
 
   final List<String> _entryTypes;
   final List<Map<String, Object?>> addedEntries = [];

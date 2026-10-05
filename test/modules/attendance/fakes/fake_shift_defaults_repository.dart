@@ -3,7 +3,8 @@ import 'package:crs_ops/modules/attendance/repositories/shift_defaults_repositor
 
 class FakeShiftDefaultsRepository implements ShiftDefaultsRepository {
   FakeShiftDefaultsRepository({List<ShiftDefaults>? seed})
-      : _history = List.of(seed ??
+    : _history = List.of(
+        seed ??
             [
               ShiftDefaults(
                 id: 'seed-1',
@@ -12,7 +13,8 @@ class FakeShiftDefaultsRepository implements ShiftDefaultsRepository {
                 defaultEnd: '18:30:00',
                 weekOffDays: const [7],
               ),
-            ]);
+            ],
+      );
 
   final List<ShiftDefaults> _history;
 

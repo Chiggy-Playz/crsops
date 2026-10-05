@@ -2,7 +2,8 @@ import 'package:crs_ops/modules/attendance/models/status_type.dart';
 import 'package:crs_ops/modules/attendance/repositories/status_type_repository.dart';
 
 class FakeStatusTypeRepository implements StatusTypeRepository {
-  FakeStatusTypeRepository({List<StatusType>? seed}) : _types = List.of(seed ?? const []);
+  FakeStatusTypeRepository({List<StatusType>? seed})
+    : _types = List.of(seed ?? const []);
 
   final List<StatusType> _types;
 
@@ -16,13 +17,22 @@ class FakeStatusTypeRepository implements StatusTypeRepository {
     String? iconName,
     String? colorHex,
   }) async {
-    final type = StatusType(id: id, label: label, iconName: iconName, colorHex: colorHex);
+    final type = StatusType(
+      id: id,
+      label: label,
+      iconName: iconName,
+      colorHex: colorHex,
+    );
     _types.add(type);
     return type;
   }
 
   @override
-  Future<StatusType> updateDisplay(String id, {String? iconName, String? colorHex}) async {
+  Future<StatusType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  }) async {
     final index = _types.indexWhere((t) => t.id == id);
     final updated = StatusType(
       id: _types[index].id,

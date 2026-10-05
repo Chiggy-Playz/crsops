@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../layout/window_size.dart';
 import '../router/dialog_page.dart';
 import '../router/navigator_keys.dart';
+import '../widgets/empty_state.dart';
 import 'models/employee.dart';
 import 'pages/employee_detail_page.dart';
 import 'pages/employee_edit_page.dart';
 import 'pages/employee_list_page.dart';
 import 'pages/employees_split_layout.dart';
-import '../widgets/empty_state.dart';
 
 part 'routes.g.dart';
 

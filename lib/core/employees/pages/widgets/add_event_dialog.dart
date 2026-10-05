@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../widgets/creatable_dropdown_field.dart';
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
-import '../../../widgets/creatable_dropdown_field.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
 import '../../repositories/event_type_repository.dart';

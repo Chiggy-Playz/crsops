@@ -6,8 +6,8 @@ class FakeAttendanceRepository implements AttendanceRepository {
   FakeAttendanceRepository({
     List<EffectiveStatusRow>? rangeStatusSeed,
     List<DerivedFlagsRow>? derivedFlagsSeed,
-  })  : _rangeStatus = List.of(rangeStatusSeed ?? const []),
-        _derivedFlags = List.of(derivedFlagsSeed ?? const []);
+  }) : _rangeStatus = List.of(rangeStatusSeed ?? const []),
+       _derivedFlags = List.of(derivedFlagsSeed ?? const []);
 
   final List<EffectiveStatusRow> _rangeStatus;
   final List<DerivedFlagsRow> _derivedFlags;
@@ -21,22 +21,20 @@ class FakeAttendanceRepository implements AttendanceRepository {
     required DateTime start,
     required DateTime end,
     String? employeeId,
-  }) async =>
-      _rangeStatus
-          .where((r) => !r.date.isBefore(start) && !r.date.isAfter(end))
-          .where((r) => employeeId == null || r.employeeId == employeeId)
-          .toList();
+  }) async => _rangeStatus
+      .where((r) => !r.date.isBefore(start) && !r.date.isAfter(end))
+      .where((r) => employeeId == null || r.employeeId == employeeId)
+      .toList();
 
   @override
   Future<List<DerivedFlagsRow>> fetchDerivedFlags({
     required DateTime start,
     required DateTime end,
     String? employeeId,
-  }) async =>
-      _derivedFlags
-          .where((r) => !r.date.isBefore(start) && !r.date.isAfter(end))
-          .where((r) => employeeId == null || r.employeeId == employeeId)
-          .toList();
+  }) async => _derivedFlags
+      .where((r) => !r.date.isBefore(start) && !r.date.isAfter(end))
+      .where((r) => employeeId == null || r.employeeId == employeeId)
+      .toList();
 
   @override
   Future<void> markDay({
@@ -60,19 +58,28 @@ class FakeAttendanceRepository implements AttendanceRepository {
   }
 
   @override
-  Future<void> markAllPresent({required DateTime date, required List<String> employeeIds}) async {
+  Future<void> markAllPresent({
+    required DateTime date,
+    required List<String> employeeIds,
+  }) async {
     markedAllPresentDates.add(date);
   }
 
   @override
-  Future<void> markHoliday({required DateTime date, required List<String> employeeIds}) async {
+  Future<void> markHoliday({
+    required DateTime date,
+    required List<String> employeeIds,
+  }) async {
     markedHolidayDates.add(date);
   }
 
   final List<Map<String, Object?>> unmarkedDays = [];
 
   @override
-  Future<void> unmarkDay({required String employeeId, required DateTime date}) async {
+  Future<void> unmarkDay({
+    required String employeeId,
+    required DateTime date,
+  }) async {
     unmarkedDays.add({'employeeId': employeeId, 'date': date});
   }
 }

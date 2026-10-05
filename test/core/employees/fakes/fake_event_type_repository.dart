@@ -2,7 +2,8 @@ import 'package:crs_ops/core/employees/models/event_type.dart';
 import 'package:crs_ops/core/employees/repositories/event_type_repository.dart';
 
 class FakeEventTypeRepository implements EventTypeRepository {
-  FakeEventTypeRepository({List<EventType>? seed}) : _types = List.of(seed ?? const []);
+  FakeEventTypeRepository({List<EventType>? seed})
+    : _types = List.of(seed ?? const []);
 
   final List<EventType> _types;
 
@@ -17,7 +18,11 @@ class FakeEventTypeRepository implements EventTypeRepository {
   }
 
   @override
-  Future<EventType> updateDisplay(String id, {String? iconName, String? colorHex}) async {
+  Future<EventType> updateDisplay(
+    String id, {
+    String? iconName,
+    String? colorHex,
+  }) async {
     final index = _types.indexWhere((t) => t.id == id);
     final updated = EventType(
       id: _types[index].id,
