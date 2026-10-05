@@ -18,21 +18,174 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <!-- Same viewport Flutter installs on startup (it replaces this tag), so
+       phones show the loader at the right scale instead of zoomed out.
+       flt-viewport marks it as Flutter's own, which skips a debug warning. -->
+  <meta flt-viewport name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="CRS Ops: staff attendance and operations.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="crs_ops">
+  <meta name="apple-mobile-web-app-title" content="CRS Ops">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>crs_ops</title>
+  <title>CRS Ops</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Loader shown while Flutter downloads. It copies Flutter's LoadingPage
+    (the app's first screen: a default CircularProgressIndicator centred on
+    the surface color), so the swap to Flutter can't be seen.
+    Colors are ColorScheme.fromSeed(0xFF2196F3) surface / primary;
+    test/web/loader_colors_test.dart fails if they drift from the app theme.
+  -->
+  <style>
+    :root {
+      --loader-bg-light: #f8f9ff;
+      --loader-fg-light: #36618e;
+      --loader-bg-dark: #111418;
+      --loader-fg-dark: #a0cafd;
+      --loader-bg: var(--loader-bg-light);
+      --loader-fg: var(--loader-fg-light);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --loader-bg: var(--loader-bg-dark);
+        --loader-fg: var(--loader-fg-dark);
+      }
+    }
+    :root[data-theme="dark"] {
+      --loader-bg: var(--loader-bg-dark);
+      --loader-fg: var(--loader-fg-dark);
+    }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--loader-bg);
+    }
+    #loader {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--loader-bg);
+    }
+    /* Flutter's spinner is a 36px box whose 4px stroke is centred on the
+       box edge, so it paints 2px past each side: 40px in all. */
+    #loader-spinner {
+      width: 40px;
+      height: 40px;
+    }
+  </style>
+  <script>
+    // The app's Theme setting (System / Light / Dark). shared_preferences
+    // stores it in localStorage as a JSON string under "flutter.theme_mode".
+    // System, or nothing saved, falls through to prefers-color-scheme above.
+    (function () {
+      var mode = null;
+      try {
+        mode = JSON.parse(localStorage.getItem('flutter.theme_mode'));
+      } catch (e) {}
+      if (mode === 'light' || mode === 'dark') {
+        document.documentElement.setAttribute('data-theme', mode);
+      }
+    })();
+  </script>
 </head>
 <body>
+  <div id="loader" role="progressbar" aria-label="Loading">
+    <canvas id="loader-spinner"></canvas>
+  </div>
+  <script>
+    // Redraws Flutter's indeterminate CircularProgressIndicator (Material 3,
+    // year2023 style) with the same math as its source
+    // (material/progress_indicator.dart): a 1333 ms grow/shrink cycle
+    // inside a 2222 ms rotation, eased with Curves.fastOutSlowIn.
+    (function () {
+      var size = 40;
+      var radius = 18;
+      var canvas = document.getElementById('loader-spinner');
+      var context = canvas.getContext('2d');
+      var pixelRatio = window.devicePixelRatio || 1;
+      canvas.width = size * pixelRatio;
+      canvas.height = size * pixelRatio;
+      context.scale(pixelRatio, pixelRatio);
+
+      function cubicPoint(a, b, m) {
+        return 3 * a * (1 - m) * (1 - m) * m + 3 * b * (1 - m) * m * m + m * m * m;
+      }
+
+      // Curves.fastOutSlowIn = Cubic(0.4, 0.0, 0.2, 1.0), solved the same
+      // way Flutter's Cubic.transform does.
+      function fastOutSlowIn(t) {
+        if (t <= 0) {
+          return 0;
+        }
+        if (t >= 1) {
+          return 1;
+        }
+        var start = 0;
+        var end = 1;
+        while (true) {
+          var midpoint = (start + end) / 2;
+          var estimate = cubicPoint(0.4, 0.2, midpoint);
+          if (Math.abs(t - estimate) < 0.001) {
+            return cubicPoint(0.0, 1.0, midpoint);
+          }
+          if (estimate < t) {
+            start = midpoint;
+          } else {
+            end = midpoint;
+          }
+        }
+      }
+
+      function interval(begin, end, t) {
+        return Math.min(Math.max((t - begin) / (end - begin), 0), 1);
+      }
+
+      var startTime = null;
+      var frame = null;
+
+      function draw(now) {
+        if (startTime === null) {
+          startTime = now;
+        }
+        var elapsed = now - startTime;
+        var path = (elapsed % 1333) / 1333;
+        var rotation = (elapsed % 2222) / 2222;
+        var head = fastOutSlowIn(interval(0.0, 0.5, path));
+        var tail = fastOutSlowIn(interval(0.5, 1.0, path));
+        var arcStart = -Math.PI / 2 +
+            tail * 1.5 * Math.PI +
+            rotation * 2 * Math.PI +
+            path * 0.5 * Math.PI;
+        var arcSweep = Math.max((head - tail) * 1.5 * Math.PI, 0.001);
+
+        context.clearRect(0, 0, size, size);
+        context.beginPath();
+        context.arc(size / 2, size / 2, radius, arcStart, arcStart + arcSweep);
+        context.lineWidth = 4;
+        context.lineCap = 'square';
+        context.strokeStyle = getComputedStyle(document.documentElement)
+            .getPropertyValue('--loader-fg');
+        context.stroke();
+        frame = requestAnimationFrame(draw);
+      }
+
+      frame = requestAnimationFrame(draw);
+
+      window.addEventListener('flutter-first-frame', function () {
+        cancelAnimationFrame(frame);
+        document.getElementById('loader').remove();
+      }, { once: true });
+    })();
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader

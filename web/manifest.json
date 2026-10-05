@@ -1,11 +1,11 @@
 {
-    "name": "crs_ops",
-    "short_name": "crs_ops",
+    "name": "CRS Ops",
+    "short_name": "CRS Ops",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "CRS Ops: staff attendance and operations.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
