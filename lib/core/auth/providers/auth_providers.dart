@@ -9,10 +9,12 @@ import '../repositories/roles_repository.dart';
 part 'auth_providers.g.dart';
 
 @Riverpod(keepAlive: true)
-AuthRepository authRepository(Ref ref) => AuthRepository(ref.watch(supabaseClientProvider));
+AuthRepository authRepository(Ref ref) =>
+    AuthRepository(ref.watch(supabaseClientProvider));
 
 @Riverpod(keepAlive: true)
-RolesRepository rolesRepository(Ref ref) => RolesRepository(ref.watch(supabaseClientProvider));
+RolesRepository rolesRepository(Ref ref) =>
+    RolesRepository(ref.watch(supabaseClientProvider));
 
 @Riverpod(keepAlive: true)
 Stream<AuthState> authStateChanges(Ref ref) =>

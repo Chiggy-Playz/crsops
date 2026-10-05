@@ -43,7 +43,9 @@ class AuthRepository {
       } else if (Platform.isAndroid) {
         await _signInWithGoogleNative();
       } else {
-        throw const AuthFailureException('Google sign-in is not supported on this platform yet.');
+        throw const AuthFailureException(
+          'Google sign-in is not supported on this platform yet.',
+        );
       }
     } catch (error) {
       throw translateException(error);
@@ -53,7 +55,10 @@ class AuthRepository {
   Future<void> _signInWithGoogleInBrowser() async {
     final HttpServer server;
     try {
-      server = await HttpServer.bind(InternetAddress.loopbackIPv4, _desktopCallbackPort);
+      server = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        _desktopCallbackPort,
+      );
     } on SocketException {
       throw const AuthFailureException(
         'Could not start sign-in: port $_desktopCallbackPort is already in use.',
@@ -70,7 +75,9 @@ class AuthRepository {
       try {
         request = await server.first.timeout(const Duration(minutes: 5));
       } on TimeoutException {
-        throw const AuthFailureException('Sign-in timed out. Please try again.');
+        throw const AuthFailureException(
+          'Sign-in timed out. Please try again.',
+        );
       }
 
       final code = request.uri.queryParameters['code'];
@@ -78,7 +85,9 @@ class AuthRepository {
           ? 'Sign-in did not complete. You can close this tab and try again in CRS Ops.'
           : 'Signed in. You can close this tab and return to CRS Ops.';
       request.response.headers.contentType = ContentType.html;
-      request.response.write('<!doctype html><title>CRS Ops</title><p>$pageText</p>');
+      request.response.write(
+        '<!doctype html><title>CRS Ops</title><p>$pageText</p>',
+      );
       await request.response.close();
 
       if (code == null) {
@@ -114,12 +123,16 @@ class AuthRepository {
     try {
       account = await GoogleSignIn.instance.authenticate();
     } on GoogleSignInException catch (e) {
-      throw AuthFailureException('Google sign-in failed: ${e.description ?? e.code}');
+      throw AuthFailureException(
+        'Google sign-in failed: ${e.description ?? e.code}',
+      );
     }
 
     final idToken = account.authentication.idToken;
     if (idToken == null) {
-      throw const AuthFailureException('Google sign-in did not return an ID token.');
+      throw const AuthFailureException(
+        'Google sign-in did not return an ID token.',
+      );
     }
     await _client.auth.signInWithIdToken(
       provider: OAuthProvider.google,

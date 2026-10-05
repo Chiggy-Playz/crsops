@@ -28,7 +28,8 @@ EmployeeLedgerEntryRepository employeeLedgerEntryRepository(Ref ref) =>
     SupabaseEmployeeLedgerEntryRepository(ref.watch(supabaseClientProvider));
 
 @riverpod
-Future<List<Employee>> employeeList(Ref ref) => ref.watch(employeeRepositoryProvider).fetchAll();
+Future<List<Employee>> employeeList(Ref ref) =>
+    ref.watch(employeeRepositoryProvider).fetchAll();
 
 @riverpod
 Future<Employee> employee(Ref ref, String employeeId) =>
@@ -47,7 +48,8 @@ Future<List<TimelineEntry>> employeeTimeline(Ref ref, String employeeId) =>
     ref.watch(employeeEventRepositoryProvider).fetchTimeline(employeeId);
 
 @Riverpod(keepAlive: true)
-Future<List<EventType>> eventTypes(Ref ref) => ref.watch(eventTypeRepositoryProvider).fetchAll();
+Future<List<EventType>> eventTypes(Ref ref) =>
+    ref.watch(eventTypeRepositoryProvider).fetchAll();
 
 @Riverpod(keepAlive: true)
 Future<List<String>> distinctEntryTypes(Ref ref) =>

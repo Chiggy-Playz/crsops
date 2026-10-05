@@ -15,10 +15,15 @@ const kSwatchColors = <String>[
   '#607D8B', // blue grey
 ];
 
-Color _fromHex(String hex) => Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
+Color _fromHex(String hex) =>
+    Color(int.parse('FF${hex.replaceFirst('#', '')}', radix: 16));
 
 class ColorSwatchPicker extends StatelessWidget {
-  const ColorSwatchPicker({super.key, required this.selectedHex, required this.onChanged});
+  const ColorSwatchPicker({
+    super.key,
+    required this.selectedHex,
+    required this.onChanged,
+  });
 
   final String? selectedHex;
   final ValueChanged<String> onChanged;
@@ -40,10 +45,15 @@ class ColorSwatchPicker extends StatelessWidget {
                 color: _fromHex(hex),
                 shape: BoxShape.circle,
                 border: selectedHex == hex
-                    ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.onSurface,
+                        width: 3,
+                      )
                     : null,
               ),
-              child: selectedHex == hex ? const Icon(Icons.check, color: Colors.white, size: 18) : null,
+              child: selectedHex == hex
+                  ? const Icon(Icons.check, color: Colors.white, size: 18)
+                  : null,
             ),
           ),
       ],

@@ -8,7 +8,7 @@ sealed class AppException implements Exception {
 
 final class NetworkException extends AppException {
   const NetworkException()
-      : super('No internet connection. Check your connection and try again.');
+    : super('No internet connection. Check your connection and try again.');
 }
 
 final class AuthFailureException extends AppException {

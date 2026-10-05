@@ -4,7 +4,11 @@ part 'profile.mapper.dart';
 
 @MappableClass()
 class Profile with ProfileMappable {
-  const Profile({required this.id, required this.email, required this.createdAt});
+  const Profile({
+    required this.id,
+    required this.email,
+    required this.createdAt,
+  });
 
   @MappableField(key: 'id')
   final String id;

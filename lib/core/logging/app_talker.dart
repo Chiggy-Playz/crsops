@@ -8,9 +8,7 @@ late final Talker appTalker;
 
 Future<void> initAppTalker() async {
   appTalker = TalkerFlutter.init(
-    settings: TalkerSettings(
-      useConsoleLogs: true,
-    ),
+    settings: TalkerSettings(useConsoleLogs: true),
   );
 
   // Browsers have no app file system: path_provider has no web
