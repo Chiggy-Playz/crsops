@@ -61,3 +61,13 @@ String? statusSummaryLabel(
   return [for (final id in ids) '${counts[id]} ${labelByStatusId[id] ?? id}']
       .join(', ');
 }
+
+/// The gap rule (same as the server's attendance.recent_gaps): some active
+/// employee has no mark on a working day that's already past. Today and
+/// later can't be "missed" yet.
+bool hasUnmarkedPastDay(List<EffectiveStatusRow> dayRows, DateTime day) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  if (!DateTime(day.year, day.month, day.day).isBefore(today)) return false;
+  return dayRows.any((row) => !row.isExplicit && !row.isWeekOff);
+}

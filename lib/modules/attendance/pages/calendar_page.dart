@@ -38,10 +38,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final gapsAsync = ref.watch(recentGapsProvider);
-    final gapDates =
-        gapsAsync.value?.map((g) => dateOnly(g.date)).toSet() ?? {};
-
     final monthStart = DateTime(_focusedDay.year, _focusedDay.month, 1);
     final monthEnd = DateTime(_focusedDay.year, _focusedDay.month + 1, 0);
     final monthStatusAsync = ref.watch(
@@ -70,7 +66,9 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         day: day,
         isToday: isToday,
         isSelected: isSelected,
-        hasGap: gapDates.contains(dateKey),
+        // Same rule as Reports, from this month's rows — so any month shows
+        // its gaps, not just the last 7 days.
+        hasGap: hasUnmarkedPastDay(rowsByDate[dateKey] ?? const [], day),
         statusDots: statusDotsFor(
           rowsByDate[dateKey] ?? const [],
           colorHexByStatusId,
@@ -104,7 +102,8 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
                 rowsByDate[dateKey] ?? const [],
                 labelByStatusId,
               );
-              final gap = gapDates.contains(dateKey)
+              final gap =
+                  hasUnmarkedPastDay(rowsByDate[dateKey] ?? const [], day)
                   ? 'attendance missing'
                   : null;
               final parts = [?summary, ?gap];

@@ -4,7 +4,6 @@ import '../../../core/errors/exception_translator.dart';
 import '../../../core/utils/date_key.dart';
 import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
-import '../models/gap_row.dart';
 
 /// Status recorded when a day is marked (e.g. by entering times) without an
 /// explicit half status: entering times implies presence. Lives here — not in
@@ -49,7 +48,6 @@ abstract class AttendanceRepository {
     required DateTime end,
     String? employeeId,
   });
-  Future<List<GapRow>> fetchRecentGaps({int windowDays = 7});
   Future<List<DerivedFlagsRow>> fetchDerivedFlags({
     required DateTime start,
     required DateTime end,
@@ -114,20 +112,6 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
           .map(
             (r) => EffectiveStatusRowMapper.fromMap(r as Map<String, dynamic>),
           )
-          .toList();
-    } catch (error) {
-      throw translateException(error);
-    }
-  }
-
-  @override
-  Future<List<GapRow>> fetchRecentGaps({int windowDays = 7}) async {
-    try {
-      final rows = await _client
-          .schema('attendance')
-          .rpc('recent_gaps', params: {'p_window_days': windowDays});
-      return (rows as List)
-          .map((r) => GapRowMapper.fromMap(r as Map<String, dynamic>))
           .toList();
     } catch (error) {
       throw translateException(error);

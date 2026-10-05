@@ -137,4 +137,43 @@ void main() {
       expect(dots, [Colors.grey]);
     });
   });
+
+  group('hasUnmarkedPastDay', () {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final pastDay = DateTime(yesterday.year, yesterday.month, yesterday.day);
+
+    test('an active employee left unmarked on a past working day', () {
+      final rows = [
+        _row(employeeId: '1', date: pastDay, firstHalfStatus: 'present'),
+        _row(employeeId: '2', date: pastDay, isExplicit: false),
+      ];
+      expect(hasUnmarkedPastDay(rows, pastDay), isTrue);
+    });
+
+    test('a fully marked day is not a gap', () {
+      final rows = [
+        _row(employeeId: '1', date: pastDay, firstHalfStatus: 'present'),
+      ];
+      expect(hasUnmarkedPastDay(rows, pastDay), isFalse);
+    });
+
+    test('an unmarked week-off is not a gap', () {
+      final rows = [
+        _row(
+          employeeId: '1',
+          date: pastDay,
+          isExplicit: false,
+          isWeekOff: true,
+        ),
+      ];
+      expect(hasUnmarkedPastDay(rows, pastDay), isFalse);
+    });
+
+    test('today and later are never gaps yet', () {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final rows = [_row(employeeId: '1', date: today, isExplicit: false)];
+      expect(hasUnmarkedPastDay(rows, today), isFalse);
+    });
+  });
 }

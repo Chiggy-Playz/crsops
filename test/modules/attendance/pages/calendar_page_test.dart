@@ -1,7 +1,7 @@
 import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/providers/employee_providers.dart';
 import 'package:crs_ops/core/utils/date_key.dart';
-import 'package:crs_ops/modules/attendance/models/gap_row.dart';
+import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/pages/calendar_page.dart';
 import 'package:crs_ops/modules/attendance/pages/widgets/day_cell.dart';
 import 'package:crs_ops/modules/attendance/providers/attendance_providers.dart';
@@ -43,13 +43,13 @@ void main() {
     expect(find.byType(CalendarPage), findsOneWidget);
   });
 
-  testWidgets('a day with a gap shows a warning marker', (tester) async {
-    final today = DateTime.now();
-    // Stay inside the displayed month: day-minus-one on the 1st falls in
-    // the previous month, whose grid never renders the marker.
-    final gapDate = today.day > 1
-        ? DateTime(today.year, today.month, today.day - 1)
-        : today.add(const Duration(days: 1));
+  testWidgets('a past day with someone unmarked shows a warning marker', (
+    tester,
+  ) async {
+    // A fixed past month (opened via selectedDate), so the test doesn't
+    // depend on today's date.
+    final gapDate = DateTime(2024, 6, 3);
+    final markedDate = DateTime(2024, 6, 4);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -68,15 +68,33 @@ void main() {
           ),
           attendanceRepositoryProvider.overrideWithValue(
             FakeAttendanceRepository(
-              gapsSeed: [GapRow(employeeId: '1', date: gapDate)],
+              rangeStatusSeed: [
+                EffectiveStatusRow(
+                  employeeId: '1',
+                  date: gapDate,
+                  isExplicit: false,
+                  isWeekOff: false,
+                ),
+                EffectiveStatusRow(
+                  employeeId: '1',
+                  date: markedDate,
+                  firstHalfStatus: 'present',
+                  secondHalfStatus: 'present',
+                  isExplicit: true,
+                  isWeekOff: false,
+                ),
+              ],
             ),
           ),
         ],
-        child: const MaterialApp(home: CalendarPage()),
+        child: MaterialApp(
+          home: CalendarPage(selectedDate: DateTime(2024, 6, 10)),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byKey(gapMarkerKey(dateOnly(gapDate))), findsOneWidget);
+    expect(find.byKey(gapMarkerKey(dateOnly(markedDate))), findsNothing);
   });
 }

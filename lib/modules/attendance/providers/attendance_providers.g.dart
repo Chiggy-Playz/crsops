@@ -329,45 +329,6 @@ final class EffectiveRangeStatusFamily extends $Family
   String toString() => r'effectiveRangeStatusProvider';
 }
 
-@ProviderFor(recentGaps)
-final recentGapsProvider = RecentGapsProvider._();
-
-final class RecentGapsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<GapRow>>,
-          List<GapRow>,
-          FutureOr<List<GapRow>>
-        >
-    with $FutureModifier<List<GapRow>>, $FutureProvider<List<GapRow>> {
-  RecentGapsProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'recentGapsProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$recentGapsHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<List<GapRow>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<GapRow>> create(Ref ref) {
-    return recentGaps(ref);
-  }
-}
-
-String _$recentGapsHash() => r'0a7de945c876fdda5813c1f1e15f45d8375451fa';
-
 @ProviderFor(derivedFlags)
 final derivedFlagsProvider = DerivedFlagsFamily._();
 

@@ -392,20 +392,26 @@ class _ReportCalendarState extends State<_ReportCalendar> {
       // A quick look on top of Reports (see ReportDayRoute): back/✕ returns
       // here with the filters intact.
       onDateTap: (day) => ReportDayRoute(dateOnly(day)).push(context),
-      dayBuilder: (context, day, {required isToday, required isSelected}) =>
-          DayCell(
-            day: day,
-            isToday: isToday,
-            hasGap: false,
-            statusDots: statusDotsFor(
-              rowsByDate[dateOnly(day)] ?? const [],
-              colorHexByStatusId,
-            ),
-          ),
-      semanticLabelFor: (day) => statusSummaryLabel(
-        rowsByDate[dateOnly(day)] ?? const [],
-        labelByStatusId,
-      ),
+      dayBuilder: (context, day, {required isToday, required isSelected}) {
+        final dayRows = rowsByDate[dateOnly(day)] ?? const [];
+        return DayCell(
+          day: day,
+          isToday: isToday,
+          // From the rows already loaded for the range — so it covers the
+          // whole range, not just the last 7 days the main calendar checks.
+          hasGap: hasUnmarkedPastDay(dayRows, day),
+          statusDots: statusDotsFor(dayRows, colorHexByStatusId),
+        );
+      },
+      semanticLabelFor: (day) {
+        final dayRows = rowsByDate[dateOnly(day)] ?? const [];
+        final summary = statusSummaryLabel(dayRows, labelByStatusId);
+        final gap = hasUnmarkedPastDay(dayRows, day)
+            ? 'attendance missing'
+            : null;
+        final parts = [?summary, ?gap];
+        return parts.isEmpty ? null : parts.join(', ');
+      },
     );
   }
 }

@@ -38,16 +38,11 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
   final Set<String> _busyEmployeeIds = {};
 
   // Invalidates every cached instance of this family, not just this page's
-  // own single-day query — otherwise the Calendar page's separately-cached
+  // own single-day query — otherwise the Calendar's separately-cached
   // month-range query stays stale until something else forces a refetch
-  // (e.g. swiping months), so a freshly-marked day's color never shows up
-  // on going back. recentGapsProvider is a completely separate query (the
-  // Calendar's yellow gap-warning marker) — marking a day doesn't change
-  // effective_range_status's cache staleness, it changes recent_gaps' too.
-  void _refresh() {
-    ref.invalidate(effectiveRangeStatusProvider);
-    ref.invalidate(recentGapsProvider);
-  }
+  // (e.g. swiping months), so a freshly-marked day's color and gap marker
+  // never update on going back.
+  void _refresh() => ref.invalidate(effectiveRangeStatusProvider);
 
   void _showError(AppException e) {
     if (!mounted) return;

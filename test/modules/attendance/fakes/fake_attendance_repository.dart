@@ -1,19 +1,15 @@
 import 'package:crs_ops/modules/attendance/models/derived_flags_row.dart';
 import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
-import 'package:crs_ops/modules/attendance/models/gap_row.dart';
 import 'package:crs_ops/modules/attendance/repositories/attendance_repository.dart';
 
 class FakeAttendanceRepository implements AttendanceRepository {
   FakeAttendanceRepository({
     List<EffectiveStatusRow>? rangeStatusSeed,
-    List<GapRow>? gapsSeed,
     List<DerivedFlagsRow>? derivedFlagsSeed,
   })  : _rangeStatus = List.of(rangeStatusSeed ?? const []),
-        _gaps = List.of(gapsSeed ?? const []),
         _derivedFlags = List.of(derivedFlagsSeed ?? const []);
 
   final List<EffectiveStatusRow> _rangeStatus;
-  final List<GapRow> _gaps;
   final List<DerivedFlagsRow> _derivedFlags;
 
   final List<Map<String, Object?>> markedDays = [];
@@ -30,9 +26,6 @@ class FakeAttendanceRepository implements AttendanceRepository {
           .where((r) => !r.date.isBefore(start) && !r.date.isAfter(end))
           .where((r) => employeeId == null || r.employeeId == employeeId)
           .toList();
-
-  @override
-  Future<List<GapRow>> fetchRecentGaps({int windowDays = 7}) async => List.of(_gaps);
 
   @override
   Future<List<DerivedFlagsRow>> fetchDerivedFlags({
