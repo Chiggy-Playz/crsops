@@ -24,6 +24,8 @@ ThemeData buildAppTheme({required Brightness brightness}) {
     // cramped next to the phone. Same density everywhere.
     visualDensity: VisualDensity.standard,
     appBarTheme: const AppBarTheme(toolbarHeight: appBarHeight),
+    // Floating everywhere, so no call site has to ask for it.
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
     // Bare TextField/DropdownMenu default to Material 2's underline style even
     // with useMaterial3: true — M3's outlined look is opt-in, not automatic.
     // Outlined variant: no fill, full border on all sides at rest (outline

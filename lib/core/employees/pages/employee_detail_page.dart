@@ -399,7 +399,7 @@ class _TimelineRow extends ConsumerWidget {
       ref.invalidate(employeeTimelineProvider(entry.employeeId));
       ref.invalidate(employeeCurrentStatusProvider(entry.employeeId));
     } on AppException catch (e) {
-      if (context.mounted) showErrorSnackBar(context, e);
+      showErrorSnackBar(e);
     }
   }
 

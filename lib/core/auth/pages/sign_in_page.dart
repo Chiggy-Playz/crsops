@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../gen/assets.gen.dart';
 import '../../errors/app_exception.dart';
+import '../../widgets/error_snackbar.dart';
 import '../providers/auth_providers.dart';
 
 class SignInPage extends ConsumerStatefulWidget {
@@ -20,9 +21,7 @@ class _SignInPageState extends ConsumerState<SignInPage> {
     try {
       await ref.read(authRepositoryProvider).signInWithGoogle();
     } on AppException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      showErrorSnackBar(e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -39,9 +38,16 @@ class _SignInPageState extends ConsumerState<SignInPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.badge, size: 72, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.badge,
+                  size: 72,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(height: 16),
-                Text('CRS Ops', style: Theme.of(context).textTheme.headlineMedium),
+                Text(
+                  'CRS Ops',
+                  style: Theme.of(context).textTheme.headlineMedium,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   'Attendance, made simple.',
@@ -52,7 +58,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
                   onPressed: _loading ? null : _signIn,
                   icon: _loading
                       ? const SizedBox(
-                          width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Assets.icons.googleLogo.svg(width: 18, height: 18),
                   label: const Text('Continue with Google'),
                 ),

@@ -46,7 +46,7 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
 
   void _showError(AppException e) {
     if (!mounted) return;
-    showErrorSnackBar(context, e);
+    showErrorSnackBar(e);
   }
 
   Future<void> _markAllPresent(List<String> employeeIds) async {

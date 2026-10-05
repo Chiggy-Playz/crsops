@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Where downloaded update APKs live (getTemporaryDirectory()/updates),
+     shared with Android's installer through UpdateFileProvider. -->
+<paths>
+    <cache-path name="updates" path="updates/" />
+</paths>

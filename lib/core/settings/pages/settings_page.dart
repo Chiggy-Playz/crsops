@@ -8,6 +8,9 @@ import '../../errors/app_exception.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../sections/app_sections_provider.dart';
 import '../../theme/theme_mode_provider.dart';
+import '../../updates/update_controller.dart';
+import '../../updates/update_listener.dart';
+import '../../widgets/app_snack_bar.dart';
 import '../../widgets/error_snackbar.dart';
 import '../../widgets/selection_sheet.dart';
 import '../settings_section.dart';
@@ -72,7 +75,7 @@ class SettingsPage extends ConsumerWidget {
               try {
                 await ref.read(authRepositoryProvider).signOut();
               } on AppException catch (e) {
-                if (context.mounted) showErrorSnackBar(context, e);
+                showErrorSnackBar(e);
               }
             },
           ),
@@ -150,22 +153,61 @@ class _ThemeTile extends ConsumerWidget {
   }
 }
 
-class _VersionTile extends StatelessWidget {
+class _VersionTile extends ConsumerWidget {
   const _VersionTile();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final label = versionLabel();
+    final updateState = ref.watch(updateControllerProvider);
+    final checking = updateState is UpdateChecking;
+
+    // Tap checks for updates (Android release builds only); long-press copies.
+    // Ignored while a check runs, so it can't be spammed. During a download,
+    // tap brings the progress snackbar back instead.
+    VoidCallback? onTap;
+    if (inAppUpdatesEnabled && !checking) {
+      onTap = () {
+        final controller = ref.read(updateControllerProvider.notifier);
+        if (ref.read(updateControllerProvider) is UpdateDownloading) {
+          showDownloadProgressSnackBar(controller.cancelDownload);
+        } else {
+          controller.check(userInitiated: true);
+        }
+      };
+    }
+
+    String subtitle = label;
+    Widget? trailing;
+    if (checking) {
+      trailing = const SizedBox.square(
+        dimension: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    } else if (updateState is UpdateDownloading) {
+      final percent = updateState.percent;
+      subtitle = '$label\nDownloading ${updateState.release.version}';
+      if (percent != null) {
+        subtitle = '$subtitle · $percent%';
+      }
+      trailing = SizedBox.square(
+        dimension: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          value: updateState.fraction,
+        ),
+      );
+    }
+
     return ListTile(
       leading: const Icon(Icons.info_outline),
       title: const Text('Version'),
-      subtitle: Text(label),
-      onTap: () async {
+      subtitle: Text(subtitle),
+      trailing: trailing,
+      onTap: onTap,
+      onLongPress: () async {
         await Clipboard.setData(ClipboardData(text: label));
-        if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Version copied')));
-        }
+        showAppSnackBar('Version copied');
       },
     );
   }

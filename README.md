@@ -91,6 +91,19 @@ The keystore's SHA-1 is registered as an Android OAuth client in Google Cloud;
 Google sign-in fails in release APKs otherwise. Keep the keystore and its
 password backed up.
 
+### In-app updates (Android, until the Play Store)
+
+Release builds check GitHub's latest release a few seconds after startup and
+offer newer versions in a snackbar; tapping **Settings → About → Version**
+checks again (long-press copies the version). Updates download in the
+background, then open Android's installer. Code: `lib/core/updates/` plus the
+`crs_ops/app_update` channel in `MainActivity.kt`.
+
+When moving to the Play Store, remove `REQUEST_INSTALL_PACKAGES` and
+`UpdateFileProvider` from `AndroidManifest.xml`, the channel in
+`MainActivity.kt`, `res/xml/update_paths.xml`, and `lib/core/updates/`
+(plus `UpdateListener` in `app.dart` and the version tile's tap).
+
 ## App icon
 
 Sources are in `assets/branding/`. To change the icon, edit the SVGs, then:

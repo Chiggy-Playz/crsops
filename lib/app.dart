@@ -5,6 +5,8 @@ import 'app_router.dart';
 import 'core/connectivity/connectivity_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
+import 'core/updates/update_listener.dart';
+import 'core/widgets/app_snack_bar.dart';
 import 'core/widgets/offline_screen.dart';
 
 class App extends ConsumerWidget {
@@ -20,12 +22,13 @@ class App extends ConsumerWidget {
     // connectivity blip discarded dialogs, form input, and scroll state.
     return MaterialApp.router(
       routerConfig: router,
+      scaffoldMessengerKey: rootScaffoldMessengerKey,
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
       themeMode: ref.watch(themeModeControllerProvider),
       builder: (context, child) => Stack(
         children: [
-          child!,
+          UpdateListener(child: child!),
           if (!isOnline)
             Positioned.fill(
               child: OfflineScreen(

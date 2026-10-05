@@ -19,7 +19,7 @@ Future<void> runGuardedSave(
     await action();
     if (context.mounted) onSuccess();
   } on AppException catch (e) {
-    if (context.mounted) showErrorSnackBar(context, e);
+    showErrorSnackBar(e);
   } finally {
     if (context.mounted) setSaving(false);
   }

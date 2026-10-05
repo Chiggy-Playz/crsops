@@ -1,6 +1,7 @@
 import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/providers/employee_providers.dart';
 import 'package:crs_ops/core/errors/app_exception.dart';
+import 'package:crs_ops/core/widgets/app_snack_bar.dart';
 import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/models/status_type.dart';
 import 'package:crs_ops/modules/attendance/pages/attendance_day_page.dart';
@@ -70,7 +71,11 @@ Widget _wrap({required FakeAttendanceRepository attendanceRepo}) =>
           FakeStatusTypeRepository(seed: _statusTypes),
         ),
       ],
-      child: MaterialApp(home: AttendanceDayPage(date: DateTime(2024, 6, 3))),
+      child: MaterialApp(
+        // Same as the real app: errors go through the app-wide messenger.
+        scaffoldMessengerKey: rootScaffoldMessengerKey,
+        home: AttendanceDayPage(date: DateTime(2024, 6, 3)),
+      ),
     );
 
 /// Scopes text lookups to the mark sheet: the tile behind it can show the
