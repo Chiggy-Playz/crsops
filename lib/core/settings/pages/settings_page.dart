@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app_version.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../errors/app_exception.dart';
 import '../../layout/two_pane_layout.dart';
@@ -60,6 +62,8 @@ class SettingsPage extends ConsumerWidget {
                 onTap: () => openInPane(context, entry.location),
               ),
           ],
+          const _GroupHeader('About'),
+          const _VersionTile(),
           const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
@@ -140,6 +144,27 @@ class _ThemeTile extends ConsumerWidget {
         );
         if (picked != null) {
           ref.read(themeModeControllerProvider.notifier).set(picked);
+        }
+      },
+    );
+  }
+}
+
+class _VersionTile extends StatelessWidget {
+  const _VersionTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final label = versionLabel();
+    return ListTile(
+      leading: const Icon(Icons.info_outline),
+      title: const Text('Version'),
+      subtitle: Text(label),
+      onTap: () async {
+        await Clipboard.setData(ClipboardData(text: label));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('Version copied')));
         }
       },
     );

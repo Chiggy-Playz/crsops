@@ -1,0 +1,11 @@
+// Cloudflare Worker serving the Flutter web build. Deployed by
+// .github/workflows/release.yml on vX.Y.Z tags (or `npx wrangler deploy`).
+{
+  "name": "crsops",
+  "compatibility_date": "2026-10-05",
+  "assets": {
+    "directory": "./build/web",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "crsops.chiggydoes.tech", "custom_domain": true }]
+}
