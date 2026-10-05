@@ -1,0 +1,88 @@
+name: Build Android APKs
+description: >
+  Signed release APKs (arm64-v8a, armeabi-v7a), renamed to
+  crs-ops-<version>-<abi>.apk in the workspace root. Shared by the release
+  workflow and the cache-warming workflow, so both run the exact same build
+  and the caches one saves are the ones the other needs.
+
+inputs:
+  flutter-version: { required: true }
+  version: { required: true }
+  build-number: { required: true }
+  sha: { required: true }
+  supabase-url: { required: true }
+  supabase-publishable-key: { required: true }
+  google-server-client-id: { required: true }
+  keystore-base64: { required: true }
+  keystore-password: { required: true }
+  key-alias: { required: true }
+  key-password: { required: true }
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: '21'
+
+    # Caches Gradle's downloads and its build cache (org.gradle.caching in
+    # android/gradle.properties). Only default-branch runs save; tag runs
+    # restore what the cache-warming workflow saved on master.
+    - uses: gradle/actions/setup-gradle@v6
+      with:
+        cache-provider: basic
+
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: ${{ inputs.flutter-version }}
+        channel: stable
+        cache: true
+
+    - name: Write env.json
+      shell: bash
+      env:
+        SUPABASE_URL: ${{ inputs.supabase-url }}
+        SUPABASE_PUBLISHABLE_KEY: ${{ inputs.supabase-publishable-key }}
+        GOOGLE_SERVER_CLIENT_ID: ${{ inputs.google-server-client-id }}
+      run: |
+        jq -n \
+          --arg url "$SUPABASE_URL" \
+          --arg key "$SUPABASE_PUBLISHABLE_KEY" \
+          --arg google "$GOOGLE_SERVER_CLIENT_ID" \
+          '{SUPABASE_URL: $url, SUPABASE_PUBLISHABLE_KEY: $key, GOOGLE_SERVER_CLIENT_ID: $google}' \
+          > env.json
+
+    - name: Set up signing key
+      shell: bash
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ inputs.keystore-base64 }}
+        ANDROID_KEYSTORE_PASSWORD: ${{ inputs.keystore-password }}
+        ANDROID_KEY_ALIAS: ${{ inputs.key-alias }}
+        ANDROID_KEY_PASSWORD: ${{ inputs.key-password }}
+      run: |
+        keystore="$RUNNER_TEMP/upload-keystore.jks"
+        echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+        {
+          echo "storeFile=$keystore"
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD"
+          echo "keyAlias=$ANDROID_KEY_ALIAS"
+          echo "keyPassword=$ANDROID_KEY_PASSWORD"
+        } > android/key.properties
+
+    # No x86_64: it only runs on emulators and a few Chromebooks, and each
+    # ABI is a full extra Dart AOT + native (jni/CMake) compile.
+    - name: Build APKs
+      shell: bash
+      run: |
+        flutter build apk --release --split-per-abi \
+          --target-platform android-arm,android-arm64 \
+          --dart-define-from-file=env.json \
+          --build-name=${{ inputs.version }} \
+          --build-number=${{ inputs.build-number }} \
+          --dart-define=APP_VERSION=${{ inputs.version }} \
+          --dart-define=GIT_SHA=${{ inputs.sha }}
+        mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+          "crs-ops-${{ inputs.version }}-arm64-v8a.apk"
+        mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+          "crs-ops-${{ inputs.version }}-armeabi-v7a.apk"

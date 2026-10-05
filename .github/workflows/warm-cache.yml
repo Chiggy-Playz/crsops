@@ -1,0 +1,43 @@
+name: Warm build caches
+
+# GitHub only lets a run restore caches saved on its own ref or on the
+# default branch, so release runs (each on its own tag) can never reuse each
+# other's caches. This runs the same Android build on master, without
+# publishing anything, so the Flutter SDK, pub and Gradle caches it saves
+# are there for every tag.
+on:
+  push:
+    branches: [master]
+    # The caches only go stale when dependencies or the build setup change.
+    paths:
+      - pubspec.lock
+      - android/**
+      - .github/actions/**
+      - .github/workflows/warm-cache.yml
+  # GitHub deletes caches unused for 7 days; a weekly run keeps them alive
+  # between infrequent releases.
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.47.5'
+
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/build-android
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          version: 0.0.0
+          build-number: '1'
+          sha: ${{ github.sha }}
+          supabase-url: ${{ secrets.SUPABASE_URL }}
+          supabase-publishable-key: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          google-server-client-id: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
