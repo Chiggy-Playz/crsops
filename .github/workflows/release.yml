@@ -149,18 +149,22 @@ jobs:
             echo "keyAlias=$ANDROID_KEY_ALIAS"
             echo "keyPassword=$ANDROID_KEY_PASSWORD"
           } > android/key.properties
-      - name: Build APK
+      - name: Build APKs
         run: |
-          flutter build apk --release \
+          flutter build apk --release --split-per-abi \
             --dart-define-from-file=env.json \
             --build-name=${{ needs.check.outputs.version }} \
             --build-number=${{ needs.check.outputs.build_number }} \
             --dart-define=APP_VERSION=${{ needs.check.outputs.version }} \
             --dart-define=GIT_SHA=${{ needs.check.outputs.sha }}
-          mv build/app/outputs/flutter-apk/app-release.apk \
-            "crs-ops-${{ needs.check.outputs.version }}.apk"
+          mv build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            "crs-ops-${{ needs.check.outputs.version }}-arm64-v8a.apk"
+          mv build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+            "crs-ops-${{ needs.check.outputs.version }}-armeabi-v7a.apk"
+          mv build/app/outputs/flutter-apk/app-x86_64-release.apk \
+            "crs-ops-${{ needs.check.outputs.version }}-x86_64.apk"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: crs-ops-${{ needs.check.outputs.version }}.apk
+          files: crs-ops-${{ needs.check.outputs.version }}-*.apk
           generate_release_notes: true
