@@ -31,9 +31,12 @@ class AuthRepository {
       if (kIsWeb) {
         // Come back to whichever site started sign-in (live site or local dev).
         // Without redirectTo, Supabase always sends users to the Site URL.
+        // The trailing slash matters: allow-list patterns like
+        // http://localhost:8080/** don't match the bare origin, and an
+        // unmatched redirect silently falls back to the Site URL.
         await _client.auth.signInWithOAuth(
           OAuthProvider.google,
-          redirectTo: Uri.base.origin,
+          redirectTo: '${Uri.base.origin}/',
         );
       } else if (Platform.isLinux || Platform.isWindows) {
         await _signInWithGoogleInBrowser();
