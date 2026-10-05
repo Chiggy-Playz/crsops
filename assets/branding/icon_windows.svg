@@ -1,5 +1,7 @@
 <!-- Windows icon: rounded tile with a little transparent margin, as Windows apps usually have. -->
+<!-- The arc's centre is at x=55.35, a little right of 54, because the C's
+     open side has less ink; same offset, by eye, as icon_foreground.svg. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
   <rect x="4" y="4" width="100" height="100" rx="22" fill="#36618e"/>
-  <path d="M70.3 37.7 A23 23 0 1 0 70.3 70.3" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+  <path d="M71.65 37.7 A23 23 0 1 0 71.65 70.3" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
 </svg>

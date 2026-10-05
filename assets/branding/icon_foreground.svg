@@ -1,4 +1,8 @@
-<!-- Android adaptive icon foreground (and themed-icon monochrome): the C alone. -->
+<!-- Android adaptive icon foreground (and themed-icon monochrome): the C alone.
+     Launchers show only the middle 72 of these 108 units, so the C is kept to
+     ~43 units tall (~60% of what's visible). Its arc's centre is at x=55, a
+     little right of the canvas centre, because the open side has less ink;
+     the exact spot was picked by eye on a real launcher. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
-  <path d="M70.3 37.7 A23 23 0 1 0 70.3 70.3" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+  <path d="M67.02 41.98 A17 17 0 1 0 67.02 66.02" fill="none" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
 </svg>
