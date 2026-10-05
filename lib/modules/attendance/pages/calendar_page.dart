@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/utils/date_key.dart';
@@ -8,8 +7,8 @@ import '../attendance_calendar_colors.dart';
 import '../routes.dart';
 import '../models/effective_status_row.dart';
 import '../providers/attendance_providers.dart';
-import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
+import 'widgets/month_calendar.dart';
 
 /// The month calendar: a full page on narrow windows, the left pane of the
 /// attendance two-pane layout on wide ones. [selectedDate] is the date open in
@@ -53,20 +52,24 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       for (final t in statusTypesAsync.value ?? const [])
         if (t.colorHex != null) t.id: t.colorHex!,
     };
+    final labelByStatusId = <String, String>{
+      for (final t in statusTypesAsync.value ?? const []) t.id: t.label,
+    };
     final rowsByDate = groupRowsByDate(
       monthStatusAsync.value ?? const <EffectiveStatusRow>[],
     );
 
-    final selectedKey = widget.selectedDate == null
-        ? null
-        : dateOnly(widget.selectedDate!);
-
-    Widget cell(DateTime day, {bool isToday = false}) {
+    Widget cell(
+      BuildContext context,
+      DateTime day, {
+      required bool isToday,
+      required bool isSelected,
+    }) {
       final dateKey = dateOnly(day);
       return DayCell(
         day: day,
         isToday: isToday,
-        isSelected: dateKey == selectedKey,
+        isSelected: isSelected,
         hasGap: gapDates.contains(dateKey),
         statusDots: statusDotsFor(
           rowsByDate[dateKey] ?? const [],
@@ -86,26 +89,29 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
           ),
         ],
       ),
-      body: TableCalendar(
-        firstDay: DateTime(2000, 1, 1),
-        lastDay: DateTime(2100, 12, 31),
-        focusedDay: _focusedDay,
-        calendarFormat: CalendarFormat.month,
-        headerStyle: const HeaderStyle(formatButtonVisible: false),
-        onPageChanged: (day) => setState(() => _focusedDay = day),
-        onDaySelected: (selectedDay, focusedDay) {
-          setState(() => _focusedDay = focusedDay);
-          openInPane(
-            context,
-            AttendanceDayRoute(dateOnly(selectedDay)).location,
-          );
-        },
-        daysOfWeekStyle: themedDaysOfWeekStyle(context),
-        calendarStyle: themedCalendarStyle(context),
-        calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) => cell(day),
-          todayBuilder: (context, day, focusedDay) => cell(day, isToday: true),
-        ),
+      body: ListView(
+        children: [
+          MonthCalendar(
+            month: _focusedDay,
+            selectedDate: widget.selectedDate,
+            onMonthChanged: (month) => setState(() => _focusedDay = month),
+            onDateTap: (day) =>
+                openInPane(context, AttendanceDayRoute(dateOnly(day)).location),
+            dayBuilder: cell,
+            semanticLabelFor: (day) {
+              final dateKey = dateOnly(day);
+              final summary = statusSummaryLabel(
+                rowsByDate[dateKey] ?? const [],
+                labelByStatusId,
+              );
+              final gap = gapDates.contains(dateKey)
+                  ? 'attendance missing'
+                  : null;
+              final parts = [?summary, ?gap];
+              return parts.isEmpty ? null : parts.join(', ');
+            },
+          ),
+        ],
       ),
     );
   }

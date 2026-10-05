@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/pages/widgets/employee_multi_picker.dart';
@@ -18,8 +17,8 @@ import '../models/effective_status_row.dart';
 import '../models/status_type.dart';
 import '../providers/attendance_providers.dart';
 import '../report_calculations.dart';
-import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
+import 'widgets/month_calendar.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -349,7 +348,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   ];
 }
 
-class _ReportCalendar extends StatelessWidget {
+class _ReportCalendar extends StatefulWidget {
   const _ReportCalendar({
     required this.range,
     required this.rows,
@@ -361,41 +360,51 @@ class _ReportCalendar extends StatelessWidget {
   final List<StatusType> statusTypes;
 
   @override
+  State<_ReportCalendar> createState() => _ReportCalendarState();
+}
+
+class _ReportCalendarState extends State<_ReportCalendar> {
+  late DateTime _month = widget.range.end;
+
+  @override
+  void didUpdateWidget(_ReportCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A new range: show its last month (the most recent data).
+    if (oldWidget.range != widget.range) _month = widget.range.end;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colorHexByStatusId = <String, String>{
-      for (final t in statusTypes)
+      for (final t in widget.statusTypes)
         if (t.colorHex != null) t.id: t.colorHex!,
     };
-    final rowsByDate = groupRowsByDate(rows);
+    final labelByStatusId = <String, String>{
+      for (final t in widget.statusTypes) t.id: t.label,
+    };
+    final rowsByDate = groupRowsByDate(widget.rows);
 
-    Widget cell(DateTime day, {bool isToday = false}) {
-      final dateKey = dateOnly(day);
-      return DayCell(
-        day: day,
-        isToday: isToday,
-        hasGap: false,
-        statusDots: statusDotsFor(
-          rowsByDate[dateKey] ?? const [],
-          colorHexByStatusId,
-        ),
-      );
-    }
-
-    return SizedBox(
-      height: 400,
-      child: TableCalendar(
-        firstDay: range.start,
-        lastDay: range.end,
-        focusedDay: range.start,
-        headerStyle: const HeaderStyle(formatButtonVisible: false),
-        onDaySelected: (selectedDay, focusedDay) =>
-            AttendanceDayRoute(dateOnly(selectedDay)).push(context),
-        daysOfWeekStyle: themedDaysOfWeekStyle(context),
-        calendarStyle: themedCalendarStyle(context),
-        calendarBuilders: CalendarBuilders(
-          defaultBuilder: (context, day, focusedDay) => cell(day),
-          todayBuilder: (context, day, focusedDay) => cell(day, isToday: true),
-        ),
+    return MonthCalendar(
+      month: _month,
+      firstDate: widget.range.start,
+      lastDate: widget.range.end,
+      onMonthChanged: (month) => setState(() => _month = month),
+      // A quick look on top of Reports (see ReportDayRoute): back/✕ returns
+      // here with the filters intact.
+      onDateTap: (day) => ReportDayRoute(dateOnly(day)).push(context),
+      dayBuilder: (context, day, {required isToday, required isSelected}) =>
+          DayCell(
+            day: day,
+            isToday: isToday,
+            hasGap: false,
+            statusDots: statusDotsFor(
+              rowsByDate[dateOnly(day)] ?? const [],
+              colorHexByStatusId,
+            ),
+          ),
+      semanticLabelFor: (day) => statusSummaryLabel(
+        rowsByDate[dateOnly(day)] ?? const [],
+        labelByStatusId,
       ),
     );
   }

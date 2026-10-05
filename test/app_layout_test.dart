@@ -17,6 +17,7 @@ import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/models/status_type.dart';
 import 'package:crs_ops/modules/attendance/pages/attendance_day_page.dart';
 import 'package:crs_ops/modules/attendance/pages/calendar_page.dart';
+import 'package:crs_ops/modules/attendance/pages/widgets/month_calendar.dart';
 import 'package:crs_ops/modules/attendance/providers/attendance_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -290,6 +291,44 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Asha'), findsWidgets); // chip label shows the name
       expect(find.text('Filter by employee'), findsNothing);
+    });
+  }
+
+  // Regression: Reports is outside the attendance shell; pushing the shell's
+  // day route from it stacked a second shell (duplicate page key → crash).
+  // Days now open on top of Reports and close back to it, filters intact.
+  for (final w in [1400.0, 400.0]) {
+    testWidgets('a day opened from the Reports calendar closes back to it at '
+        '${w}px', (tester) async {
+      final r = await _pumpApp(tester, Size(w, 900));
+      r.push('/attendance/reports');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('This month'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Previous month'));
+      await tester.pumpAndSettle();
+
+      final calendar = find.byType(MonthCalendar);
+      await tester.tap(
+        find.descendant(of: calendar, matching: find.text('3')).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(_loc(r), startsWith('/attendance/reports/'));
+      expect(find.byType(AttendanceDayPage), findsOneWidget);
+
+      // ✕ in the wide dialog, back arrow on phones.
+      if (w > 840) {
+        await tester.tap(find.byType(CloseButton));
+      } else {
+        await tester.tap(find.byType(BackButton));
+      }
+      await tester.pumpAndSettle();
+
+      expect(_loc(r), '/attendance/reports');
+      expect(find.byType(AttendanceDayPage), findsNothing);
+      expect(find.text('Previous month'), findsOneWidget); // filter kept
     });
   }
 }

@@ -18,9 +18,17 @@ import 'widgets/status_picker_sheet.dart';
 final _titleFormat = DateFormat('d MMM yyyy');
 
 class AttendanceDayPage extends ConsumerStatefulWidget {
-  const AttendanceDayPage({super.key, required this.date});
+  const AttendanceDayPage({
+    super.key,
+    required this.date,
+    this.openedFromReports = false,
+  });
 
   final DateTime date;
+
+  /// A quick look from Reports (a dialog on wide windows, a page on phones)
+  /// rather than the attendance day pane: closing returns to Reports.
+  final bool openedFromReports;
 
   @override
   ConsumerState<AttendanceDayPage> createState() => _AttendanceDayPageState();
@@ -154,10 +162,19 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     void markAllPresent() =>
         _markAllPresent(activeEmployees!.map((e) => e.id).toList());
     final isTwoPane = context.isTwoPane;
-    final leading = paneLeading(
-      context,
-      parentLocation: const CalendarRoute().location,
-    );
+    final ({Widget? leading, bool implyLeading}) leading;
+    if (widget.openedFromReports) {
+      // Over Reports: ✕ in the wide-window dialog, the usual back arrow on
+      // phones — both return to Reports with its filters intact.
+      leading = isTwoPane
+          ? (leading: const CloseButton(), implyLeading: false)
+          : (leading: null, implyLeading: true);
+    } else {
+      leading = paneLeading(
+        context,
+        parentLocation: const CalendarRoute().location,
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(

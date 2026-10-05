@@ -12,6 +12,13 @@ RouteBase get $reportsRoute => GoRouteData.$route(
   path: '/attendance/reports',
   hasOverriddenOnExit: false,
   factory: $ReportsRoute._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: ':date',
+      hasOverriddenOnExit: false,
+      factory: $ReportDayRoute._fromState,
+    ),
+  ],
 );
 
 mixin $ReportsRoute on GoRouteData {
@@ -19,6 +26,31 @@ mixin $ReportsRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/attendance/reports');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $ReportDayRoute on GoRouteData {
+  static ReportDayRoute _fromState(GoRouterState state) =>
+      ReportDayRoute(state.pathParameters['date']!);
+
+  ReportDayRoute get _self => this as ReportDayRoute;
+
+  @override
+  String get location => GoRouteData.$location(
+    '/attendance/reports/${Uri.encodeComponent(_self.date)}',
+  );
 
   @override
   void go(BuildContext context) => context.go(location);

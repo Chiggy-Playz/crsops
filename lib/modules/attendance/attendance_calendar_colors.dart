@@ -43,3 +43,21 @@ List<Color> statusDotsFor(
         ..sort((a, b) => statusDisplayRank(a).compareTo(statusDisplayRank(b)));
   return [for (final id in statusIds) colorFor(colorHexByStatusId[id])];
 }
+
+/// Screen-reader summary of a day's statuses, in display order — e.g.
+/// "3 Present, 1 Absent". Null when nothing is marked.
+String? statusSummaryLabel(
+  List<EffectiveStatusRow> dayRows,
+  Map<String, String> labelByStatusId,
+) {
+  final counts = <String, int>{};
+  for (final row in dayRows) {
+    final statusId = representativeStatus(row);
+    if (statusId != null) counts[statusId] = (counts[statusId] ?? 0) + 1;
+  }
+  if (counts.isEmpty) return null;
+  final ids = counts.keys.toList()
+    ..sort((a, b) => statusDisplayRank(a).compareTo(statusDisplayRank(b)));
+  return [for (final id in ids) '${counts[id]} ${labelByStatusId[id] ?? id}']
+      .join(', ');
+}

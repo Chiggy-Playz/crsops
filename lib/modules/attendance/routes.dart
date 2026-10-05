@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout/window_size.dart';
+import '../../core/router/dialog_page.dart';
 import '../../core/utils/date_key.dart';
 import '../../core/widgets/empty_state.dart';
 import 'pages/attendance_day_page.dart';
@@ -13,12 +14,48 @@ part 'routes.g.dart';
 
 // Declared before the shell: '/attendance/reports' would otherwise match the
 // shell's '/attendance/:date' as a "date" called "reports".
-@TypedGoRoute<ReportsRoute>(path: '/attendance/reports')
+@TypedGoRoute<ReportsRoute>(
+  path: '/attendance/reports',
+  routes: [TypedGoRoute<ReportDayRoute>(path: ':date')],
+)
 class ReportsRoute extends GoRouteData with $ReportsRoute {
   const ReportsRoute();
 
   @override
   Widget build(BuildContext context, GoRouterState state) => const ReportPage();
+}
+
+/// A day opened from the Reports calendar, on top of Reports (so back returns
+/// to it with filters intact) — a centred dialog on wide windows, a page on
+/// phones. A child of Reports, outside the attendance shell, so it never
+/// stacks a second shell.
+class ReportDayRoute extends GoRouteData with $ReportDayRoute {
+  // String for the same reason as AttendanceDayRoute: validate, then parse.
+  const ReportDayRoute(this.date);
+  final String date;
+
+  @override
+  String? redirect(BuildContext context, GoRouterState state) =>
+      _redirectIfBadDate(state, fallback: const ReportsRoute().location);
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) {
+    final page = AttendanceDayPage(
+      date: DateTime.parse(date),
+      openedFromReports: true,
+    );
+    if (!context.isTwoPane) {
+      return MaterialPage(key: state.pageKey, child: page);
+    }
+    final height = MediaQuery.sizeOf(context).height * 0.85;
+    return DialogPage(
+      key: state.pageKey,
+      child: Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(width: 720, height: height, child: page),
+      ),
+    );
+  }
 }
 
 /// Calendar + day in one shell: two panes on wide windows (calendar left,
@@ -77,11 +114,16 @@ class AttendanceDayRoute extends GoRouteData with $AttendanceDayRoute {
 
   @override
   String? redirect(BuildContext context, GoRouterState state) =>
-      DateTime.tryParse(state.pathParameters['date'] ?? '') == null
-      ? const CalendarRoute().location
-      : null;
+      _redirectIfBadDate(state, fallback: const CalendarRoute().location);
 
   @override
   Widget build(BuildContext context, GoRouterState state) =>
       AttendanceDayPage(date: DateTime.parse(date));
 }
+
+/// Shared by the day routes: a `:date` that isn't a date (typo, old link)
+/// goes to [fallback] instead of crashing in build.
+String? _redirectIfBadDate(GoRouterState state, {required String fallback}) =>
+    DateTime.tryParse(state.pathParameters['date'] ?? '') == null
+    ? fallback
+    : null;
