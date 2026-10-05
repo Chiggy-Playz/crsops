@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
 
-import '../../core/utils/date_key.dart';
-import '../../core/widgets/status_metadata.dart';
-import 'day_status.dart';
-import 'models/effective_status_row.dart';
-import 'models/status_type.dart';
+import '../../../core/utils/date_time_format.dart';
+import '../../../core/utils/status_metadata.dart';
+import 'effective_status_row.dart';
+import 'status_ids.dart';
+import 'status_type.dart';
+
+// Rules for what a day's attendance rows add up to, shared by the calendar
+// dots, the report summary and screen-reader labels so they never disagree.
+
+/// The single shared "which status represents this row" rule: an explicit
+/// mark wins with its first-half status, otherwise a week-off date reports
+/// `week_off`, otherwise there is no status (unmarked working day).
+/// Used by both the report summary buckets and the calendar dots so the two
+/// can never disagree on priority — only on what they do with the answer
+/// (count vs. dot).
+String? representativeStatus(EffectiveStatusRow row) => row.isExplicit
+    ? row.firstHalfStatus
+    : (row.isWeekOff ? StatusIds.weekOff : null);
 
 /// Groups rows by date (`yyyy-MM-dd` key) — shared by any calendar view that
 /// needs "what happened on this day" regardless of how many employees' rows

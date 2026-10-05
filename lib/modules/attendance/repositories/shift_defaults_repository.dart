@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/exception_translator.dart';
-import '../../../core/utils/date_key.dart';
+import '../../../core/utils/date_time_format.dart';
 import '../models/shift_defaults.dart';
 
 abstract class ShiftDefaultsRepository {

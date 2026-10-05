@@ -1,25 +1,17 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/exception_translator.dart';
-import '../../../core/utils/date_key.dart';
+import '../../../core/utils/date_time_format.dart';
 import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
+import '../models/status_ids.dart';
 
-/// Status recorded when a day is marked (e.g. by entering times) without an
-/// explicit half status: entering times implies presence. Lives here — not in
+/// A day marked without an explicit half status (e.g. by entering times)
+/// counts as present: entering times implies presence. Lives here — not in
 /// the UI — so the rule is independent of whichever sheet calls `markDay`.
-/// Must match a row in `attendance.status_types` (seeded).
-const defaultPresenceStatusId = 'present';
-
-/// Seeded `attendance.status_types` id used by the mark-as-holiday bulk
-/// action. Named next to [defaultPresenceStatusId] so a DB rename breaks
-/// loudly in one place instead of silently in a string literal.
-const holidayStatusId = 'holiday';
-
-/// Applies [defaultPresenceStatusId] to a null half. Pure so it stays unit
-/// testable without a Supabase client.
+/// Pure so it stays unit testable without a Supabase client.
 String applyPresenceDefault(String? halfStatus) =>
-    halfStatus ?? defaultPresenceStatusId;
+    halfStatus ?? StatusIds.present;
 
 /// The exact upsert payload [SupabaseAttendanceRepository.markDay] writes.
 /// Pure so upsert shape and presence-default application stay unit tested
@@ -182,7 +174,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     await _markAll(
       date: date,
       employeeIds: employeeIds,
-      status: defaultPresenceStatusId,
+      status: StatusIds.present,
     );
   }
 
@@ -194,7 +186,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
     await _markAll(
       date: date,
       employeeIds: employeeIds,
-      status: holidayStatusId,
+      status: StatusIds.holiday,
     );
   }
 

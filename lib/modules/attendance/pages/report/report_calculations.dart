@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'day_status.dart';
-import 'models/derived_flags_row.dart';
-import 'models/effective_status_row.dart';
-import 'models/status_type.dart';
-
-const _unmarkedKey = 'unmarked';
+import '../../models/day_status.dart';
+import '../../models/derived_flags_row.dart';
+import '../../models/effective_status_row.dart';
+import '../../models/status_ids.dart';
+import '../../models/status_type.dart';
 
 /// Open product question, deliberately not resolved here (see plan.md): a
 /// mixed first-half-present/second-half-absent day counts only toward
@@ -17,11 +16,11 @@ Map<String, int> computeStatusSummary(
 ) {
   final summary = <String, int>{
     for (final t in statusTypes) t.id: 0,
-    _unmarkedKey: 0,
+    StatusIds.unmarked: 0,
   };
 
   for (final row in rows) {
-    final bucket = representativeStatus(row) ?? _unmarkedKey;
+    final bucket = representativeStatus(row) ?? StatusIds.unmarked;
     summary[bucket] = (summary[bucket] ?? 0) + 1;
   }
 

@@ -1,5 +1,7 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
+import 'employee.dart';
+
 part 'event_type.mapper.dart';
 
 @MappableClass()
@@ -14,8 +16,11 @@ class EventType with EventTypeMappable {
 
   @MappableField(key: 'id')
   final String id;
+
+  /// What recording this event does to the employee's status (joined →
+  /// active, left → inactive). Null for ordinary events like a raise.
   @MappableField(key: 'status_effect')
-  final String? statusEffect;
+  final EmploymentStatus? statusEffect;
   @MappableField(key: 'icon_name')
   final String? iconName;
   @MappableField(key: 'color_hex')

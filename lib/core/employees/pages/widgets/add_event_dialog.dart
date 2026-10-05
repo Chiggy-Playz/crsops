@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../utils/status_metadata.dart';
 import '../../../widgets/creatable_dropdown_field.dart';
+import '../../../widgets/date_time_form_fields.dart';
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
-import '../../repositories/event_type_repository.dart';
-
-final _dateFormat = DateFormat('d MMM yyyy');
 
 Future<void> showAddEventDialog(
   BuildContext context,
@@ -52,7 +50,7 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
 
   Future<void> _save(List<String> existingTypeIds) async {
     if (!_formKey.currentState!.validate() || _saving) return;
-    final typed = slugifyEventType(_typedType);
+    final typed = slugify(_typedType);
 
     var typeId = typed;
     await runGuardedSave(
@@ -88,7 +86,7 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
       },
       onSuccess: () {
         ref.invalidate(eventTypesProvider);
-        ref.invalidate(employeeTimelineProvider(widget.employeeId));
+        ref.read(employeeHistoryRevisionProvider.notifier).bump();
         Navigator.of(context).pop();
       },
     );
@@ -118,7 +116,7 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
             initialValue: widget.existing?.label,
             autofocus: !FormDialog.isCompact(context),
             validator: (value) =>
-                slugifyEventType(value ?? '').isEmpty ? 'Choose a type' : null,
+                slugify(value ?? '').isEmpty ? 'Choose a type' : null,
             onChanged: (value) => _typedType = value,
           ),
         ),
@@ -126,7 +124,6 @@ class _AddEventDialogState extends ConsumerState<_AddEventDialog> {
           fieldKey: const Key('event-date-field'),
           label: 'Date',
           value: _eventDate,
-          format: _dateFormat.format,
           onChanged: (d) => setState(() => _eventDate = d),
         ),
         TextFormField(

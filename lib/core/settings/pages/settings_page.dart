@@ -12,6 +12,7 @@ import '../../updates/update_controller.dart';
 import '../../updates/update_listener.dart';
 import '../../widgets/app_snack_bar.dart';
 import '../../widgets/error_snackbar.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/selection_sheet.dart';
 import '../settings_section.dart';
 
@@ -50,10 +51,10 @@ class SettingsPage extends ConsumerWidget {
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
         children: [
-          const _GroupHeader('Appearance'),
+          const SectionHeader('Appearance'),
           const _ThemeTile(),
           for (final group in groups) ...[
-            _GroupHeader(group.title),
+            SectionHeader(group.title),
             for (final entry in group.entries)
               ListTile(
                 leading: Icon(entry.icon),
@@ -65,7 +66,7 @@ class SettingsPage extends ConsumerWidget {
                 onTap: () => openInPane(context, entry.location),
               ),
           ],
-          const _GroupHeader('About'),
+          const SectionHeader('About'),
           const _VersionTile(),
           const Divider(),
           ListTile(
@@ -80,29 +81,6 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Semantics(
-        header: true,
-        child: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
       ),
     );
   }

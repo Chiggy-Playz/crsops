@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
+import '../../settings/routes.dart';
+import '../../utils/status_metadata.dart';
 import '../../widgets/color_swatch_picker.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
-import '../../widgets/status_metadata.dart';
+import '../../widgets/labelled_field_box.dart';
 import '../models/event_type.dart';
 import '../providers/employee_providers.dart';
 
@@ -17,7 +19,10 @@ class EventTypesManagerPage extends ConsumerWidget {
     final typesAsync = ref.watch(eventTypesProvider);
 
     return Scaffold(
-      appBar: PaneAppBar(title: 'Event types', parentLocation: '/settings'),
+      appBar: PaneAppBar(
+        title: 'Event types',
+        parentLocation: const SettingsRoute().location,
+      ),
       body: typesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
@@ -32,7 +37,7 @@ class EventTypesManagerPage extends ConsumerWidget {
               ),
               title: Text(displayLabel(type.id)),
               subtitle: type.isStructural
-                  ? Text('Structural: ${displayLabel(type.statusEffect!)}')
+                  ? Text('Structural: ${displayLabel(type.statusEffect!.name)}')
                   : null,
               onTap: () => showFormDialog<void>(
                 context: context,

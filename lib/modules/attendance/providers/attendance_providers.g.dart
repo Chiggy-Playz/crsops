@@ -299,7 +299,7 @@ final class EffectiveRangeStatusProvider
 }
 
 String _$effectiveRangeStatusHash() =>
-    r'5bc5049decae828806e9041a5567cd1b6c59e9e2';
+    r'7fd3c452a31bc5b07ae2c3d1a505a978ed325d98';
 
 final class EffectiveRangeStatusFamily extends $Family
     with
@@ -393,7 +393,7 @@ final class DerivedFlagsProvider
   }
 }
 
-String _$derivedFlagsHash() => r'852deb428600f4e4089437a5d11739c1c85e3e70';
+String _$derivedFlagsHash() => r'bae7afdc080f40dcf3ec3df558d36b47612c7703';
 
 final class DerivedFlagsFamily extends $Family
     with

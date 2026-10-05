@@ -1,3 +1,4 @@
+import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/models/event_type.dart';
 import 'package:crs_ops/core/employees/pages/event_types_manager_page.dart';
 import 'package:crs_ops/core/employees/providers/employee_providers.dart';
@@ -15,7 +16,7 @@ void main() {
       seed: [
         const EventType(
           id: 'joined',
-          statusEffect: 'active',
+          statusEffect: EmploymentStatus.active,
           iconName: 'check',
           colorHex: '#4CAF50',
         ),

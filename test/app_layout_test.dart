@@ -12,7 +12,7 @@ import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/providers/employee_providers.dart';
 import 'package:crs_ops/core/sections/app_sections_provider.dart';
 import 'package:crs_ops/core/theme/app_theme.dart';
-import 'package:crs_ops/core/utils/date_key.dart';
+import 'package:crs_ops/core/utils/date_time_format.dart';
 import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/models/status_type.dart';
 import 'package:crs_ops/modules/attendance/pages/attendance_day_page.dart';
@@ -73,7 +73,10 @@ Future<GoRouter> _pumpApp(WidgetTester tester, Size size) async {
               createdAt: DateTime(2024),
             ),
           ],
-          statusById: {'e1': 'active', 'e2': 'active'},
+          statusById: {
+            'e1': EmploymentStatus.active,
+            'e2': EmploymentStatus.active,
+          },
         ),
       ),
       employeeEventRepositoryProvider.overrideWithValue(

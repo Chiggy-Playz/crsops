@@ -8,18 +8,14 @@ import '../fakes/fake_employee_event_repository.dart';
 import '../fakes/fake_employee_repository.dart';
 
 void main() {
-  testWidgets('creating an employee saves it and inserts a joined event', (
+  testWidgets('creating an employee saves it along with a join date', (
     tester,
   ) async {
     final employeeRepo = FakeEmployeeRepository();
-    final eventRepo = FakeEmployeeEventRepository();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          employeeRepositoryProvider.overrideWithValue(employeeRepo),
-          employeeEventRepositoryProvider.overrideWithValue(eventRepo),
-        ],
+        overrides: [employeeRepositoryProvider.overrideWithValue(employeeRepo)],
         child: const MaterialApp(home: EmployeeEditPage(existing: null)),
       ),
     );
@@ -35,8 +31,7 @@ void main() {
     final saved = await employeeRepo.fetchAll();
     expect(saved, hasLength(1));
     expect(saved.first.name, 'Ramesh');
-    expect(eventRepo.addedEvents, hasLength(1));
-    expect(eventRepo.addedEvents.first['eventType'], 'joined');
+    expect(employeeRepo.joinedOnById, contains(saved.first.id));
   });
 
   testWidgets('saving without a name says so instead of saving', (

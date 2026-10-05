@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/settings/routes.dart';
+import '../../../core/utils/date_time_format.dart';
+import '../../../core/widgets/date_time_form_fields.dart';
 import '../../../core/widgets/form_dialog.dart';
 import '../../../core/widgets/guarded_save.dart';
+import '../../../core/widgets/labelled_field_box.dart';
 import '../providers/attendance_providers.dart';
 
 const _kWeekdayNames = {
@@ -22,8 +25,6 @@ String _weekOffLabel(List<int> days) {
   return days.map((d) => _kWeekdayNames[d] ?? '?').join(', ');
 }
 
-final _dateFormat = DateFormat('d MMM yyyy');
-
 class ShiftDefaultsManagerPage extends ConsumerWidget {
   const ShiftDefaultsManagerPage({super.key});
 
@@ -32,7 +33,10 @@ class ShiftDefaultsManagerPage extends ConsumerWidget {
     final historyAsync = ref.watch(shiftDefaultsHistoryProvider);
 
     return Scaffold(
-      appBar: PaneAppBar(title: 'Shift defaults', parentLocation: '/settings'),
+      appBar: PaneAppBar(
+        title: 'Shift defaults',
+        parentLocation: const SettingsRoute().location,
+      ),
       body: historyAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
@@ -44,7 +48,7 @@ class ShiftDefaultsManagerPage extends ConsumerWidget {
               isThreeLine: true,
               title: Text('${entry.defaultStart} – ${entry.defaultEnd}'),
               subtitle: Text(
-                'Effective from ${_dateFormat.format(entry.effectiveFrom)}\n'
+                'Effective from ${formatDisplayDate(entry.effectiveFrom)}\n'
                 'Week off: ${_weekOffLabel(entry.weekOffDays)}',
               ),
             );
@@ -79,9 +83,6 @@ class _AddShiftDefaultDialogState
   bool _saving = false;
   final _formKey = GlobalKey<FormState>();
 
-  String _fmt(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-
   Future<void> _save() async {
     if (_saving) return;
     await runGuardedSave(
@@ -91,8 +92,8 @@ class _AddShiftDefaultDialogState
           .read(shiftDefaultsRepositoryProvider)
           .addEffectiveFrom(
             effectiveFrom: _effectiveFrom,
-            defaultStart: _fmt(_start),
-            defaultEnd: _fmt(_end),
+            defaultStart: toStoredTime(_start),
+            defaultEnd: toStoredTime(_end),
             weekOffDays: _weekOffDays.toList()..sort(),
           ),
       onSuccess: () {
@@ -113,7 +114,6 @@ class _AddShiftDefaultDialogState
         DateFormField(
           label: 'Effective from',
           value: _effectiveFrom,
-          format: _dateFormat.format,
           onChanged: (d) => setState(() => _effectiveFrom = d),
         ),
         TimeFormField(

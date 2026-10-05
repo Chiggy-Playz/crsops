@@ -107,7 +107,10 @@ void main() {
           createdAt: DateTime(2024, 1, 1),
         ),
       ],
-      statusById: {'1': 'active', '2': 'inactive'},
+      statusById: {
+        '1': EmploymentStatus.active,
+        '2': EmploymentStatus.inactive,
+      },
     );
 
     await tester.pumpWidget(_wrap(const EmployeeListPage(), repo: repo));
@@ -147,7 +150,11 @@ void main() {
           createdAt: DateTime(2024, 1, 1),
         ),
       ],
-      statusById: {'1': 'inactive', '2': 'active', '3': 'active'},
+      statusById: {
+        '1': EmploymentStatus.inactive,
+        '2': EmploymentStatus.active,
+        '3': EmploymentStatus.active,
+      },
     );
 
     await tester.pumpWidget(_wrap(const EmployeeListPage(), repo: repo));

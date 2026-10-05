@@ -1,16 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../auth/models/app_session.dart';
 import '../../auth/providers/admin_providers.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
+import '../routes.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
   const ModuleAccessManagerPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      appBar: PaneAppBar(
+        title: 'Module access',
+        parentLocation: const SettingsRoute().location,
+      ),
+      body: _buildBody(context, ref),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, WidgetRef ref) {
     final profilesAsync = ref.watch(profilesProvider);
     final rolesAsync = ref.watch(userRolesProvider);
     final accessAsync = ref.watch(moduleAccessProvider);
@@ -20,69 +32,58 @@ class ModuleAccessManagerPage extends ConsumerWidget {
     // which profiles even render below, so a row must never flash before
     // roles finish loading.
     if (profilesAsync.isLoading || rolesAsync.isLoading) {
-      return Scaffold(
-        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
-        body: const Center(child: CircularProgressIndicator()),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
     if (profilesAsync.hasError) {
-      return Scaffold(
-        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
-        body: Center(child: Text('${profilesAsync.error}')),
-      );
+      return Center(child: Text('${profilesAsync.error}'));
     }
     if (rolesAsync.hasError) {
-      return Scaffold(
-        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
-        body: Center(child: Text('${rolesAsync.error}')),
-      );
+      return Center(child: Text('${rolesAsync.error}'));
     }
 
     final roles = rolesAsync.value ?? const {};
     // Admin-or-above always passes hasModuleAccess() regardless of any grant
     // row (see AppSession.hasModuleAccess) — granting them one is a no-op
     // that only confuses whoever's using this screen, so they're not listed.
-    final profiles = profilesAsync.value!
-        .where((p) => roles[p.id] != 'admin' && roles[p.id] != 'superadmin')
-        .toList();
+    final profiles = profilesAsync.value!.where((p) {
+      final role = roles[p.id];
+      return role != AppRole.admin.name && role != AppRole.superadmin.name;
+    }).toList();
     final access = accessAsync.value ?? const {};
     final modules = modulesAsync.value ?? const [];
 
-    return Scaffold(
-      appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
-      body: profiles.isEmpty
-          ? const Center(
-              child: Text('No employee logins yet to grant module access to'),
-            )
-          : ListView.builder(
-              itemCount: profiles.length,
-              itemBuilder: (context, index) {
-                final profile = profiles[index];
-                final granted = access[profile.id] ?? const <String>{};
-                final hasAll = modules.every((m) => granted.contains(m.id));
-                return ListTile(
-                  title: Text(profile.email),
-                  subtitle: Text(
-                    granted.isEmpty
-                        ? 'No module access granted'
-                        : granted.join(', '),
+    if (profiles.isEmpty) {
+      return const Center(
+        child: Text('No employee logins yet to grant module access to'),
+      );
+    }
+    return ListView.builder(
+      itemCount: profiles.length,
+      itemBuilder: (context, index) {
+        final profile = profiles[index];
+        final granted = access[profile.id] ?? const <String>{};
+        final hasAll = modules.every((m) => granted.contains(m.id));
+        String subtitle = granted.join(', ');
+        if (granted.isEmpty) subtitle = 'No module access granted';
+        // Nothing left to grant → no form that would open empty.
+        final canGrant = modules.isNotEmpty && !hasAll;
+        return ListTile(
+          title: Text(profile.email),
+          subtitle: Text(subtitle),
+          trailing: Icon(hasAll ? Icons.check : Icons.add),
+          onTap: canGrant
+              ? () => showFormDialog<void>(
+                  context: context,
+                  builder: (context) => _GrantModuleAccessDialog(
+                    profileId: profile.id,
+                    email: profile.email,
+                    granted: granted,
+                    modules: modules,
                   ),
-                  // Nothing left to grant → no form that would open empty.
-                  trailing: Icon(hasAll ? Icons.check : Icons.add),
-                  onTap: modules.isEmpty || hasAll
-                      ? null
-                      : () => showFormDialog<void>(
-                          context: context,
-                          builder: (context) => _GrantModuleAccessDialog(
-                            profileId: profile.id,
-                            email: profile.email,
-                            granted: granted,
-                            modules: modules,
-                          ),
-                        ),
-                );
-              },
-            ),
+                )
+              : null,
+        );
+      },
     );
   }
 }

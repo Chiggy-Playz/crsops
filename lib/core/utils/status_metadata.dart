@@ -29,11 +29,28 @@ Color colorFor(String? colorHex) {
 
 /// Ids/entry types are stored as lowercase slugs (`rehired`, `salary_payment`)
 /// so they stay stable as FK/lookup keys — this only affects how they're shown.
-String displayLabel(String id) => id
-    .split(RegExp('[_ ]+'))
+/// The reverse of [slugify].
+String displayLabel(String id) => titleCase(id.replaceAll('_', ' '));
+
+/// Capitalises the first letter of each word and tidies the spacing
+/// (`  ramesh   kumar ` → `Ramesh Kumar`). The rest of each word is left as
+/// typed, so `McDonald` stays `McDonald`. Names and labels people type are
+/// saved through this so they always show title-cased.
+String titleCase(String input) => input
+    .split(RegExp(r'\s+'))
     .where((word) => word.isNotEmpty)
     .map((word) => word[0].toUpperCase() + word.substring(1))
     .join(' ');
+
+/// What the user typed as a new type/category, as the id it's stored under:
+/// lowercase words joined by underscores (`Sick Leave` → `sick_leave`).
+/// Without this, `Warning` and `warning` would become two different ids.
+String slugify(String input) => input
+    .trim()
+    .toLowerCase()
+    .split(RegExp(r'[^a-z0-9]+'))
+    .where((w) => w.isNotEmpty)
+    .join('_');
 
 String initialsFor(String name) => name
     .trim()

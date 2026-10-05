@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/data/supabase_client_provider.dart';
+import '../../../core/employees/providers/employee_providers.dart';
 import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
 import '../models/shift_defaults.dart';
@@ -37,9 +38,17 @@ Future<List<EffectiveStatusRow>> effectiveRangeStatus(
   required DateTime start,
   required DateTime end,
   String? employeeId,
-}) => ref
-    .watch(attendanceRepositoryProvider)
-    .fetchEffectiveRangeStatus(start: start, end: end, employeeId: employeeId);
+}) {
+  // Who was employed on which day comes from employee history.
+  ref.watch(employeeHistoryRevisionProvider);
+  return ref
+      .watch(attendanceRepositoryProvider)
+      .fetchEffectiveRangeStatus(
+        start: start,
+        end: end,
+        employeeId: employeeId,
+      );
+}
 
 @riverpod
 Future<List<DerivedFlagsRow>> derivedFlags(
@@ -47,6 +56,10 @@ Future<List<DerivedFlagsRow>> derivedFlags(
   required DateTime start,
   required DateTime end,
   String? employeeId,
-}) => ref
-    .watch(attendanceRepositoryProvider)
-    .fetchDerivedFlags(start: start, end: end, employeeId: employeeId);
+}) {
+  // Who was employed on which day comes from employee history.
+  ref.watch(employeeHistoryRevisionProvider);
+  return ref
+      .watch(attendanceRepositoryProvider)
+      .fetchDerivedFlags(start: start, end: end, employeeId: employeeId);
+}

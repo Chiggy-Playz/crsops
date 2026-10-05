@@ -29,7 +29,7 @@ class FakeEmployeeEventRepository implements EmployeeEventRepository {
         id: 'fake-event-${_nextId++}',
         employeeId: employeeId,
         entryDate: eventDate,
-        kind: 'event',
+        kind: TimelineKind.event,
         label: eventType,
         note: note,
       ),

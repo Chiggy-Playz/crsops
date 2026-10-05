@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'status_metadata.dart';
+import '../utils/status_metadata.dart';
 
 /// "Pick an existing value or create a new one", as an M3 editable dropdown
 /// menu (DropdownMenuFormField): typing filters the menu, arrows + Enter pick,

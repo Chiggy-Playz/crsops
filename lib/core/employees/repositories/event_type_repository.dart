@@ -3,17 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../errors/exception_translator.dart';
 import '../models/event_type.dart';
 
-/// Normalizes a typed event-type label to its id slug (`Salary Revision` →
-/// `salary_revision`), matching the lowercase-underscore ids used by seeds
-/// and `displayLabel`. Without this, `Warning` and `warning` become two
-/// different PKs. Pure so it stays unit tested.
-String slugifyEventType(String input) => input
-    .trim()
-    .toLowerCase()
-    .split(RegExp(r'[^a-z0-9]+'))
-    .where((w) => w.isNotEmpty)
-    .join('_');
-
 abstract class EventTypeRepository {
   Future<List<EventType>> fetchAll();
 

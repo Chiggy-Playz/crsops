@@ -15,6 +15,7 @@ class EventTypeMapper extends ClassMapperBase<EventType> {
   static EventTypeMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = EventTypeMapper._());
+      EmploymentStatusMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -24,8 +25,8 @@ class EventTypeMapper extends ClassMapperBase<EventType> {
 
   static String _$id(EventType v) => v.id;
   static const Field<EventType, String> _f$id = Field('id', _$id);
-  static String? _$statusEffect(EventType v) => v.statusEffect;
-  static const Field<EventType, String> _f$statusEffect = Field(
+  static EmploymentStatus? _$statusEffect(EventType v) => v.statusEffect;
+  static const Field<EventType, EmploymentStatus> _f$statusEffect = Field(
     'statusEffect',
     _$statusEffect,
     key: r'status_effect',
@@ -132,7 +133,7 @@ abstract class EventTypeCopyWith<$R, $In extends EventType, $Out>
     implements ClassCopyWith<$R, $In, $Out> {
   $R call({
     String? id,
-    String? statusEffect,
+    EmploymentStatus? statusEffect,
     String? iconName,
     String? colorHex,
     String? description,

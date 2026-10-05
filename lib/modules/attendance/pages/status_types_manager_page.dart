@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/settings/routes.dart';
+import '../../../core/utils/status_metadata.dart';
 import '../../../core/widgets/color_swatch_picker.dart';
 import '../../../core/widgets/form_dialog.dart';
 import '../../../core/widgets/guarded_save.dart';
-import '../../../core/widgets/status_metadata.dart';
+import '../../../core/widgets/labelled_field_box.dart';
 import '../providers/attendance_providers.dart';
 import 'widgets/status_badge.dart';
 
@@ -19,7 +21,7 @@ class StatusTypesManagerPage extends ConsumerWidget {
     return Scaffold(
       appBar: PaneAppBar(
         title: 'Attendance status types',
-        parentLocation: '/settings',
+        parentLocation: const SettingsRoute().location,
       ),
       body: typesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -55,7 +57,6 @@ class _AddStatusTypeDialog extends ConsumerStatefulWidget {
 }
 
 class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
-  final _idController = TextEditingController();
   final _labelController = TextEditingController();
   String? _iconName;
   String? _colorHex;
@@ -65,7 +66,6 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
 
   @override
   void dispose() {
-    _idController.dispose();
     _labelController.dispose();
     super.dispose();
   }
@@ -78,7 +78,8 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
       action: () => ref
           .read(statusTypeRepositoryProvider)
           .add(
-            id: _idController.text.trim(),
+            // Stored under its snake_case form, like event types.
+            id: slugify(_labelController.text),
             label: _labelController.text.trim(),
             iconName: _iconName,
             colorHex: _colorHex,
@@ -92,8 +93,11 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    String? required(String? value, String what) =>
-        (value ?? '').trim().isEmpty ? 'Enter $what' : null;
+    // slugify, not trim: a label of only symbols has no usable id.
+    String? required(String? value, String what) {
+      if (slugify(value ?? '').isEmpty) return 'Enter $what';
+      return null;
+    }
 
     return FormDialog(
       title: 'New status type',
@@ -109,15 +113,6 @@ class _AddStatusTypeDialogState extends ConsumerState<_AddStatusTypeDialog> {
             helperText: 'Shown in the app, e.g. Sick leave',
           ),
           validator: (v) => required(v, 'a label'),
-        ),
-        TextFormField(
-          controller: _idController,
-          decoration: const InputDecoration(
-            labelText: 'Id',
-            helperText:
-                'Stored key, lowercase with underscores, e.g. sick_leave',
-          ),
-          validator: (v) => required(v, 'an id'),
         ),
         DropdownMenuFormField<String>(
           expandedInsets: EdgeInsets.zero,

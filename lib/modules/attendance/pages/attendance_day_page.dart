@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/layout/window_size.dart';
+import '../../../core/utils/date_time_format.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_snackbar.dart';
 import '../../../core/widgets/list_action_row.dart';
+import '../models/effective_status_row.dart';
+import '../models/status_type.dart';
 import '../providers/attendance_providers.dart';
 import '../routes.dart';
 import 'widgets/employee_marking_tile.dart';
 import 'widgets/status_picker_sheet.dart';
-
-final _titleFormat = DateFormat('d MMM yyyy');
 
 class AttendanceDayPage extends ConsumerStatefulWidget {
   const AttendanceDayPage({
@@ -161,9 +161,11 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
     if (widget.openedFromReports) {
       // Over Reports: ✕ in the wide-window dialog, the usual back arrow on
       // phones — both return to Reports with its filters intact.
-      leading = isTwoPane
-          ? (leading: const CloseButton(), implyLeading: false)
-          : (leading: null, implyLeading: true);
+      if (isTwoPane) {
+        leading = (leading: const CloseButton(), implyLeading: false);
+      } else {
+        leading = (leading: null, implyLeading: true);
+      }
     } else {
       leading = paneLeading(
         context,
@@ -175,59 +177,25 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
       appBar: AppBar(
         leading: leading.leading,
         automaticallyImplyLeading: leading.implyLeading,
-        title: Text('Attendance on ${_titleFormat.format(widget.date)}'),
+        title: Text('Attendance on ${formatDisplayDate(widget.date)}'),
         actions: [
           IconButton(
             key: const Key('mark-holiday-button'),
             icon: const Icon(Icons.beach_access_outlined),
             tooltip: 'Mark day as company holiday',
-            onPressed: activeEmployees == null || activeEmployees.isEmpty
-                ? null
-                : () => _markHoliday(activeEmployees.map((e) => e.id).toList()),
+            onPressed: hasEmployees
+                ? () => _markHoliday(activeEmployees.map((e) => e.id).toList())
+                : null,
           ),
         ],
       ),
-      body: employeesAsync.isLoading || statusAsync.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : employeesAsync.hasError
-          ? Center(child: Text('${employeesAsync.error}'))
-          : statusAsync.hasError
-          ? Center(child: Text('${statusAsync.error}'))
-          : activeEmployees == null || activeEmployees.isEmpty
-          ? const Center(child: Text('No active employees for this date'))
-          : Builder(
-              builder: (context) {
-                final statusByEmployeeId = {
-                  for (final s in statusAsync.value!) s.employeeId: s,
-                };
-                // Wide: "Mark all present" is the list's first row, right
-                // above the people it marks. Phones: the floating button.
-                final hasActionRow = isTwoPane;
-                return ListView.builder(
-                  itemCount: activeEmployees.length + (hasActionRow ? 1 : 0),
-                  itemBuilder: (context, index) {
-                    if (hasActionRow && index == 0) {
-                      return ListActionRow(
-                        key: const Key('mark-all-present-button'),
-                        icon: Icons.done_all,
-                        label: 'Mark all present',
-                        onTap: markAllPresent,
-                      );
-                    }
-                    final employee =
-                        activeEmployees[index - (hasActionRow ? 1 : 0)];
-                    return EmployeeMarkingTile(
-                      employee: employee,
-                      status: statusByEmployeeId[employee.id],
-                      statusTypes: statusTypesAsync.value ?? const [],
-                      busy: _busyEmployeeIds.contains(employee.id),
-                      onMarkStatus: (pick) => _markStatus(employee.id, pick),
-                      onUnmark: () => _unmark(employee.id),
-                    );
-                  },
-                );
-              },
-            ),
+      body: _buildBody(
+        employeesAsync: employeesAsync,
+        statusAsync: statusAsync,
+        statusTypes: statusTypesAsync.value ?? const [],
+        activeEmployees: activeEmployees,
+        onMarkAllPresent: markAllPresent,
+      ),
       // A FAB with nothing to act on shouldn't be shown at all — it's not a
       // form control to grey out, it's the screen's primary action.
       floatingActionButton: isTwoPane || !hasEmployees
@@ -239,6 +207,57 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
               icon: const Icon(Icons.done_all),
               label: const Text('Mark all present'),
             ),
+    );
+  }
+
+  Widget _buildBody({
+    required AsyncValue<List<Employee>> employeesAsync,
+    required AsyncValue<List<EffectiveStatusRow>> statusAsync,
+    required List<StatusType> statusTypes,
+    required List<Employee>? activeEmployees,
+    required VoidCallback onMarkAllPresent,
+  }) {
+    if (employeesAsync.isLoading || statusAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (employeesAsync.hasError) {
+      return Center(child: Text('${employeesAsync.error}'));
+    }
+    if (statusAsync.hasError) {
+      return Center(child: Text('${statusAsync.error}'));
+    }
+    if (activeEmployees == null || activeEmployees.isEmpty) {
+      return const Center(child: Text('No active employees for this date'));
+    }
+
+    final statusByEmployeeId = {
+      for (final s in statusAsync.value!) s.employeeId: s,
+    };
+    // Wide: "Mark all present" is the list's first row, right above the
+    // people it marks. Phones: the floating button.
+    final hasActionRow = context.isTwoPane;
+    final rowOffset = hasActionRow ? 1 : 0;
+    return ListView.builder(
+      itemCount: activeEmployees.length + rowOffset,
+      itemBuilder: (context, index) {
+        if (hasActionRow && index == 0) {
+          return ListActionRow(
+            key: const Key('mark-all-present-button'),
+            icon: Icons.done_all,
+            label: 'Mark all present',
+            onTap: onMarkAllPresent,
+          );
+        }
+        final employee = activeEmployees[index - rowOffset];
+        return EmployeeMarkingTile(
+          employee: employee,
+          status: statusByEmployeeId[employee.id],
+          statusTypes: statusTypes,
+          busy: _busyEmployeeIds.contains(employee.id),
+          onMarkStatus: (pick) => _markStatus(employee.id, pick),
+          onUnmark: () => _unmark(employee.id),
+        );
+      },
     );
   }
 }

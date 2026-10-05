@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../widgets/status_metadata.dart';
+import '../../../utils/status_metadata.dart';
 
 /// Initials on the theme's primaryContainer — one colour for everyone,
 /// matching the nav pill and Flutter's M3 CircleAvatar default (the quieter

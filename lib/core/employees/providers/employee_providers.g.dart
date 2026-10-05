@@ -204,6 +204,81 @@ final class EmployeeLedgerEntryRepositoryProvider
 String _$employeeLedgerEntryRepositoryHash() =>
     r'c8528b85332b5ea705c27d033446c26ce273e61a';
 
+/// Goes up by one whenever an employee's joined/left history changes:
+/// creating an employee, or adding, editing or deleting one of their events.
+/// Everything derived from that history (employees' status, the timeline,
+/// and attendance's who-was-employed-on-which-day data) watches this, so one
+/// [EmployeeHistoryRevision.bump] refreshes all of it.
+
+@ProviderFor(EmployeeHistoryRevision)
+final employeeHistoryRevisionProvider = EmployeeHistoryRevisionProvider._();
+
+/// Goes up by one whenever an employee's joined/left history changes:
+/// creating an employee, or adding, editing or deleting one of their events.
+/// Everything derived from that history (employees' status, the timeline,
+/// and attendance's who-was-employed-on-which-day data) watches this, so one
+/// [EmployeeHistoryRevision.bump] refreshes all of it.
+final class EmployeeHistoryRevisionProvider
+    extends $NotifierProvider<EmployeeHistoryRevision, int> {
+  /// Goes up by one whenever an employee's joined/left history changes:
+  /// creating an employee, or adding, editing or deleting one of their events.
+  /// Everything derived from that history (employees' status, the timeline,
+  /// and attendance's who-was-employed-on-which-day data) watches this, so one
+  /// [EmployeeHistoryRevision.bump] refreshes all of it.
+  EmployeeHistoryRevisionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'employeeHistoryRevisionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$employeeHistoryRevisionHash();
+
+  @$internal
+  @override
+  EmployeeHistoryRevision create() => EmployeeHistoryRevision();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$employeeHistoryRevisionHash() =>
+    r'adc1d3af86af95469bc095c226250759cd5ecc73';
+
+/// Goes up by one whenever an employee's joined/left history changes:
+/// creating an employee, or adding, editing or deleting one of their events.
+/// Everything derived from that history (employees' status, the timeline,
+/// and attendance's who-was-employed-on-which-day data) watches this, so one
+/// [EmployeeHistoryRevision.bump] refreshes all of it.
+
+abstract class _$EmployeeHistoryRevision extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(employeeList)
 final employeeListProvider = EmployeeListProvider._();
 
@@ -241,7 +316,7 @@ final class EmployeeListProvider
   }
 }
 
-String _$employeeListHash() => r'1711befb57278647302cd907b13a485c737a488a';
+String _$employeeListHash() => r'bdfc7bea4719fca6e9158725d8e27e0249e09202';
 
 @ProviderFor(employee)
 final employeeProvider = EmployeeFamily._();
@@ -293,7 +368,7 @@ final class EmployeeProvider
   }
 }
 
-String _$employeeHash() => r'74c88c654d7e66a7c650c73de35d6623f7484765';
+String _$employeeHash() => r'a1af668d8eab5a2fb0f7eb39455dff0a26dc5d7d';
 
 final class EmployeeFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Employee>, String> {
@@ -312,118 +387,6 @@ final class EmployeeFamily extends $Family
   @override
   String toString() => r'employeeProvider';
 }
-
-@ProviderFor(employeeCurrentStatus)
-final employeeCurrentStatusProvider = EmployeeCurrentStatusFamily._();
-
-final class EmployeeCurrentStatusProvider
-    extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
-    with $FutureModifier<String?>, $FutureProvider<String?> {
-  EmployeeCurrentStatusProvider._({
-    required EmployeeCurrentStatusFamily super.from,
-    required String super.argument,
-  }) : super(
-         retry: null,
-         name: r'employeeCurrentStatusProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$employeeCurrentStatusHash();
-
-  @override
-  String toString() {
-    return r'employeeCurrentStatusProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<String?> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<String?> create(Ref ref) {
-    final argument = this.argument as String;
-    return employeeCurrentStatus(ref, argument);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is EmployeeCurrentStatusProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$employeeCurrentStatusHash() =>
-    r'1024a823b7b6b2a28993e70cc33f7ab47d06defd';
-
-final class EmployeeCurrentStatusFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<String?>, String> {
-  EmployeeCurrentStatusFamily._()
-    : super(
-        retry: null,
-        name: r'employeeCurrentStatusProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  EmployeeCurrentStatusProvider call(String employeeId) =>
-      EmployeeCurrentStatusProvider._(argument: employeeId, from: this);
-
-  @override
-  String toString() => r'employeeCurrentStatusProvider';
-}
-
-@ProviderFor(employeeCurrentStatuses)
-final employeeCurrentStatusesProvider = EmployeeCurrentStatusesProvider._();
-
-final class EmployeeCurrentStatusesProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<Map<String, String>>,
-          Map<String, String>,
-          FutureOr<Map<String, String>>
-        >
-    with
-        $FutureModifier<Map<String, String>>,
-        $FutureProvider<Map<String, String>> {
-  EmployeeCurrentStatusesProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'employeeCurrentStatusesProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$employeeCurrentStatusesHash();
-
-  @$internal
-  @override
-  $FutureProviderElement<Map<String, String>> $createElement(
-    $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<Map<String, String>> create(Ref ref) {
-    return employeeCurrentStatuses(ref);
-  }
-}
-
-String _$employeeCurrentStatusesHash() =>
-    r'1784590d429dc1e857f269f76cef4df8c51cc4e7';
 
 @ProviderFor(employeeTimeline)
 final employeeTimelineProvider = EmployeeTimelineFamily._();
@@ -482,7 +445,7 @@ final class EmployeeTimelineProvider
   }
 }
 
-String _$employeeTimelineHash() => r'2195df982c7b90ffe59045e425769e9fa65c43ca';
+String _$employeeTimelineHash() => r'1c8c6938fe14f40e07fb653996f8ead18e6d1cdf';
 
 final class EmployeeTimelineFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<TimelineEntry>>, String> {

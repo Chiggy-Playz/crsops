@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../widgets/date_time_form_fields.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
-
-final _dateFormat = DateFormat('d MMM yyyy');
 
 class EmployeeEditPage extends ConsumerStatefulWidget {
   const EmployeeEditPage({super.key, required this.existing});
@@ -49,7 +47,7 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
     if (!_formKey.currentState!.validate() || _saving) return;
     final employeeRepo = ref.read(employeeRepositoryProvider);
     final name = _nameController.text.trim();
-    final salary = double.tryParse(_salaryController.text.trim());
+    final salary = int.tryParse(_salaryController.text.trim());
     final notes = _notesController.text.trim();
 
     await runGuardedSave(
@@ -66,27 +64,27 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
               salary: salary,
               notes: notes.isEmpty ? null : notes,
               createdAt: widget.existing!.createdAt,
+              status: widget.existing!.status,
             ),
           );
         } else {
-          final created = await employeeRepo.create(
+          await employeeRepo.create(
             name: name,
             color: _color,
             salary: salary,
             notes: notes.isEmpty ? null : notes,
+            joinedOn: _joinDate,
           );
-          await ref
-              .read(employeeEventRepositoryProvider)
-              .addEvent(
-                employeeId: created.id,
-                eventType: 'joined',
-                eventDate: _joinDate,
-              );
         }
       },
       onSuccess: () {
-        ref.invalidate(employeeListProvider);
-        if (_isEditing) ref.invalidate(employeeProvider(widget.existing!.id));
+        if (_isEditing) {
+          ref.invalidate(employeeListProvider);
+          ref.invalidate(employeeProvider(widget.existing!.id));
+        } else {
+          // A new hire also changes who's on the attendance sheet.
+          ref.read(employeeHistoryRevisionProvider.notifier).bump();
+        }
         Navigator.of(context).pop();
       },
     );
@@ -115,7 +113,6 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
             fieldKey: const Key('employee-join-date-field'),
             label: 'Join date',
             value: _joinDate,
-            format: _dateFormat.format,
             onChanged: (d) => setState(() => _joinDate = d),
           ),
         TextFormField(
@@ -124,12 +121,13 @@ class _EmployeeEditPageState extends ConsumerState<EmployeeEditPage> {
             labelText: 'Salary (optional)',
             prefixText: '₹ ',
           ),
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          keyboardType: TextInputType.number,
           validator: (value) {
             final text = value?.trim() ?? '';
-            return text.isNotEmpty && double.tryParse(text) == null
-                ? 'Enter a number'
-                : null;
+            if (text.isNotEmpty && int.tryParse(text) == null) {
+              return 'Enter whole rupees, like 25000';
+            }
+            return null;
           },
         ),
         TextFormField(

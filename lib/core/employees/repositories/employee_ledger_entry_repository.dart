@@ -1,7 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../errors/exception_translator.dart';
-import '../../utils/date_key.dart';
+import '../../utils/date_time_format.dart';
 
 abstract class EmployeeLedgerEntryRepository {
   Future<void> addEntry({

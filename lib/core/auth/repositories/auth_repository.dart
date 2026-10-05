@@ -101,15 +101,9 @@ class AuthRepository {
   }
 
   Future<void> _signInWithGoogleNative() async {
-    // NOTE: cannot be exercised end-to-end until a real Android device/emulator is
-    // available. Also still needs a separate Android-type OAuth client registered in
-    // Google Cloud Console (app's package name + SHA-1 signing fingerprint) — no code
-    // involved, but native sign-in fails on-device without it even with the correct
-    // serverClientId. Code compiles against the actual installed google_sign_in 7.x API
-    // (verified against package source — the plan's original code targeted the pre-7.x
-    // API, which no longer exists: no unnamed GoogleSignIn() constructor, no .signIn()
-    // method); Task 19 Step 1's spike (confirming a non-null idToken on a real device)
-    // still needs doing for real.
+    // Also needs an Android-type OAuth client in Google Cloud Console (the
+    // app's package name + SHA-1 of the signing key). No code involved, but
+    // native sign-in fails on a build signed with an unregistered key.
     // serverClientId must be the Web OAuth client ID (the same one pasted into
     // Supabase's Google provider config) — it's what sets the ID token's audience,
     // which Supabase checks when verifying the token in signInWithIdToken below.

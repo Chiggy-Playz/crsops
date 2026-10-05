@@ -8,6 +8,52 @@
 
 part of 'employee.dart';
 
+class EmploymentStatusMapper extends EnumMapper<EmploymentStatus> {
+  EmploymentStatusMapper._();
+
+  static EmploymentStatusMapper? _instance;
+  static EmploymentStatusMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = EmploymentStatusMapper._());
+    }
+    return _instance!;
+  }
+
+  static EmploymentStatus fromValue(dynamic value) {
+    ensureInitialized();
+    return MapperContainer.globals.fromValue(value);
+  }
+
+  @override
+  EmploymentStatus decode(dynamic value) {
+    switch (value) {
+      case r'active':
+        return EmploymentStatus.active;
+      case r'inactive':
+        return EmploymentStatus.inactive;
+      default:
+        throw MapperException.unknownEnumValue(value);
+    }
+  }
+
+  @override
+  dynamic encode(EmploymentStatus self) {
+    switch (self) {
+      case EmploymentStatus.active:
+        return r'active';
+      case EmploymentStatus.inactive:
+        return r'inactive';
+    }
+  }
+}
+
+extension EmploymentStatusMapperExtension on EmploymentStatus {
+  String toValue() {
+    EmploymentStatusMapper.ensureInitialized();
+    return MapperContainer.globals.toValue<EmploymentStatus>(this) as String;
+  }
+}
+
 class EmployeeMapper extends ClassMapperBase<Employee> {
   EmployeeMapper._();
 
@@ -15,6 +61,7 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
   static EmployeeMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = EmployeeMapper._());
+      EmploymentStatusMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -35,8 +82,8 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
   static const Field<Employee, String> _f$name = Field('name', _$name);
   static int _$color(Employee v) => v.color;
   static const Field<Employee, int> _f$color = Field('color', _$color);
-  static double? _$salary(Employee v) => v.salary;
-  static const Field<Employee, double> _f$salary = Field(
+  static int? _$salary(Employee v) => v.salary;
+  static const Field<Employee, int> _f$salary = Field(
     'salary',
     _$salary,
     opt: true,
@@ -53,6 +100,12 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
     _$createdAt,
     key: r'created_at',
   );
+  static EmploymentStatus? _$status(Employee v) => v.status;
+  static const Field<Employee, EmploymentStatus> _f$status = Field(
+    'status',
+    _$status,
+    opt: true,
+  );
 
   @override
   final MappableFields<Employee> fields = const {
@@ -63,6 +116,7 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
     #salary: _f$salary,
     #notes: _f$notes,
     #createdAt: _f$createdAt,
+    #status: _f$status,
   };
 
   static Employee _instantiate(DecodingData data) {
@@ -74,6 +128,7 @@ class EmployeeMapper extends ClassMapperBase<Employee> {
       salary: data.dec(_f$salary),
       notes: data.dec(_f$notes),
       createdAt: data.dec(_f$createdAt),
+      status: data.dec(_f$status),
     );
   }
 
@@ -139,9 +194,10 @@ abstract class EmployeeCopyWith<$R, $In extends Employee, $Out>
     String? userId,
     String? name,
     int? color,
-    double? salary,
+    int? salary,
     String? notes,
     DateTime? createdAt,
+    EmploymentStatus? status,
   });
   EmployeeCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -163,6 +219,7 @@ class _EmployeeCopyWithImpl<$R, $Out>
     Object? salary = $none,
     Object? notes = $none,
     DateTime? createdAt,
+    Object? status = $none,
   }) => $apply(
     FieldCopyWithData({
       if (id != null) #id: id,
@@ -172,6 +229,7 @@ class _EmployeeCopyWithImpl<$R, $Out>
       if (salary != $none) #salary: salary,
       if (notes != $none) #notes: notes,
       if (createdAt != null) #createdAt: createdAt,
+      if (status != $none) #status: status,
     }),
   );
   @override
@@ -183,6 +241,7 @@ class _EmployeeCopyWithImpl<$R, $Out>
     salary: data.get(#salary, or: $value.salary),
     notes: data.get(#notes, or: $value.notes),
     createdAt: data.get(#createdAt, or: $value.createdAt),
+    status: data.get(#status, or: $value.status),
   );
 
   @override

@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
-import '../../../core/utils/date_key.dart';
-import '../attendance_calendar_colors.dart';
-import '../models/effective_status_row.dart';
+import '../../../core/utils/date_time_format.dart';
 import '../providers/attendance_providers.dart';
 import '../routes.dart';
-import 'widgets/day_cell.dart';
-import 'widgets/month_calendar.dart';
+import 'widgets/attendance_month_calendar.dart';
 
 /// The month calendar: a full page on narrow windows, the left pane of the
 /// attendance two-pane layout on wide ones. [selectedDate] is the date open in
@@ -44,37 +41,6 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       effectiveRangeStatusProvider(start: monthStart, end: monthEnd),
     );
     final statusTypesAsync = ref.watch(statusTypesProvider);
-    final colorHexByStatusId = <String, String>{
-      for (final t in statusTypesAsync.value ?? const [])
-        if (t.colorHex != null) t.id: t.colorHex!,
-    };
-    final labelByStatusId = <String, String>{
-      for (final t in statusTypesAsync.value ?? const []) t.id: t.label,
-    };
-    final rowsByDate = groupRowsByDate(
-      monthStatusAsync.value ?? const <EffectiveStatusRow>[],
-    );
-
-    Widget cell(
-      BuildContext context,
-      DateTime day, {
-      required bool isToday,
-      required bool isSelected,
-    }) {
-      final dateKey = dateOnly(day);
-      return DayCell(
-        day: day,
-        isToday: isToday,
-        isSelected: isSelected,
-        // Same rule as Reports, from this month's rows — so any month shows
-        // its gaps, not just the last 7 days.
-        hasGap: hasUnmarkedPastDay(rowsByDate[dateKey] ?? const [], day),
-        statusDots: statusDotsFor(
-          rowsByDate[dateKey] ?? const [],
-          colorHexByStatusId,
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -89,26 +55,14 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       ),
       body: ListView(
         children: [
-          MonthCalendar(
+          AttendanceMonthCalendar(
             month: _focusedDay,
+            rows: monthStatusAsync.value ?? const [],
+            statusTypes: statusTypesAsync.value ?? const [],
             selectedDate: widget.selectedDate,
             onMonthChanged: (month) => setState(() => _focusedDay = month),
             onDateTap: (day) =>
                 openInPane(context, AttendanceDayRoute(dateOnly(day)).location),
-            dayBuilder: cell,
-            semanticLabelFor: (day) {
-              final dateKey = dateOnly(day);
-              final summary = statusSummaryLabel(
-                rowsByDate[dateKey] ?? const [],
-                labelByStatusId,
-              );
-              final gap =
-                  hasUnmarkedPastDay(rowsByDate[dateKey] ?? const [], day)
-                  ? 'attendance missing'
-                  : null;
-              final parts = [?summary, ?gap];
-              return parts.isEmpty ? null : parts.join(', ');
-            },
           ),
         ],
       ),

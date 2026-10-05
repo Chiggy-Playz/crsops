@@ -7,6 +7,7 @@ import '../../widgets/busy_overlay.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
+import '../routes.dart';
 
 class AllowListManagerPage extends ConsumerStatefulWidget {
   const AllowListManagerPage({super.key});
@@ -49,7 +50,7 @@ class _AllowListManagerPageState extends ConsumerState<AllowListManagerPage> {
     return Scaffold(
       appBar: PaneAppBar(
         title: 'Signup allow-list',
-        parentLocation: '/settings',
+        parentLocation: const SettingsRoute().location,
       ),
       body: BusyOverlay(
         busy: _busy,

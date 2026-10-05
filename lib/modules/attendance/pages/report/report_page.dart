@@ -1,26 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
-import '../../../core/employees/models/employee.dart';
-import '../../../core/employees/pages/widgets/employee_multi_picker.dart';
-import '../../../core/employees/providers/employee_providers.dart';
-import '../../../core/layout/two_pane_layout.dart';
-import '../../../core/layout/window_size.dart';
-import '../../../core/theme/custom_colors.dart';
-import '../../../core/utils/date_key.dart';
-import '../../../core/widgets/status_metadata.dart';
-import '../attendance_calendar_colors.dart';
-import '../models/derived_flags_row.dart';
-import '../models/effective_status_row.dart';
-import '../models/status_type.dart';
-import '../providers/attendance_providers.dart';
-import '../report_calculations.dart';
-import '../routes.dart';
-import 'widgets/day_cell.dart';
-import 'widgets/month_calendar.dart';
-
-final _dateFormat = DateFormat('d MMM yyyy');
+import '../../../../core/employees/models/employee.dart';
+import '../../../../core/employees/pages/widgets/employee_multi_picker.dart';
+import '../../../../core/employees/providers/employee_providers.dart';
+import '../../../../core/layout/two_pane_layout.dart';
+import '../../../../core/layout/window_size.dart';
+import '../../../../core/utils/date_time_format.dart';
+import '../../models/derived_flags_row.dart';
+import '../../models/effective_status_row.dart';
+import '../../providers/attendance_providers.dart';
+import 'report_calculations.dart';
+import 'report_sections.dart';
 
 class ReportPage extends ConsumerStatefulWidget {
   const ReportPage({super.key});
@@ -62,20 +53,23 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   List<(String, DateTimeRange)> _presets() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    // "Last N days" means the N full days before today, so today's
+    // half-marked attendance doesn't skew it.
+    final yesterday = today.subtract(const Duration(days: 1));
     return [
       ('Today', DateTimeRange(start: today, end: today)),
       (
         'Last 7 days',
         DateTimeRange(
           start: today.subtract(const Duration(days: 7)),
-          end: today,
+          end: yesterday,
         ),
       ),
       (
         'Last 30 days',
         DateTimeRange(
           start: today.subtract(const Duration(days: 30)),
-          end: today,
+          end: yesterday,
         ),
       ),
       (
@@ -92,14 +86,9 @@ class _ReportPageState extends ConsumerState<ReportPage> {
   });
 
   Future<void> _openEmployeePicker(List<Employee> employees) async {
-    // Awaited, not read: the statuses may not be loaded yet if the Employees
-    // tab was never opened, and every row would then count as active.
-    final statuses = await ref.read(employeeCurrentStatusesProvider.future);
-    if (!mounted) return;
     final result = await showEmployeeMultiPicker(
       context,
       employees: employees,
-      statusById: statuses,
       initialSelection: _selectedEmployeeIds,
     );
     if (result != null) setState(() => _selectedEmployeeIds = result);
@@ -160,7 +149,7 @@ class _ReportPageState extends ConsumerState<ReportPage> {
                       avatar: const Icon(Icons.date_range, size: 18),
                       label: Text(
                         _rangeLabel ??
-                            '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}',
+                            '${formatDisplayDate(_range.start)} – ${formatDisplayDate(_range.end)}',
                       ),
                       onPressed: () => controller.isOpen
                           ? controller.close()
@@ -252,28 +241,9 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     final summary = computeStatusSummary(statusRows, statusTypes);
     final exceptions = filterExceptions(exceptionRows);
 
-    final summaryCards = GridView.extent(
-      maxCrossAxisExtent: 160,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      mainAxisExtent: 124,
-      children: [
-        for (final type in statusTypes)
-          _SummaryCard(
-            label: type.label,
-            count: summary[type.id] ?? 0,
-            icon: iconFor(type.iconName),
-            color: context.customColor(colorFor(type.colorHex)).color,
-          ),
-        _SummaryCard(
-          label: 'Unmarked',
-          count: summary['unmarked'] ?? 0,
-          icon: Icons.help_outline,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ],
+    final summaryCards = ReportSummaryGrid(
+      statusTypes: statusTypes,
+      summary: summary,
     );
 
     final exceptionsSection = <Widget>[
@@ -281,25 +251,16 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         'Late / early / overtime',
         style: Theme.of(context).textTheme.titleMedium,
       ),
-      if (exceptions.isEmpty)
-        const Padding(
-          padding: EdgeInsets.only(top: 8),
-          child: Text('No exceptions in this range.'),
-        )
-      else
-        for (final e in exceptions)
-          ListTile(
-            title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
-            subtitle: Text(
-              '${_dateFormat.format(e.date)} · ${_exceptionParts(e).join(' · ')}',
-            ),
-          ),
+      ReportExceptionsList(
+        exceptions: exceptions,
+        nameByEmployeeId: nameByEmployeeId,
+      ),
     ];
 
     final calendarSection = <Widget>[
       Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
-      _ReportCalendar(range: range, rows: statusRows, statusTypes: statusTypes),
+      ReportCalendar(range: range, rows: statusRows, statusTypes: statusTypes),
     ];
 
     // Large windows: numbers on the left, calendar on the right, all in view.
@@ -338,117 +299,6 @@ class _ReportPageState extends ConsumerState<ReportPage> {
         const SizedBox(height: 24),
         ...calendarSection,
       ],
-    );
-  }
-
-  List<String> _exceptionParts(DerivedFlagsRow e) => [
-    if (e.isLate) 'Late',
-    if (e.isEarly) 'Left early',
-    if (e.overtimeMinutes > 0) '+${formatOvertime(e.overtimeMinutes)} overtime',
-  ];
-}
-
-class _ReportCalendar extends StatefulWidget {
-  const _ReportCalendar({
-    required this.range,
-    required this.rows,
-    required this.statusTypes,
-  });
-
-  final DateTimeRange range;
-  final List<EffectiveStatusRow> rows;
-  final List<StatusType> statusTypes;
-
-  @override
-  State<_ReportCalendar> createState() => _ReportCalendarState();
-}
-
-class _ReportCalendarState extends State<_ReportCalendar> {
-  late DateTime _month = widget.range.end;
-
-  @override
-  void didUpdateWidget(_ReportCalendar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // A new range: show its last month (the most recent data).
-    if (oldWidget.range != widget.range) _month = widget.range.end;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorHexByStatusId = <String, String>{
-      for (final t in widget.statusTypes)
-        if (t.colorHex != null) t.id: t.colorHex!,
-    };
-    final labelByStatusId = <String, String>{
-      for (final t in widget.statusTypes) t.id: t.label,
-    };
-    final rowsByDate = groupRowsByDate(widget.rows);
-
-    return MonthCalendar(
-      month: _month,
-      firstDate: widget.range.start,
-      lastDate: widget.range.end,
-      onMonthChanged: (month) => setState(() => _month = month),
-      // A quick look on top of Reports (see ReportDayRoute): back/✕ returns
-      // here with the filters intact.
-      onDateTap: (day) => ReportDayRoute(dateOnly(day)).push(context),
-      dayBuilder: (context, day, {required isToday, required isSelected}) {
-        final dayRows = rowsByDate[dateOnly(day)] ?? const [];
-        return DayCell(
-          day: day,
-          isToday: isToday,
-          // From the rows already loaded for the range — so it covers the
-          // whole range, not just the last 7 days the main calendar checks.
-          hasGap: hasUnmarkedPastDay(dayRows, day),
-          statusDots: statusDotsFor(dayRows, colorHexByStatusId),
-        );
-      },
-      semanticLabelFor: (day) {
-        final dayRows = rowsByDate[dateOnly(day)] ?? const [];
-        final summary = statusSummaryLabel(dayRows, labelByStatusId);
-        final gap = hasUnmarkedPastDay(dayRows, day)
-            ? 'attendance missing'
-            : null;
-        final parts = [?summary, ?gap];
-        return parts.isEmpty ? null : parts.join(', ');
-      },
-    );
-  }
-}
-
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({
-    required this.label,
-    required this.count,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final int count;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color),
-            Text('$count', style: Theme.of(context).textTheme.headlineSmall),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

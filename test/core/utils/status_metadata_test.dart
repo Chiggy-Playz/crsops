@@ -1,4 +1,4 @@
-import 'package:crs_ops/core/widgets/status_metadata.dart';
+import 'package:crs_ops/core/utils/status_metadata.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -35,6 +35,24 @@ void main() {
 
     test('accepts hex with or without the leading hash', () {
       expect(colorFor('4CAF50'), const Color(0xFF4CAF50));
+    });
+  });
+
+  group('slugify', () {
+    test('lowercases and trims', () {
+      expect(slugify('  Warning  '), 'warning');
+    });
+
+    test('joins words with underscores', () {
+      expect(slugify('Salary Revision'), 'salary_revision');
+    });
+
+    test('collapses separators and drops punctuation', () {
+      expect(slugify('sick - leave!!'), 'sick_leave');
+    });
+
+    test('already-slug input passes through', () {
+      expect(slugify('leave_sick'), 'leave_sick');
     });
   });
 }

@@ -54,8 +54,7 @@ void main() {
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(repo.revokedRoles, contains((userId: 'u1', roleId: 'admin')));
-      expect(repo.grantedRoles, contains((userId: 'u1', roleId: 'employee')));
+      expect(repo.setRoles, [(userId: 'u1', roleId: 'employee')]);
     });
   });
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/custom_colors.dart';
-import '../../../../core/utils/date_key.dart';
+import '../../../../core/utils/date_time_format.dart';
 
 /// Key for the gap-warning marker of a day, shared with tests so the format
 /// lives in one place. Takes the `yyyy-MM-dd` date key (see [dateOnly]).

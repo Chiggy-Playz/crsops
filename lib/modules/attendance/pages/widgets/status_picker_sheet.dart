@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/custom_colors.dart';
-import '../../../../core/widgets/status_metadata.dart';
+import '../../../../core/utils/date_time_format.dart';
+import '../../../../core/utils/status_metadata.dart';
 import '../../models/status_type.dart';
 
 typedef StatusPick = ({
@@ -11,31 +12,6 @@ typedef StatusPick = ({
   String? timeOut,
   String? note,
 });
-
-/// Parses `"HH:mm"` (write format) and `"HH:mm:ss"` (Postgres read-back).
-/// Returns null for anything else, including out-of-range values — callers
-/// fall back instead of crashing TimeOfDay's asserts.
-TimeOfDay? parseStoredTime(String? stored) {
-  if (stored == null) return null;
-  final parts = stored.split(':');
-  if (parts.length < 2) return null;
-  final hour = int.tryParse(parts[0]);
-  final minute = int.tryParse(parts[1]);
-  // Shape-valid but out-of-range values (bad migration, manual DB edit)
-  // must fall back, never crash TimeOfDay's asserts.
-  if (hour == null ||
-      minute == null ||
-      hour < 0 ||
-      hour > 23 ||
-      minute < 0 ||
-      minute > 59) {
-    return null;
-  }
-  return TimeOfDay(hour: hour, minute: minute);
-}
-
-String toStoredTime(TimeOfDay time) =>
-    '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
 class StatusPickerSheet extends StatefulWidget {
   const StatusPickerSheet({

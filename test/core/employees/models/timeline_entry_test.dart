@@ -15,7 +15,7 @@ void main() {
 
     final entry = TimelineEntryMapper.fromMap(json);
 
-    expect(entry.kind, 'event');
+    expect(entry.kind, TimelineKind.event);
     expect(entry.label, 'joined');
   });
 }

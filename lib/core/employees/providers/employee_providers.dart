@@ -27,25 +27,36 @@ EventTypeRepository eventTypeRepository(Ref ref) =>
 EmployeeLedgerEntryRepository employeeLedgerEntryRepository(Ref ref) =>
     SupabaseEmployeeLedgerEntryRepository(ref.watch(supabaseClientProvider));
 
-@riverpod
-Future<List<Employee>> employeeList(Ref ref) =>
-    ref.watch(employeeRepositoryProvider).fetchAll();
+/// Goes up by one whenever an employee's joined/left history changes:
+/// creating an employee, or adding, editing or deleting one of their events.
+/// Everything derived from that history (employees' status, the timeline,
+/// and attendance's who-was-employed-on-which-day data) watches this, so one
+/// [EmployeeHistoryRevision.bump] refreshes all of it.
+@Riverpod(keepAlive: true)
+class EmployeeHistoryRevision extends _$EmployeeHistoryRevision {
+  @override
+  int build() => 0;
+
+  void bump() => state++;
+}
 
 @riverpod
-Future<Employee> employee(Ref ref, String employeeId) =>
-    ref.watch(employeeRepositoryProvider).fetchById(employeeId);
+Future<List<Employee>> employeeList(Ref ref) {
+  ref.watch(employeeHistoryRevisionProvider);
+  return ref.watch(employeeRepositoryProvider).fetchAll();
+}
 
 @riverpod
-Future<String?> employeeCurrentStatus(Ref ref, String employeeId) =>
-    ref.watch(employeeRepositoryProvider).fetchCurrentStatus(employeeId);
+Future<Employee> employee(Ref ref, String employeeId) {
+  ref.watch(employeeHistoryRevisionProvider);
+  return ref.watch(employeeRepositoryProvider).fetchById(employeeId);
+}
 
 @riverpod
-Future<Map<String, String>> employeeCurrentStatuses(Ref ref) =>
-    ref.watch(employeeRepositoryProvider).fetchAllCurrentStatuses();
-
-@riverpod
-Future<List<TimelineEntry>> employeeTimeline(Ref ref, String employeeId) =>
-    ref.watch(employeeEventRepositoryProvider).fetchTimeline(employeeId);
+Future<List<TimelineEntry>> employeeTimeline(Ref ref, String employeeId) {
+  ref.watch(employeeHistoryRevisionProvider);
+  return ref.watch(employeeEventRepositoryProvider).fetchTimeline(employeeId);
+}
 
 @Riverpod(keepAlive: true)
 Future<List<EventType>> eventTypes(Ref ref) =>

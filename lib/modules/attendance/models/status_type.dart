@@ -1,5 +1,7 @@
 import 'package:dart_mappable/dart_mappable.dart';
 
+import 'status_ids.dart';
+
 part 'status_type.mapper.dart';
 
 @MappableClass()
@@ -24,16 +26,14 @@ class StatusType with StatusTypeMappable {
   final String? description;
 }
 
-/// The order statuses are offered in: the everyday ones first (what gets
-/// tapped most), then any custom types alphabetically by label.
-const _builtInOrder = ['present', 'absent', 'leave', 'holiday', 'week_off'];
-
-/// Built-ins by their fixed position; anything custom ranks after them.
+/// Built-ins by their fixed position ([StatusIds.builtInOrder]); anything
+/// custom ranks after them.
 int statusDisplayRank(String statusId) {
-  final i = _builtInOrder.indexOf(statusId);
-  return i == -1 ? _builtInOrder.length : i;
+  final i = StatusIds.builtInOrder.indexOf(statusId);
+  return i == -1 ? StatusIds.builtInOrder.length : i;
 }
 
+/// Built-ins first, then custom types alphabetically by label.
 List<StatusType> inDisplayOrder(Iterable<StatusType> types) {
   return types.toList()..sort((a, b) {
     final byRank = statusDisplayRank(a.id).compareTo(statusDisplayRank(b.id));

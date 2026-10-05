@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:talker_flutter/talker_flutter.dart';
 
-late final Talker appTalker;
+/// Replaced by [initAppTalker] at startup. The plain default keeps code that
+/// logs usable in tests, which never call it.
+Talker appTalker = Talker();
 
 Future<void> initAppTalker() async {
   appTalker = TalkerFlutter.init(

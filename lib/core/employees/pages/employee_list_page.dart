@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../layout/window_size.dart';
 import '../../widgets/list_action_row.dart';
+import '../../widgets/section_header.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
 import '../routes.dart';
@@ -29,20 +30,13 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
   @override
   Widget build(BuildContext context) {
     final employeesAsync = ref.watch(employeeListProvider);
-    final statusesAsync = ref.watch(employeeCurrentStatusesProvider);
-
-    // Wait for statuses too: rendering with an empty status map treats
-    // everyone as active, so inactive employees flashed in for a moment.
-    final error = employeesAsync.error ?? statusesAsync.error;
-    final employees = employeesAsync.value;
-    final statuses = statusesAsync.value;
-    final isLoaded = employees != null && statuses != null;
 
     final Widget body;
-    if (error != null) {
-      body = Center(child: Text('$error'));
-    } else if (isLoaded) {
-      body = _buildList(employees, statuses);
+    final employees = employeesAsync.value;
+    if (employeesAsync.hasError) {
+      body = Center(child: Text('${employeesAsync.error}'));
+    } else if (employees != null) {
+      body = _buildList(employees);
     } else {
       body = const Center(child: CircularProgressIndicator());
     }
@@ -91,7 +85,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
     );
   }
 
-  Widget _buildList(List<Employee> employees, Map<String, String> statuses) {
+  Widget _buildList(List<Employee> employees) {
     final addRow = context.isTwoPane
         ? ListActionRow(
             key: const Key('add-employee-row'),
@@ -101,13 +95,12 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
           )
         : null;
 
-    bool isInactive(Employee e) => statuses[e.id] == 'inactive';
     final matching = employees
         .where((e) => e.name.toLowerCase().contains(_query))
         .toList();
-    final active = matching.where((e) => !isInactive(e)).toList();
+    final active = matching.where((e) => !e.isInactive).toList();
     final inactive = _showInactive
-        ? matching.where(isInactive).toList()
+        ? matching.where((e) => e.isInactive).toList()
         : const <Employee>[];
 
     final String? emptyMessage;
@@ -134,7 +127,7 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         for (final e in active)
           _EmployeeTile(employee: e, selected: e.id == widget.selectedId),
         if (inactive.isNotEmpty) ...[
-          const _SectionHeader('Inactive'),
+          const SectionHeader('Inactive'),
           for (final e in inactive)
             _EmployeeTile(
               employee: e,
@@ -143,29 +136,6 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
             ),
         ],
       ],
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Semantics(
-        header: true,
-        child: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ),
     );
   }
 }

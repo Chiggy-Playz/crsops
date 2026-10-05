@@ -25,7 +25,7 @@ void main() {
           createdAt: DateTime(2024, 1, 1),
         ),
       ],
-      statusById: {'1': 'active'},
+      statusById: {'1': EmploymentStatus.active},
     );
     final eventRepo = FakeEmployeeEventRepository(
       seed: [
@@ -33,14 +33,14 @@ void main() {
           id: 'e1',
           employeeId: '1',
           entryDate: DateTime(2024, 1, 10),
-          kind: 'event',
+          kind: TimelineKind.event,
           label: 'joined',
         ),
         TimelineEntry(
           id: 'l1',
           employeeId: '1',
           entryDate: DateTime(2024, 2, 1),
-          kind: 'ledger',
+          kind: TimelineKind.ledger,
           label: 'advance',
           amount: 5000,
         ),
@@ -71,7 +71,9 @@ void main() {
     'Add event button opens a dialog that inserts a new descriptive type inline',
     (tester) async {
       final eventTypeRepo = FakeEventTypeRepository(
-        seed: [const EventType(id: 'joined', statusEffect: 'active')],
+        seed: [
+          const EventType(id: 'joined', statusEffect: EmploymentStatus.active),
+        ],
       );
       final eventRepo = FakeEmployeeEventRepository();
 

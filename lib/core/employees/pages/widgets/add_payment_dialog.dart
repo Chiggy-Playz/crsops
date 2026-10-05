@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
+import '../../../utils/money_format.dart';
+import '../../../utils/status_metadata.dart';
 import '../../../widgets/creatable_dropdown_field.dart';
+import '../../../widgets/date_time_form_fields.dart';
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/guarded_save.dart';
 import '../../models/timeline_entry.dart';
@@ -21,7 +23,8 @@ Future<void> showAddPaymentDialog(
   );
 }
 
-final _dateFormat = DateFormat('d MMM yyyy');
+/// Rupees with at most two decimal places (paise), optionally negative.
+final _amountPattern = RegExp(r'^-?\d+(\.\d{1,2})?$');
 
 class _AddPaymentDialog extends ConsumerStatefulWidget {
   const _AddPaymentDialog({required this.employeeId, this.existing});
@@ -34,7 +37,9 @@ class _AddPaymentDialog extends ConsumerStatefulWidget {
 
 class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
   late final _amountController = TextEditingController(
-    text: widget.existing?.amount?.toStringAsFixed(0) ?? '',
+    text: widget.existing?.amount == null
+        ? ''
+        : amountFieldText(widget.existing!.amount!),
   );
   late final _noteController = TextEditingController(
     text: widget.existing?.note ?? '',
@@ -56,7 +61,8 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _saving) return;
     final amount = double.parse(_amountController.text.trim());
-    final entryType = _typedEntryType.trim();
+    // A new category is stored snake_case, like event and status types.
+    final entryType = slugify(_typedEntryType);
 
     await runGuardedSave(
       context,
@@ -131,14 +137,15 @@ class _AddPaymentDialogState extends ConsumerState<_AddPaymentDialog> {
           validator: (value) {
             final text = value?.trim() ?? '';
             if (text.isEmpty) return 'Enter an amount';
-            if (double.tryParse(text) == null) return 'Enter a number';
+            if (!_amountPattern.hasMatch(text)) {
+              return 'Enter an amount like 1500 or 1500.50';
+            }
             return null;
           },
         ),
         DateFormField(
           label: 'Date',
           value: _entryDate,
-          format: _dateFormat.format,
           onChanged: (d) => setState(() => _entryDate = d),
         ),
         TextFormField(

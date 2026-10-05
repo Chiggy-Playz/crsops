@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../errors/app_exception.dart';
+import '../../widgets/error_snackbar.dart';
 import '../providers/auth_providers.dart';
 
 class UnauthorizedPage extends ConsumerWidget {
@@ -20,7 +22,13 @@ class UnauthorizedPage extends ConsumerWidget {
             const Text('Ask an admin to grant you a role.'),
             const SizedBox(height: 24),
             TextButton(
-              onPressed: () => ref.read(authRepositoryProvider).signOut(),
+              onPressed: () async {
+                try {
+                  await ref.read(authRepositoryProvider).signOut();
+                } on AppException catch (e) {
+                  showErrorSnackBar(e);
+                }
+              },
               child: const Text('Sign out'),
             ),
           ],

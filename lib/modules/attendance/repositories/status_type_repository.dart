@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/errors/exception_translator.dart';
+import '../../../core/utils/status_metadata.dart';
 import '../models/status_type.dart';
 
 abstract class StatusTypeRepository {
@@ -49,7 +50,7 @@ class SupabaseStatusTypeRepository implements StatusTypeRepository {
           .from('status_types')
           .insert({
             'id': id,
-            'label': label,
+            'label': titleCase(label),
             'icon_name': iconName,
             'color_hex': colorHex,
           })

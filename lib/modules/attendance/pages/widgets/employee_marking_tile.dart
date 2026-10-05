@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/employees/models/employee.dart';
+import '../../../../core/utils/date_time_format.dart';
+import '../../../../core/utils/status_metadata.dart';
 import '../../../../core/widgets/adaptive_sheet.dart';
-import '../../../../core/widgets/status_metadata.dart';
 import '../../models/effective_status_row.dart';
+import '../../models/status_ids.dart';
 import '../../models/status_type.dart';
 import 'status_badge.dart';
 import 'status_picker_sheet.dart';
@@ -62,11 +64,20 @@ class EmployeeMarkingTile extends StatelessWidget {
     final typeById = {for (final type in statusTypes) type.id: type};
     final isWeekOff = status?.isWeekOff == true;
     final isUnmarked = status?.firstHalfStatus == null;
-    final currentLabel = !isUnmarked
-        ? (status!.firstHalfStatus == status!.secondHalfStatus
-              ? displayLabel(status!.firstHalfStatus!)
-              : '${displayLabel(status!.firstHalfStatus!)} / ${displayLabel(status!.secondHalfStatus ?? '—')}')
-        : (isWeekOff ? 'Week off' : null);
+    // "Present", or "Present / Absent" for a split day.
+    String? currentLabel;
+    if (!isUnmarked) {
+      final firstHalf = status!.firstHalfStatus!;
+      final secondHalf = status!.secondHalfStatus;
+      if (firstHalf == secondHalf) {
+        currentLabel = displayLabel(firstHalf);
+      } else {
+        currentLabel =
+            '${displayLabel(firstHalf)} / ${displayLabel(secondHalf ?? '—')}';
+      }
+    } else if (isWeekOff) {
+      currentLabel = 'Week off';
+    }
 
     final hasTimes = status?.timeIn != null || status?.timeOut != null;
     final timeLabel = hasTimes
@@ -80,7 +91,9 @@ class EmployeeMarkingTile extends StatelessWidget {
     ];
 
     // An unmarked week-off day shows as Week off, same as its label.
-    final weekOffType = isUnmarked && isWeekOff ? typeById['week_off'] : null;
+    final weekOffType = isUnmarked && isWeekOff
+        ? typeById[StatusIds.weekOff]
+        : null;
 
     // The whole row opens the status sheet — the badge already shows the
     // status, so a separate button only repeated it.

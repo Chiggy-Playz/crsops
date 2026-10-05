@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/custom_colors.dart';
-import '../../../../core/widgets/status_metadata.dart';
+import '../../../../core/utils/status_metadata.dart';
 import '../../models/status_type.dart';
 
 /// A day's status at a glance, in the leading slot of a marking row:

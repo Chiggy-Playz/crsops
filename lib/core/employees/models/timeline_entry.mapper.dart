@@ -8,6 +8,52 @@
 
 part of 'timeline_entry.dart';
 
+class TimelineKindMapper extends EnumMapper<TimelineKind> {
+  TimelineKindMapper._();
+
+  static TimelineKindMapper? _instance;
+  static TimelineKindMapper ensureInitialized() {
+    if (_instance == null) {
+      MapperContainer.globals.use(_instance = TimelineKindMapper._());
+    }
+    return _instance!;
+  }
+
+  static TimelineKind fromValue(dynamic value) {
+    ensureInitialized();
+    return MapperContainer.globals.fromValue(value);
+  }
+
+  @override
+  TimelineKind decode(dynamic value) {
+    switch (value) {
+      case r'event':
+        return TimelineKind.event;
+      case r'ledger':
+        return TimelineKind.ledger;
+      default:
+        throw MapperException.unknownEnumValue(value);
+    }
+  }
+
+  @override
+  dynamic encode(TimelineKind self) {
+    switch (self) {
+      case TimelineKind.event:
+        return r'event';
+      case TimelineKind.ledger:
+        return r'ledger';
+    }
+  }
+}
+
+extension TimelineKindMapperExtension on TimelineKind {
+  String toValue() {
+    TimelineKindMapper.ensureInitialized();
+    return MapperContainer.globals.toValue<TimelineKind>(this) as String;
+  }
+}
+
 class TimelineEntryMapper extends ClassMapperBase<TimelineEntry> {
   TimelineEntryMapper._();
 
@@ -15,6 +61,7 @@ class TimelineEntryMapper extends ClassMapperBase<TimelineEntry> {
   static TimelineEntryMapper ensureInitialized() {
     if (_instance == null) {
       MapperContainer.globals.use(_instance = TimelineEntryMapper._());
+      TimelineKindMapper.ensureInitialized();
     }
     return _instance!;
   }
@@ -36,8 +83,11 @@ class TimelineEntryMapper extends ClassMapperBase<TimelineEntry> {
     _$entryDate,
     key: r'entry_date',
   );
-  static String _$kind(TimelineEntry v) => v.kind;
-  static const Field<TimelineEntry, String> _f$kind = Field('kind', _$kind);
+  static TimelineKind _$kind(TimelineEntry v) => v.kind;
+  static const Field<TimelineEntry, TimelineKind> _f$kind = Field(
+    'kind',
+    _$kind,
+  );
   static String _$label(TimelineEntry v) => v.label;
   static const Field<TimelineEntry, String> _f$label = Field('label', _$label);
   static String? _$note(TimelineEntry v) => v.note;
@@ -142,7 +192,7 @@ abstract class TimelineEntryCopyWith<$R, $In extends TimelineEntry, $Out>
     String? id,
     String? employeeId,
     DateTime? entryDate,
-    String? kind,
+    TimelineKind? kind,
     String? label,
     String? note,
     double? amount,
@@ -163,7 +213,7 @@ class _TimelineEntryCopyWithImpl<$R, $Out>
     String? id,
     String? employeeId,
     DateTime? entryDate,
-    String? kind,
+    TimelineKind? kind,
     String? label,
     Object? note = $none,
     Object? amount = $none,

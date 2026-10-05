@@ -4,7 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 final _employees = [
-  Employee(id: 'a', name: 'Amit', color: 0, createdAt: DateTime(2024)),
+  Employee(
+    id: 'a',
+    name: 'Amit',
+    color: 0,
+    createdAt: DateTime(2024),
+    status: EmploymentStatus.inactive,
+  ),
   Employee(id: 'b', name: 'Bhanu', color: 0, createdAt: DateTime(2024)),
   Employee(id: 'c', name: 'Chetan', color: 0, createdAt: DateTime(2024)),
 ];
@@ -23,7 +29,6 @@ Future<List<Set<String>?>> _open(
             await showEmployeeMultiPicker(
               context,
               employees: _employees,
-              statusById: const {'a': 'inactive', 'b': 'active', 'c': 'active'},
               initialSelection: initialSelection,
             ),
           ),

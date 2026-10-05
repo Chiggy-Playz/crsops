@@ -1,7 +1,7 @@
 import 'package:crs_ops/modules/attendance/models/derived_flags_row.dart';
 import 'package:crs_ops/modules/attendance/models/effective_status_row.dart';
 import 'package:crs_ops/modules/attendance/models/status_type.dart';
-import 'package:crs_ops/modules/attendance/report_calculations.dart';
+import 'package:crs_ops/modules/attendance/pages/report/report_calculations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

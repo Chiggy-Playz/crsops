@@ -68,13 +68,12 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).at(0), 'Sick leave');
-    await tester.enterText(find.byType(TextField).at(1), 'leave_sick');
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
     final types = await repo.fetchAll();
-    expect(types.map((t) => t.id), contains('leave_sick'));
+    expect(types.map((t) => t.id), contains('sick_leave'));
   });
 }

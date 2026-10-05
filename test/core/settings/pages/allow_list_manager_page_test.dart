@@ -28,13 +28,7 @@ class _FakeAdminRepository implements AdminRepository {
   Future<Map<String, String>> fetchUserRoles() async => {};
 
   @override
-  Future<void> grantRole({
-    required String userId,
-    required String roleId,
-  }) async {}
-
-  @override
-  Future<void> revokeRole({
+  Future<void> setRole({
     required String userId,
     required String roleId,
   }) async {}

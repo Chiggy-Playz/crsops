@@ -8,7 +8,7 @@ void main() {
       'user_id': null,
       'name': 'Ramesh',
       'color': 4283215696,
-      'salary': 25000.0,
+      'salary': 25000,
       'notes': null,
       'created_at': '2024-01-10T00:00:00.000Z',
     };
@@ -19,7 +19,7 @@ void main() {
     expect(employee.userId, isNull);
     expect(employee.name, 'Ramesh');
     expect(employee.color, 4283215696);
-    expect(employee.salary, 25000.0);
+    expect(employee.salary, 25000);
     expect(employee.createdAt, DateTime.parse('2024-01-10T00:00:00.000Z'));
   });
 }

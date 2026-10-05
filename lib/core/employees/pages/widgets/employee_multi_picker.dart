@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../widgets/form_dialog.dart';
+import '../../../widgets/section_header.dart';
 import '../../models/employee.dart';
 import 'employee_avatar.dart';
 
@@ -12,13 +13,11 @@ import 'employee_avatar.dart';
 Future<Set<String>?> showEmployeeMultiPicker(
   BuildContext context, {
   required List<Employee> employees,
-  required Map<String, String> statusById,
   required Set<String> initialSelection,
 }) => showFormDialog<Set<String>>(
   context: context,
   builder: (_) => _EmployeeMultiPicker(
     employees: employees,
-    statusById: statusById,
     initialSelection: initialSelection,
   ),
 );
@@ -26,12 +25,10 @@ Future<Set<String>?> showEmployeeMultiPicker(
 class _EmployeeMultiPicker extends StatefulWidget {
   const _EmployeeMultiPicker({
     required this.employees,
-    required this.statusById,
     required this.initialSelection,
   });
 
   final List<Employee> employees;
-  final Map<String, String> statusById;
   final Set<String> initialSelection;
 
   @override
@@ -56,9 +53,8 @@ class _EmployeeMultiPickerState extends State<_EmployeeMultiPicker> {
     final matching = widget.employees
         .where((e) => e.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
-    bool isInactive(Employee e) => widget.statusById[e.id] == 'inactive';
-    final active = matching.where((e) => !isInactive(e)).toList();
-    final inactive = matching.where(isInactive).toList();
+    final active = matching.where((e) => !e.isInactive).toList();
+    final inactive = matching.where((e) => e.isInactive).toList();
 
     final String description;
     if (_selection.isEmpty) {
@@ -95,7 +91,7 @@ class _EmployeeMultiPickerState extends State<_EmployeeMultiPicker> {
             const Divider(height: 1),
             for (final e in active) _row(e, inactive: false),
             if (inactive.isNotEmpty) ...[
-              const _GroupHeader('Inactive'),
+              const SectionHeader('Inactive', topPadding: 16),
               for (final e in inactive) _row(e, inactive: true),
             ],
             if (matching.isEmpty)
@@ -118,29 +114,6 @@ class _EmployeeMultiPickerState extends State<_EmployeeMultiPicker> {
       title: Text(e.name, style: dimmedText),
       value: _selection.contains(e.id),
       onChanged: (checked) => _toggle(e.id, checked ?? false),
-    );
-  }
-}
-
-class _GroupHeader extends StatelessWidget {
-  const _GroupHeader(this.title);
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Semantics(
-        header: true,
-        child: Text(
-          title,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: theme.colorScheme.primary,
-          ),
-        ),
-      ),
     );
   }
 }

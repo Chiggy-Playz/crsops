@@ -22,8 +22,7 @@ class FakeAdminRepository implements AdminRepository {
   final Map<String, Set<String>> _access;
   final List<({String email, String? note, DateTime addedAt})> _emails;
 
-  final List<({String userId, String roleId})> grantedRoles = [];
-  final List<({String userId, String roleId})> revokedRoles = [];
+  final List<({String userId, String roleId})> setRoles = [];
   final List<({String userId, String moduleId})> grantedAccess = [];
   final List<String> addedEmails = [];
   final List<String> removedEmails = [];
@@ -51,21 +50,9 @@ class FakeAdminRepository implements AdminRepository {
   Future<Map<String, String>> fetchUserRoles() async => Map.of(_roles);
 
   @override
-  Future<void> grantRole({
-    required String userId,
-    required String roleId,
-  }) async {
-    grantedRoles.add((userId: userId, roleId: roleId));
+  Future<void> setRole({required String userId, required String roleId}) async {
+    setRoles.add((userId: userId, roleId: roleId));
     _roles[userId] = roleId;
-  }
-
-  @override
-  Future<void> revokeRole({
-    required String userId,
-    required String roleId,
-  }) async {
-    revokedRoles.add((userId: userId, roleId: roleId));
-    _roles.remove(userId);
   }
 
   @override

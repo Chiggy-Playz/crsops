@@ -1,3 +1,4 @@
+import 'package:crs_ops/core/employees/models/employee.dart';
 import 'package:crs_ops/core/employees/models/event_type.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -5,7 +6,7 @@ void main() {
   test('isStructural is true only when statusEffect is set', () {
     const joined = EventType(
       id: 'joined',
-      statusEffect: 'active',
+      statusEffect: EmploymentStatus.active,
       iconName: 'check',
       colorHex: '#4CAF50',
     );
