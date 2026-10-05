@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../auth/providers/admin_providers.dart';
+import '../../layout/two_pane_layout.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {
   const ModuleAccessManagerPage({super.key});
@@ -20,19 +21,19 @@ class ModuleAccessManagerPage extends ConsumerWidget {
     // roles finish loading.
     if (profilesAsync.isLoading || rolesAsync.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Module access')),
+        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (profilesAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Module access')),
+        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
         body: Center(child: Text('${profilesAsync.error}')),
       );
     }
     if (rolesAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Module access')),
+        appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
         body: Center(child: Text('${rolesAsync.error}')),
       );
     }
@@ -48,7 +49,7 @@ class ModuleAccessManagerPage extends ConsumerWidget {
     final modules = modulesAsync.value ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Module access')),
+      appBar: PaneAppBar(title: 'Module access', parentLocation: '/settings'),
       body: profiles.isEmpty
           ? const Center(
               child: Text('No employee logins yet to grant module access to'),

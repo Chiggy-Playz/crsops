@@ -18,19 +18,19 @@ final settingsSection = AppSection(
       icon: Icons.mail_outline,
       title: 'Signup allow-list',
       canSee: (s) => s.isSuperadmin,
-      open: (context) => const AllowListRoute().push(context),
+      location: const AllowListRoute().location,
     ),
     SettingsEntry(
       icon: Icons.admin_panel_settings_outlined,
       title: 'Roles',
       canSee: (s) => s.isSuperadmin,
-      open: (context) => const RolesRoute().push(context),
+      location: const RolesRoute().location,
     ),
     SettingsEntry(
       icon: Icons.apps_outlined,
       title: 'Module access',
       canSee: (s) => s.isAdminOrAbove,
-      open: (context) => const ModuleAccessRoute().push(context),
+      location: const ModuleAccessRoute().location,
     ),
   ],
   roleGuards: {

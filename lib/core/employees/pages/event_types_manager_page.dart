@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../layout/two_pane_layout.dart';
 import '../../widgets/color_swatch_picker.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
 import '../../widgets/status_metadata.dart';
 import '../models/event_type.dart';
 import '../providers/employee_providers.dart';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class EventTypesManagerPage extends ConsumerWidget {
   const EventTypesManagerPage({super.key});
@@ -16,7 +17,7 @@ class EventTypesManagerPage extends ConsumerWidget {
     final typesAsync = ref.watch(eventTypesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Event types')),
+      appBar: PaneAppBar(title: 'Event types', parentLocation: '/settings'),
       body: typesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),

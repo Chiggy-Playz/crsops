@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+
+import '../../../widgets/form_dialog.dart';
+import '../../models/employee.dart';
+import 'employee_avatar.dart';
+
+/// Multi-select employee picker (e.g. the Reports filter): search, active
+/// employees first, then a dimmed Inactive group — they still matter for past
+/// date ranges. Full-screen on phones, a dialog on wide windows (FormDialog).
+///
+/// Resolves to the chosen ids (empty = everyone), or null if dismissed.
+Future<Set<String>?> showEmployeeMultiPicker(
+  BuildContext context, {
+  required List<Employee> employees,
+  required Map<String, String> statusById,
+  required Set<String> initialSelection,
+}) => showFormDialog<Set<String>>(
+  context: context,
+  builder: (_) => _EmployeeMultiPicker(
+    employees: employees,
+    statusById: statusById,
+    initialSelection: initialSelection,
+  ),
+);
+
+class _EmployeeMultiPicker extends StatefulWidget {
+  const _EmployeeMultiPicker({
+    required this.employees,
+    required this.statusById,
+    required this.initialSelection,
+  });
+
+  final List<Employee> employees;
+  final Map<String, String> statusById;
+  final Set<String> initialSelection;
+
+  @override
+  State<_EmployeeMultiPicker> createState() => _EmployeeMultiPickerState();
+}
+
+class _EmployeeMultiPickerState extends State<_EmployeeMultiPicker> {
+  final _formKey = GlobalKey<FormState>();
+  late final Set<String> _selection = Set.of(widget.initialSelection);
+  String _query = '';
+
+  void _toggle(String id, bool selected) => setState(() {
+    if (selected) {
+      _selection.add(id);
+    } else {
+      _selection.remove(id);
+    }
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final matching = widget.employees
+        .where((e) => e.name.toLowerCase().contains(_query.toLowerCase()))
+        .toList();
+    bool isInactive(Employee e) => widget.statusById[e.id] == 'inactive';
+    final active = matching.where((e) => !isInactive(e)).toList();
+    final inactive = matching.where(isInactive).toList();
+
+    final String description;
+    if (_selection.isEmpty) {
+      description = 'Showing everyone';
+    } else {
+      description = '${_selection.length} selected';
+    }
+
+    return FormDialog(
+      title: 'Filter by employee',
+      description: description,
+      formKey: _formKey,
+      saving: false,
+      saveLabel: 'Apply',
+      onSave: () => Navigator.of(context).pop(_selection),
+      children: [
+        TextField(
+          autofocus: !FormDialog.isCompact(context),
+          decoration: const InputDecoration(
+            labelText: 'Search',
+            prefixIcon: Icon(Icons.search),
+          ),
+          onChanged: (value) => setState(() => _query = value),
+        ),
+        // One child, so the rows aren't spaced like separate form fields.
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CheckboxListTile(
+              title: const Text('All employees'),
+              value: _selection.isEmpty,
+              onChanged: (_) => setState(_selection.clear),
+            ),
+            const Divider(height: 1),
+            for (final e in active) _row(e, inactive: false),
+            if (inactive.isNotEmpty) ...[
+              const _GroupHeader('Inactive'),
+              for (final e in inactive) _row(e, inactive: true),
+            ],
+            if (matching.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No employees match your search'),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _row(Employee e, {required bool inactive}) {
+    final dimmedText = inactive
+        ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
+        : null;
+    return CheckboxListTile(
+      secondary: EmployeeAvatar(name: e.name, dimmed: inactive),
+      title: Text(e.name, style: dimmedText),
+      value: _selection.contains(e.id),
+      onChanged: (checked) => _toggle(e.id, checked ?? false),
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  const _GroupHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Semantics(
+        header: true,
+        child: Text(
+          title,
+          style: theme.textTheme.titleSmall?.copyWith(
+            color: theme.colorScheme.primary,
+          ),
+        ),
+      ),
+    );
+  }
+}

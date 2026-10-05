@@ -5,9 +5,13 @@ import 'package:intl/intl.dart';
 import '../../../core/employees/models/employee.dart';
 import '../../../core/employees/providers/employee_providers.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/layout/window_size.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/error_snackbar.dart';
+import '../../../core/widgets/list_action_row.dart';
 import '../providers/attendance_providers.dart';
+import '../routes.dart';
 import 'widgets/employee_marking_tile.dart';
 import 'widgets/status_picker_sheet.dart';
 
@@ -146,8 +150,19 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
               if (employeesById[id] != null) employeesById[id]!,
           ];
 
+    final hasEmployees = activeEmployees != null && activeEmployees.isNotEmpty;
+    void markAllPresent() =>
+        _markAllPresent(activeEmployees!.map((e) => e.id).toList());
+    final isTwoPane = context.isTwoPane;
+    final leading = paneLeading(
+      context,
+      parentLocation: const CalendarRoute().location,
+    );
+
     return Scaffold(
       appBar: AppBar(
+        leading: leading.leading,
+        automaticallyImplyLeading: leading.implyLeading,
         title: Text('Attendance on ${_titleFormat.format(widget.date)}'),
         actions: [
           IconButton(
@@ -173,10 +188,22 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
                 final statusByEmployeeId = {
                   for (final s in statusAsync.value!) s.employeeId: s,
                 };
+                // Wide: "Mark all present" is the list's first row, right
+                // above the people it marks. Phones: the floating button.
+                final hasActionRow = isTwoPane;
                 return ListView.builder(
-                  itemCount: activeEmployees.length,
+                  itemCount: activeEmployees.length + (hasActionRow ? 1 : 0),
                   itemBuilder: (context, index) {
-                    final employee = activeEmployees[index];
+                    if (hasActionRow && index == 0) {
+                      return ListActionRow(
+                        key: const Key('mark-all-present-button'),
+                        icon: Icons.done_all,
+                        label: 'Mark all present',
+                        onTap: markAllPresent,
+                      );
+                    }
+                    final employee =
+                        activeEmployees[index - (hasActionRow ? 1 : 0)];
                     return EmployeeMarkingTile(
                       employee: employee,
                       status: statusByEmployeeId[employee.id],
@@ -191,12 +218,12 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
             ),
       // A FAB with nothing to act on shouldn't be shown at all — it's not a
       // form control to grey out, it's the screen's primary action.
-      floatingActionButton: activeEmployees == null || activeEmployees.isEmpty
+      floatingActionButton: isTwoPane || !hasEmployees
           ? null
           : FloatingActionButton.extended(
               key: const Key('mark-all-present-button'),
-              onPressed: () =>
-                  _markAllPresent(activeEmployees.map((e) => e.id).toList()),
+              heroTag: 'mark-all-present',
+              onPressed: markAllPresent,
               icon: const Icon(Icons.done_all),
               label: const Text('Mark all present'),
             ),

@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../errors/app_exception.dart';
+import '../../layout/two_pane_layout.dart';
+import '../../layout/window_size.dart';
+import '../../widgets/adaptive_sheet.dart';
 import '../../theme/custom_colors.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/error_snackbar.dart';
@@ -41,9 +44,8 @@ class EmployeeDetailPage extends ConsumerWidget {
   final String employeeId;
 
   Future<void> _showAddSheet(BuildContext context, WidgetRef ref) async {
-    final choice = await showModalBottomSheet<String>(
+    final choice = await showAdaptiveSheet<String>(
       context: context,
-      showDragHandle: true,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -77,10 +79,17 @@ class EmployeeDetailPage extends ConsumerWidget {
     final statusAsync = ref.watch(employeeCurrentStatusProvider(employeeId));
     final timelineAsync = ref.watch(employeeTimelineProvider(employeeId));
     final eventTypesAsync = ref.watch(eventTypesProvider);
+    final isTwoPane = context.isTwoPane;
+    final leading = paneLeading(
+      context,
+      parentLocation: const EmployeesRoute().location,
+    );
 
     return Scaffold(
       // No title: the profile header below shows the name, once.
       appBar: AppBar(
+        leading: leading.leading,
+        automaticallyImplyLeading: leading.implyLeading,
         actions: [
           IconButton(
             key: const Key('edit-employee-button'),
@@ -148,6 +157,14 @@ class EmployeeDetailPage extends ConsumerWidget {
                   subtitle: const Text('Notes'),
                 ),
               const _SectionHeader('History'),
+              // Wide: the add action is the first row of the history it adds
+              // to. Phones: the floating button below.
+              if (isTwoPane)
+                _AddEntryRow(
+                  onEvent: () => showAddEventDialog(context, ref, employeeId),
+                  onPayment: () =>
+                      showAddPaymentDialog(context, ref, employeeId),
+                ),
               ...timelineAsync.when(
                 loading: () => const [
                   Padding(
@@ -187,13 +204,15 @@ class EmployeeDetailPage extends ConsumerWidget {
           );
         },
       ),
-      // One FAB per screen (M3): "Add" asks what to add.
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('add-button'),
-        onPressed: () => _showAddSheet(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Add'),
-      ),
+      floatingActionButton: isTwoPane
+          ? null
+          : FloatingActionButton.extended(
+              key: const Key('add-button'),
+              heroTag: 'add-entry',
+              onPressed: () => _showAddSheet(context, ref),
+              icon: const Icon(Icons.add),
+              label: const Text('Add'),
+            ),
     );
   }
 }
@@ -453,7 +472,7 @@ class _TimelineRow extends ConsumerWidget {
                         Text(
                           _currencyFormat.format(entry.amount),
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                     ],
@@ -522,6 +541,68 @@ class _EntryMenu extends StatelessWidget {
         onPressed: () =>
             controller.isOpen ? controller.close() : controller.open(),
       ),
+    );
+  }
+}
+
+/// "Add event or payment" as the first History row on wide windows, opening
+/// an anchored, animated menu (Event / Payment) instead of the phone sheet.
+/// Uses the history rows' own marker and spacing, not the list-pane
+/// ListActionRow, so it matches the rows beneath it.
+class _AddEntryRow extends StatelessWidget {
+  const _AddEntryRow({required this.onEvent, required this.onPayment});
+
+  final VoidCallback onEvent;
+  final VoidCallback onPayment;
+
+  @override
+  Widget build(BuildContext context) {
+    return MenuAnchor(
+      animated: true,
+      menuChildren: [
+        MenuItemButton(
+          key: const Key('add-event-button'),
+          leadingIcon: const Icon(Icons.event_note_outlined),
+          onPressed: onEvent,
+          child: const Text('Event'),
+        ),
+        MenuItemButton(
+          key: const Key('add-payment-button'),
+          leadingIcon: const Icon(Icons.payments_outlined),
+          onPressed: onPayment,
+          child: const Text('Payment'),
+        ),
+      ],
+      // Built like a history row (same 28px marker, edge, gap and text style)
+      // so it reads as part of the list it adds to.
+      builder: (context, controller, _) {
+        final theme = Theme.of(context);
+        final scheme = theme.colorScheme;
+        return InkWell(
+          key: const Key('add-button'),
+          onTap: () =>
+              controller.isOpen ? controller.close() : controller.open(),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Row(
+              children: [
+                _Marker(
+                  icon: Icons.add,
+                  background: scheme.primaryContainer,
+                  foreground: scheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: _markerGap),
+                Text(
+                  'Add event or payment',
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: scheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -33,7 +33,7 @@ class EmployeeAvatar extends StatelessWidget {
       child: Text(
         initialsFor(name),
         style: TextStyle(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           fontSize: radius == null ? null : radius! * 0.7,
         ),
       ),

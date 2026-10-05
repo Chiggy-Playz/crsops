@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/widgets/color_swatch_picker.dart';
 import '../../../core/widgets/form_dialog.dart';
 import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/status_metadata.dart';
 import '../providers/attendance_providers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/status_badge.dart';
+
 
 class StatusTypesManagerPage extends ConsumerWidget {
   const StatusTypesManagerPage({super.key});
@@ -16,7 +17,7 @@ class StatusTypesManagerPage extends ConsumerWidget {
     final typesAsync = ref.watch(statusTypesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Attendance status types')),
+      appBar: PaneAppBar(title: 'Attendance status types', parentLocation: '/settings'),
       body: typesAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),

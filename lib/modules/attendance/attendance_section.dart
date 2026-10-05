@@ -18,14 +18,13 @@ final attendanceSection = AppSection(
       icon: Icons.schedule_outlined,
       title: 'Shift defaults',
       canSee: (s) => s.isAdminOrAbove,
-      open: (context) =>
-          const settings_routes.ShiftDefaultsRoute().push(context),
+      location: const settings_routes.ShiftDefaultsRoute().location,
     ),
     SettingsEntry(
       icon: Icons.label_outline,
       title: 'Status types',
       canSee: (s) => s.isAdminOrAbove,
-      open: (context) => const settings_routes.StatusTypesRoute().push(context),
+      location: const settings_routes.StatusTypesRoute().location,
     ),
   ],
   settingsRoutes: settings_routes.$appRoutes,

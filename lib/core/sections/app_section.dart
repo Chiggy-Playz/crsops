@@ -62,13 +62,16 @@ class SettingsEntry {
     required this.icon,
     required this.title,
     required this.canSee,
-    required this.open,
+    required this.location,
   });
 
   final IconData icon;
   final String title;
   final SessionCheck canSee;
 
-  /// Written inside the owning section, so navigation stays typed.
-  final void Function(BuildContext context) open;
+  /// Where the row leads — taken from the owning section's typed route
+  /// (`const XRoute().location`), so paths still live in one place. A location
+  /// rather than a callback, so the hub can highlight the open page and open
+  /// it the right way for the layout (pane vs pushed page).
+  final String location;
 }

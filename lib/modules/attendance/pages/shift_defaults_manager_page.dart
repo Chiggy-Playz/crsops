@@ -1,10 +1,11 @@
+import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/widgets/form_dialog.dart';
+import '../../../core/widgets/guarded_save.dart';
+import '../providers/attendance_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../core/widgets/form_dialog.dart';
-import '../../../core/widgets/guarded_save.dart';
-import '../providers/attendance_providers.dart';
 
 const _kWeekdayNames = {
   1: 'Monday',
@@ -31,7 +32,7 @@ class ShiftDefaultsManagerPage extends ConsumerWidget {
     final historyAsync = ref.watch(shiftDefaultsHistoryProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shift defaults')),
+      appBar: PaneAppBar(title: 'Shift defaults', parentLocation: '/settings'),
       body: historyAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),

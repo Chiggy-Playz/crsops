@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/utils/date_key.dart';
 import '../attendance_calendar_colors.dart';
 import '../routes.dart';
@@ -10,15 +11,31 @@ import '../providers/attendance_providers.dart';
 import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
 
+/// The month calendar: a full page on narrow windows, the left pane of the
+/// attendance two-pane layout on wide ones. [selectedDate] is the date open in
+/// the right pane (wide only); tapping a date opens it the right way for the
+/// layout (see [openInPane]).
 class CalendarPage extends ConsumerStatefulWidget {
-  const CalendarPage({super.key});
+  const CalendarPage({super.key, this.selectedDate});
+
+  final DateTime? selectedDate;
 
   @override
   ConsumerState<CalendarPage> createState() => _CalendarPageState();
 }
 
 class _CalendarPageState extends ConsumerState<CalendarPage> {
-  DateTime _focusedDay = DateTime.now();
+  late DateTime _focusedDay = widget.selectedDate ?? DateTime.now();
+
+  @override
+  void didUpdateWidget(CalendarPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Follow the selection when it moves (e.g. browser back to another month).
+    final selected = widget.selectedDate;
+    if (selected != null && selected != oldWidget.selectedDate) {
+      _focusedDay = selected;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +57,16 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
       monthStatusAsync.value ?? const <EffectiveStatusRow>[],
     );
 
+    final selectedKey = widget.selectedDate == null
+        ? null
+        : dateOnly(widget.selectedDate!);
+
     Widget cell(DateTime day, {bool isToday = false}) {
       final dateKey = dateOnly(day);
       return DayCell(
         day: day,
         isToday: isToday,
+        isSelected: dateKey == selectedKey,
         hasGap: gapDates.contains(dateKey),
         statusDots: statusDotsFor(
           rowsByDate[dateKey] ?? const [],
@@ -73,7 +95,10 @@ class _CalendarPageState extends ConsumerState<CalendarPage> {
         onPageChanged: (day) => setState(() => _focusedDay = day),
         onDaySelected: (selectedDay, focusedDay) {
           setState(() => _focusedDay = focusedDay);
-          AttendanceDayRoute(dateOnly(selectedDay)).push(context);
+          openInPane(
+            context,
+            AttendanceDayRoute(dateOnly(selectedDay)).location,
+          );
         },
         daysOfWeekStyle: themedDaysOfWeekStyle(context),
         calendarStyle: themedCalendarStyle(context),

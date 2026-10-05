@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../auth/providers/admin_providers.dart';
+import '../../layout/two_pane_layout.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
 import '../../widgets/status_metadata.dart';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class RolesManagerPage extends ConsumerWidget {
   const RolesManagerPage({super.key});
@@ -18,19 +19,19 @@ class RolesManagerPage extends ConsumerWidget {
     // a row never briefly shows "no role granted" before roles finish loading.
     if (profilesAsync.isLoading || rolesAsync.isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Roles')),
+        appBar: PaneAppBar(title: 'Roles', parentLocation: '/settings'),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (profilesAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Roles')),
+        appBar: PaneAppBar(title: 'Roles', parentLocation: '/settings'),
         body: Center(child: Text('${profilesAsync.error}')),
       );
     }
     if (rolesAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Roles')),
+        appBar: PaneAppBar(title: 'Roles', parentLocation: '/settings'),
         body: Center(child: Text('${rolesAsync.error}')),
       );
     }
@@ -40,7 +41,7 @@ class RolesManagerPage extends ConsumerWidget {
     final profiles = profilesAsync.value!;
     if (profiles.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Roles')),
+        appBar: PaneAppBar(title: 'Roles', parentLocation: '/settings'),
         body: const Center(
           child: Text('No profiles yet — nobody has signed in'),
         ),
@@ -48,7 +49,7 @@ class RolesManagerPage extends ConsumerWidget {
     }
     final roles = rolesAsync.value ?? const {};
     return Scaffold(
-      appBar: AppBar(title: const Text('Roles')),
+      appBar: PaneAppBar(title: 'Roles', parentLocation: '/settings'),
       body: ListView.builder(
         itemCount: profiles.length,
         itemBuilder: (context, index) {

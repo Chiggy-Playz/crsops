@@ -4,7 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../core/employees/models/employee.dart';
+import '../../../core/employees/pages/widgets/employee_multi_picker.dart';
 import '../../../core/employees/providers/employee_providers.dart';
+import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/layout/window_size.dart';
 import '../../../core/theme/custom_colors.dart';
 import '../../../core/utils/date_key.dart';
 import '../../../core/widgets/status_metadata.dart';
@@ -17,7 +20,6 @@ import '../providers/attendance_providers.dart';
 import '../report_calculations.dart';
 import 'widgets/calendar_theme.dart';
 import 'widgets/day_cell.dart';
-import 'widgets/employee_picker_dialog.dart';
 
 final _dateFormat = DateFormat('d MMM yyyy');
 
@@ -56,53 +58,49 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     }
   }
 
-  Future<void> _openRangeMenu() async {
+  /// Range presets, label → range. One place, so a label can never drift
+  /// from its range. Built on demand so "today" is always current.
+  List<(String, DateTimeRange)> _presets() {
     final now = DateTime.now();
-    final choice = await showMenu<String>(
-      context: context,
-      position: const RelativeRect.fromLTRB(100, 100, 0, 0),
-      items: const [
-        PopupMenuItem(value: 'today', child: Text('Today')),
-        PopupMenuItem(value: '7d', child: Text('Last 7 days')),
-        PopupMenuItem(value: '30d', child: Text('Last 30 days')),
-        PopupMenuItem(value: 'month', child: Text('This month')),
-        PopupMenuItem(value: 'custom', child: Text('Custom range…')),
-      ],
-    );
-    if (choice == 'custom') {
-      await _pickCustomRange();
-      return;
-    }
-    // One hoisted `now` above. Single map (range plus label) so the two
-    // can never drift apart.
-    final presets = {
-      'today': (DateTimeRange(start: now, end: now), 'Today'),
-      '7d': (
-        DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
+    final today = DateTime(now.year, now.month, now.day);
+    return [
+      ('Today', DateTimeRange(start: today, end: today)),
+      (
         'Last 7 days',
+        DateTimeRange(
+          start: today.subtract(const Duration(days: 7)),
+          end: today,
+        ),
       ),
-      '30d': (
-        DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
+      (
         'Last 30 days',
+        DateTimeRange(
+          start: today.subtract(const Duration(days: 30)),
+          end: today,
+        ),
       ),
-      'month': (
-        DateTimeRange(start: DateTime(now.year, now.month, 1), end: now),
+      (
         'This month',
+        DateTimeRange(start: DateTime(now.year, now.month, 1), end: today),
       ),
-    };
-    final preset = presets[choice];
-    if (preset != null) {
-      setState(() {
-        _range = preset.$1;
-        _rangeLabel = preset.$2;
-      });
-    }
+      ('Previous month', previousMonthRange(now)),
+    ];
   }
 
+  void _applyPreset(String label, DateTimeRange range) => setState(() {
+    _range = range;
+    _rangeLabel = label;
+  });
+
   Future<void> _openEmployeePicker(List<Employee> employees) async {
-    final result = await showEmployeePicker(
+    // Awaited, not read: the statuses may not be loaded yet if the Employees
+    // tab was never opened, and every row would then count as active.
+    final statuses = await ref.read(employeeCurrentStatusesProvider.future);
+    if (!mounted) return;
+    final result = await showEmployeeMultiPicker(
       context,
       employees: employees,
+      statusById: statuses,
       initialSelection: _selectedEmployeeIds,
     );
     if (result != null) setState(() => _selectedEmployeeIds = result);
@@ -126,39 +124,68 @@ class _ReportPageState extends ConsumerState<ReportPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reports')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                InputChip(
-                  avatar: const Icon(Icons.date_range, size: 18),
-                  label: Text(
-                    _rangeLabel ??
-                        '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}',
+      // Below large, filters and content share one centred, capped column so
+      // they line up; large windows use the full width (two columns).
+      body: MaxWidthBox(
+        maxWidth: context.windowSize == WindowSize.large
+            ? double.infinity
+            : 840,
+        child: Column(
+          // Filters start at the left edge like the content below them.
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  // Anchored under the chip (it used to open at a hardcoded
+                  // screen position).
+                  MenuAnchor(
+                    animated: true,
+                    menuChildren: [
+                      for (final (label, range) in _presets())
+                        MenuItemButton(
+                          onPressed: () => _applyPreset(label, range),
+                          child: Text(label),
+                        ),
+                      const Divider(height: 1),
+                      MenuItemButton(
+                        leadingIcon: const Icon(Icons.edit_calendar_outlined),
+                        onPressed: _pickCustomRange,
+                        child: const Text('Custom range…'),
+                      ),
+                    ],
+                    builder: (context, controller, _) => InputChip(
+                      avatar: const Icon(Icons.date_range, size: 18),
+                      label: Text(
+                        _rangeLabel ??
+                            '${_dateFormat.format(_range.start)} – ${_dateFormat.format(_range.end)}',
+                      ),
+                      onPressed: () => controller.isOpen
+                          ? controller.close()
+                          : controller.open(),
+                    ),
                   ),
-                  onPressed: _openRangeMenu,
-                ),
-                employeesAsync.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, _) => const SizedBox.shrink(),
-                  data: (employees) => InputChip(
-                    avatar: const Icon(Icons.person_outline, size: 18),
-                    label: Text(_employeeChipLabel(employees)),
-                    onPressed: () => _openEmployeePicker(employees),
-                    onDeleted: _selectedEmployeeIds.isEmpty
-                        ? null
-                        : () => setState(() => _selectedEmployeeIds = {}),
+                  employeesAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, _) => const SizedBox.shrink(),
+                    data: (employees) => InputChip(
+                      avatar: const Icon(Icons.person_outline, size: 18),
+                      label: Text(_employeeChipLabel(employees)),
+                      onPressed: () => _openEmployeePicker(employees),
+                      onDeleted: _selectedEmployeeIds.isEmpty
+                          ? null
+                          : () => setState(() => _selectedEmployeeIds = {}),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(child: _buildBody(employeesAsync)),
-        ],
+            Expanded(child: _buildBody(employeesAsync)),
+          ],
+        ),
       ),
     );
   }
@@ -226,68 +253,100 @@ class _ReportPageState extends ConsumerState<ReportPage> {
     final summary = computeStatusSummary(statusRows, statusTypes);
     final exceptions = filterExceptions(exceptionRows);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    final summaryCards = GridView.extent(
+      maxCrossAxisExtent: 160,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      mainAxisExtent: 124,
       children: [
-        GridView.extent(
-          maxCrossAxisExtent: 160,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 8,
-          crossAxisSpacing: 8,
-          mainAxisExtent: 124,
-          children: [
-            for (final type in statusTypes)
-              _SummaryCard(
-                label: type.label,
-                count: summary[type.id] ?? 0,
-                icon: iconFor(type.iconName),
-                color: context.customColor(colorFor(type.colorHex)).color,
-              ),
-            _SummaryCard(
-              label: 'Unmarked',
-              count: summary['unmarked'] ?? 0,
-              icon: Icons.help_outline,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'Late / early / overtime',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        if (exceptions.isEmpty)
-          const Padding(
-            padding: EdgeInsets.only(top: 8),
-            child: Text('No exceptions in this range.'),
-          )
-        else
-          ...exceptions.map((e) {
-            final parts = [
-              if (e.isLate) 'Late',
-              if (e.isEarly) 'Left early',
-              if (e.overtimeMinutes > 0)
-                '+${formatOvertime(e.overtimeMinutes)} overtime',
-            ];
-            return ListTile(
-              title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
-              subtitle: Text(
-                '${_dateFormat.format(e.date)} · ${parts.join(' · ')}',
-              ),
-            );
-          }),
-        const SizedBox(height: 24),
-        Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        _ReportCalendar(
-          range: range,
-          rows: statusRows,
-          statusTypes: statusTypes,
+        for (final type in statusTypes)
+          _SummaryCard(
+            label: type.label,
+            count: summary[type.id] ?? 0,
+            icon: iconFor(type.iconName),
+            color: context.customColor(colorFor(type.colorHex)).color,
+          ),
+        _SummaryCard(
+          label: 'Unmarked',
+          count: summary['unmarked'] ?? 0,
+          icon: Icons.help_outline,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ],
     );
+
+    final exceptionsSection = <Widget>[
+      Text(
+        'Late / early / overtime',
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      if (exceptions.isEmpty)
+        const Padding(
+          padding: EdgeInsets.only(top: 8),
+          child: Text('No exceptions in this range.'),
+        )
+      else
+        for (final e in exceptions)
+          ListTile(
+            title: Text(nameByEmployeeId[e.employeeId] ?? 'Unknown employee'),
+            subtitle: Text(
+              '${_dateFormat.format(e.date)} · ${_exceptionParts(e).join(' · ')}',
+            ),
+          ),
+    ];
+
+    final calendarSection = <Widget>[
+      Text('Calendar view', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 8),
+      _ReportCalendar(range: range, rows: statusRows, statusTypes: statusTypes),
+    ];
+
+    // Large windows: numbers on the left, calendar on the right, all in view.
+    if (context.windowSize == WindowSize.large) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                summaryCards,
+                const SizedBox(height: 24),
+                ...exceptionsSection,
+              ],
+            ),
+          ),
+          SizedBox(
+            width: 560,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: calendarSection,
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Otherwise one column (capped by the page's MaxWidthBox).
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      children: [
+        summaryCards,
+        const SizedBox(height: 24),
+        ...exceptionsSection,
+        const SizedBox(height: 24),
+        ...calendarSection,
+      ],
+    );
   }
+
+  List<String> _exceptionParts(DerivedFlagsRow e) => [
+    if (e.isLate) 'Late',
+    if (e.isEarly) 'Left early',
+    if (e.overtimeMinutes > 0) '+${formatOvertime(e.overtimeMinutes)} overtime',
+  ];
 }
 
 class _ReportCalendar extends StatelessWidget {

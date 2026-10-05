@@ -3,14 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../errors/app_exception.dart';
+import '../../layout/two_pane_layout.dart';
 import '../../sections/app_sections_provider.dart';
 import '../../theme/theme_mode_provider.dart';
 import '../../widgets/error_snackbar.dart';
 import '../../widgets/selection_sheet.dart';
 import '../settings_section.dart';
 
+/// The settings hub: a full page on narrow windows, the left pane of the
+/// settings two-pane layout on wide ones, where [selectedLocation] (the page
+/// open on the right) is highlighted.
 class SettingsPage extends ConsumerWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({super.key, this.selectedLocation});
+
+  final String? selectedLocation;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +53,11 @@ class SettingsPage extends ConsumerWidget {
               ListTile(
                 leading: Icon(entry.icon),
                 title: Text(entry.title),
-                onTap: () => entry.open(context),
+                selected: entry.location == selectedLocation,
+                selectedTileColor: Theme.of(context)
+                    .colorScheme
+                    .secondaryContainer,
+                onTap: () => openInPane(context, entry.location),
               ),
           ],
           const Divider(),

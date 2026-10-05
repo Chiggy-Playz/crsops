@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/employees/models/employee.dart';
+import '../../../../core/widgets/adaptive_sheet.dart';
 import '../../../../core/widgets/status_metadata.dart';
 import '../../models/effective_status_row.dart';
 import '../../models/status_type.dart';
@@ -26,9 +27,8 @@ class EmployeeMarkingTile extends StatelessWidget {
   final VoidCallback onUnmark;
 
   Future<void> _openStatusPicker(BuildContext context) async {
-    final result = await showModalBottomSheet<StatusPick?>(
+    final result = await showAdaptiveSheet<StatusPick?>(
       context: context,
-      isScrollControlled: true,
       builder: (context) => StatusPickerSheet(
         employeeName: employee.name,
         statusTypes: statusTypes,

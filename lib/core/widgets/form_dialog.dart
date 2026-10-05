@@ -29,6 +29,7 @@ class FormDialog extends StatelessWidget {
     required this.children,
     this.description,
     this.saveButtonKey,
+    this.saveLabel = 'Save',
   });
 
   static const double compactBreakpoint = 600;
@@ -45,6 +46,9 @@ class FormDialog extends StatelessWidget {
   final String? description;
   final Key? saveButtonKey;
 
+  /// The confirm button's text — "Save" for forms, e.g. "Apply" for pickers.
+  final String saveLabel;
+
   /// Whether forms open full-screen at this size — callers use it to skip
   /// autofocus on phones, where it would pop the keyboard over the form.
   static bool isCompact(BuildContext context) =>
@@ -57,7 +61,7 @@ class FormDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMac = Theme.of(context).platform == TargetPlatform.macOS;
-    final saveTooltip = 'Save (${isMac ? '⌘' : 'Ctrl'}+Enter)';
+    final saveTooltip = '$saveLabel (${isMac ? '⌘' : 'Ctrl'}+Enter)';
 
     final form = Form(
       key: formKey,
@@ -88,7 +92,7 @@ class FormDialog extends StatelessWidget {
             height: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           )
-        : const Text('Save');
+        : Text(saveLabel);
 
     final Widget dialog;
     if (isCompact(context)) {

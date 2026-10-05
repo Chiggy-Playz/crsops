@@ -232,7 +232,7 @@ final class StatusTypesProvider
   }
 }
 
-String _$statusTypesHash() => r'8dd83bf9c2a5de68dfeba13bf7f22d78045f9a6c';
+String _$statusTypesHash() => r'4cccbc8aa14bd88cf37b6db5325caa2fc01507e4';
 
 @ProviderFor(effectiveRangeStatus)
 final effectiveRangeStatusProvider = EffectiveRangeStatusFamily._();

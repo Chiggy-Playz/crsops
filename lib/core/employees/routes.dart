@@ -1,34 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../layout/window_size.dart';
 import '../router/dialog_page.dart';
 import '../router/navigator_keys.dart';
 import 'models/employee.dart';
 import 'pages/employee_detail_page.dart';
 import 'pages/employee_edit_page.dart';
 import 'pages/employee_list_page.dart';
+import 'pages/employees_split_layout.dart';
+import '../widgets/empty_state.dart';
 
 part 'routes.g.dart';
 
-// new and :id/edit are nested (not top-level) because go_router only lets a
-// route under a shell branch target the root navigator if it's a sub-route —
-// they set $parentNavigatorKey to cover the nav bar. URLs are unchanged.
-@TypedGoRoute<EmployeesRoute>(
-  path: '/employees',
+/// List + detail in one shell: two panes on wide windows (list left,
+/// selected employee right), the usual list → detail pages on narrow ones.
+///
+/// new and :id/edit are nested (not top-level) because go_router only lets a
+/// route under a shell target the root navigator if it's a sub-route — they
+/// set $parentNavigatorKey to open above everything as form dialogs.
+@TypedShellRoute<EmployeesShellRoute>(
   routes: [
-    TypedGoRoute<EmployeeNewRoute>(path: 'new'),
-    TypedGoRoute<EmployeeDetailRoute>(
-      path: ':id',
-      routes: [TypedGoRoute<EmployeeEditRoute>(path: 'edit')],
+    TypedGoRoute<EmployeesRoute>(
+      path: '/employees',
+      routes: [
+        TypedGoRoute<EmployeeNewRoute>(path: 'new'),
+        TypedGoRoute<EmployeeDetailRoute>(
+          path: ':id',
+          routes: [TypedGoRoute<EmployeeEditRoute>(path: 'edit')],
+        ),
+      ],
     ),
   ],
 )
+class EmployeesShellRoute extends ShellRouteData {
+  const EmployeesShellRoute();
+
+  @override
+  Widget builder(BuildContext context, GoRouterState state, Widget navigator) =>
+      EmployeesSplitLayout(
+        selectedId: state.pathParameters['id'],
+        child: navigator,
+      );
+}
+
 class EmployeesRoute extends GoRouteData with $EmployeesRoute {
   const EmployeesRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const EmployeeListPage();
+  Widget build(BuildContext context, GoRouterState state) {
+    // Wide: the list is the left pane, so the right pane waits for a pick.
+    if (context.isTwoPane) {
+      return const Scaffold(
+        body: EmptyState(
+          icon: Icons.person_search_outlined,
+          title: 'Select an employee',
+          message:
+              'Pick someone from the list to see their details and history.',
+        ),
+      );
+    }
+    return const EmployeeListPage();
+  }
 }
 
 class EmployeeNewRoute extends GoRouteData with $EmployeeNewRoute {

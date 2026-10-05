@@ -8,6 +8,7 @@ import 'core/router/navigator_keys.dart';
 import 'core/router/redirect_logic.dart';
 import 'core/sections/app_sections_provider.dart';
 import 'core/sections/section_nav_shell.dart';
+import 'core/settings/pages/settings_split_layout.dart';
 import 'core/settings/settings_section.dart';
 
 part 'app_router.g.dart';
@@ -45,13 +46,25 @@ GoRouter appRouter(Ref ref) {
           for (final section in sections)
             StatefulShellBranch(
               initialLocation: section.homeLocation,
-              routes: [
-                ...section.routes,
-                // Pages opened from the Settings hub join the Settings branch,
-                // so opening one keeps the Settings tab selected.
-                if (identical(section, settingsSection))
-                  for (final other in sections) ...other.settingsRoutes,
-              ],
+              routes: identical(section, settingsSection)
+                  ? [
+                      // Hub + page as two panes on wide windows. Built here
+                      // rather than with @TypedShellRoute because the pages
+                      // come from several sections' route files.
+                      ShellRoute(
+                        builder: (context, state, child) => SettingsSplitLayout(
+                          selectedLocation: state.matchedLocation,
+                          child: child,
+                        ),
+                        routes: [
+                          ...section.routes,
+                          // Pages opened from the Settings hub join the
+                          // Settings branch, so the Settings tab stays selected.
+                          for (final other in sections) ...other.settingsRoutes,
+                        ],
+                      ),
+                    ]
+                  : section.routes,
             ),
         ],
       ),

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import 'day_status.dart';
 import 'models/derived_flags_row.dart';
 import 'models/effective_status_row.dart';
@@ -39,3 +41,11 @@ String formatOvertime(int totalMinutes) {
   final rest = totalMinutes % 60;
   return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
 }
+
+/// The whole of last month: the 1st to its last day. Day 0 of a month is the
+/// last day of the one before, and month 0 rolls back to December of the
+/// previous year, so January needs no special case.
+DateTimeRange previousMonthRange(DateTime now) => DateTimeRange(
+  start: DateTime(now.year, now.month - 1, 1),
+  end: DateTime(now.year, now.month, 0),
+);

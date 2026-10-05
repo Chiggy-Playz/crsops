@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../layout/window_size.dart';
+import 'adaptive_sheet.dart';
+
 class SelectionOption<T> {
   const SelectionOption({required this.value, required this.label, this.icon});
 
@@ -8,8 +11,9 @@ class SelectionOption<T> {
   final IconData? icon;
 }
 
-/// "Pick one of a few" as a modal bottom sheet: a title, then the options as
-/// one bordered group with the current one highlighted. Resolves to the picked
+/// "Pick one of a few" as a modal bottom sheet (a dialog on wide windows): a
+/// title, then the options as one bordered group with the current one
+/// highlighted. Resolves to the picked
 /// value, or null if dismissed (callers treat null as "no change").
 Future<T?> showSelectionSheet<T>({
   required BuildContext context,
@@ -17,13 +21,12 @@ Future<T?> showSelectionSheet<T>({
   required List<SelectionOption<T>> options,
   required T selected,
 }) {
-  return showModalBottomSheet<T>(
+  return showAdaptiveSheet<T>(
     context: context,
-    showDragHandle: true,
-    isScrollControlled: true,
     builder: (context) => SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        // The phone sheet's drag handle already provides the top spacing.
+        padding: EdgeInsets.fromLTRB(16, context.isTwoPane ? 24 : 0, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

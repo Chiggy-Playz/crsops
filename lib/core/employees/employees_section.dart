@@ -17,7 +17,7 @@ final employeesSection = AppSection(
       icon: Icons.event_note_outlined,
       title: 'Event types',
       canSee: (s) => s.isSuperadmin,
-      open: (context) => const settings_routes.EventTypesRoute().push(context),
+      location: const settings_routes.EventTypesRoute().location,
     ),
   ],
   settingsRoutes: settings_routes.$appRoutes,

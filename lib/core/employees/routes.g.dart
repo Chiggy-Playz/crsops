@@ -6,34 +6,44 @@ part of 'routes.dart';
 // GoRouterGenerator
 // **************************************************************************
 
-List<RouteBase> get $appRoutes => [$employeesRoute];
+List<RouteBase> get $appRoutes => [$employeesShellRoute];
 
-RouteBase get $employeesRoute => GoRouteData.$route(
-  path: '/employees',
-  hasOverriddenOnExit: false,
-  factory: $EmployeesRoute._fromState,
+RouteBase get $employeesShellRoute => ShellRouteData.$route(
+  factory: $EmployeesShellRouteExtension._fromState,
   routes: [
     GoRouteData.$route(
-      path: 'new',
+      path: '/employees',
       hasOverriddenOnExit: false,
-      parentNavigatorKey: EmployeeNewRoute.$parentNavigatorKey,
-      factory: $EmployeeNewRoute._fromState,
-    ),
-    GoRouteData.$route(
-      path: ':id',
-      hasOverriddenOnExit: false,
-      factory: $EmployeeDetailRoute._fromState,
+      factory: $EmployeesRoute._fromState,
       routes: [
         GoRouteData.$route(
-          path: 'edit',
+          path: 'new',
           hasOverriddenOnExit: false,
-          parentNavigatorKey: EmployeeEditRoute.$parentNavigatorKey,
-          factory: $EmployeeEditRoute._fromState,
+          parentNavigatorKey: EmployeeNewRoute.$parentNavigatorKey,
+          factory: $EmployeeNewRoute._fromState,
+        ),
+        GoRouteData.$route(
+          path: ':id',
+          hasOverriddenOnExit: false,
+          factory: $EmployeeDetailRoute._fromState,
+          routes: [
+            GoRouteData.$route(
+              path: 'edit',
+              hasOverriddenOnExit: false,
+              parentNavigatorKey: EmployeeEditRoute.$parentNavigatorKey,
+              factory: $EmployeeEditRoute._fromState,
+            ),
+          ],
         ),
       ],
     ),
   ],
 );
+
+extension $EmployeesShellRouteExtension on EmployeesShellRoute {
+  static EmployeesShellRoute _fromState(GoRouterState state) =>
+      const EmployeesShellRoute();
+}
 
 mixin $EmployeesRoute on GoRouteData {
   static EmployeesRoute _fromState(GoRouterState state) =>

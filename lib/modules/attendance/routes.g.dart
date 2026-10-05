@@ -6,37 +6,7 @@ part of 'routes.dart';
 // GoRouterGenerator
 // **************************************************************************
 
-List<RouteBase> get $appRoutes => [
-  $calendarRoute,
-  $reportsRoute,
-  $attendanceDayRoute,
-];
-
-RouteBase get $calendarRoute => GoRouteData.$route(
-  path: '/attendance/calendar',
-  hasOverriddenOnExit: false,
-  factory: $CalendarRoute._fromState,
-);
-
-mixin $CalendarRoute on GoRouteData {
-  static CalendarRoute _fromState(GoRouterState state) => const CalendarRoute();
-
-  @override
-  String get location => GoRouteData.$location('/attendance/calendar');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) =>
-      context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
+List<RouteBase> get $appRoutes => [$reportsRoute, $attendanceShellRoute];
 
 RouteBase get $reportsRoute => GoRouteData.$route(
   path: '/attendance/reports',
@@ -64,11 +34,46 @@ mixin $ReportsRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-RouteBase get $attendanceDayRoute => GoRouteData.$route(
-  path: '/attendance/:date',
-  hasOverriddenOnExit: false,
-  factory: $AttendanceDayRoute._fromState,
+RouteBase get $attendanceShellRoute => ShellRouteData.$route(
+  factory: $AttendanceShellRouteExtension._fromState,
+  routes: [
+    GoRouteData.$route(
+      path: '/attendance/calendar',
+      hasOverriddenOnExit: false,
+      factory: $CalendarRoute._fromState,
+    ),
+    GoRouteData.$route(
+      path: '/attendance/:date',
+      hasOverriddenOnExit: false,
+      factory: $AttendanceDayRoute._fromState,
+    ),
+  ],
 );
+
+extension $AttendanceShellRouteExtension on AttendanceShellRoute {
+  static AttendanceShellRoute _fromState(GoRouterState state) =>
+      const AttendanceShellRoute();
+}
+
+mixin $CalendarRoute on GoRouteData {
+  static CalendarRoute _fromState(GoRouterState state) => const CalendarRoute();
+
+  @override
+  String get location => GoRouteData.$location('/attendance/calendar');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
 
 mixin $AttendanceDayRoute on GoRouteData {
   static AttendanceDayRoute _fromState(GoRouterState state) =>

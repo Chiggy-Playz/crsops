@@ -167,4 +167,23 @@ void main() {
       expect(formatOvertime(420), '7h');
     });
   });
+
+  group('previousMonthRange', () {
+    test('is the 1st to the last day of last month', () {
+      final range = previousMonthRange(DateTime(2026, 10, 5));
+      expect(range.start, DateTime(2026, 9, 1));
+      expect(range.end, DateTime(2026, 9, 30));
+    });
+
+    test('rolls back to December of last year in January', () {
+      final range = previousMonthRange(DateTime(2027, 1, 15));
+      expect(range.start, DateTime(2026, 12, 1));
+      expect(range.end, DateTime(2026, 12, 31));
+    });
+
+    test('ends on the 29th after a leap February', () {
+      final range = previousMonthRange(DateTime(2028, 3, 1));
+      expect(range.end, DateTime(2028, 2, 29));
+    });
+  });
 }

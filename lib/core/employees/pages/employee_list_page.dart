@@ -3,13 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
+import '../../layout/two_pane_layout.dart';
+import '../../layout/window_size.dart';
+import '../../widgets/list_action_row.dart';
 import '../routes.dart';
 import 'widgets/employee_avatar.dart';
 
 const employeeListRoutePath = '/employees';
 
+/// Full page on narrow windows; the left pane of the employees two-pane
+/// layout on wide ones, where [selectedId] is highlighted.
 class EmployeeListPage extends ConsumerStatefulWidget {
-  const EmployeeListPage({super.key});
+  const EmployeeListPage({super.key, this.selectedId});
+
+  final String? selectedId;
 
   @override
   ConsumerState<EmployeeListPage> createState() => _EmployeeListPageState();
@@ -40,6 +47,10 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
       body = const Center(child: CircularProgressIndicator());
     }
 
+    // Wide windows: "New employee" is the list's first row, right above the
+    // names. Phones: the usual floating button.
+    final isTwoPane = context.isTwoPane;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Employees'),
@@ -53,7 +64,10 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
           ),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
+          // Must match what the child really takes (8 + 56 search bar + 8):
+          // declaring less squeezes the toolbar above it, cramming the title
+          // and actions against the top edge.
+          preferredSize: const Size.fromHeight(72),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: SearchBar(
@@ -66,17 +80,26 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         ),
       ),
       body: body,
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => const EmployeeNewRoute().push(context),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: !isTwoPane
+          ? FloatingActionButton(
+              heroTag: 'add-employee',
+              tooltip: 'Add employee',
+              onPressed: () => const EmployeeNewRoute().push(context),
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 
   Widget _buildList(List<Employee> employees, Map<String, String> statuses) {
-    if (employees.isEmpty) {
-      return const Center(child: Text('No employees yet'));
-    }
+    final addRow = context.isTwoPane
+        ? ListActionRow(
+            key: const Key('add-employee-row'),
+            icon: Icons.person_add_outlined,
+            label: 'New employee',
+            onTap: () => const EmployeeNewRoute().push(context),
+          )
+        : null;
 
     bool isInactive(Employee e) => statuses[e.id] == 'inactive';
     final matching = employees
@@ -87,18 +110,37 @@ class _EmployeeListPageState extends ConsumerState<EmployeeListPage> {
         ? matching.where(isInactive).toList()
         : const <Employee>[];
 
-    if (active.isEmpty && inactive.isEmpty) {
-      return const Center(child: Text('No employees match your search'));
+    final String? emptyMessage;
+    if (employees.isEmpty) {
+      emptyMessage = 'No employees yet';
+    } else if (active.isEmpty && inactive.isEmpty) {
+      emptyMessage = 'No employees match your search';
+    } else {
+      emptyMessage = null;
+    }
+
+    // Phones: a centred message (the floating button is there to add).
+    if (emptyMessage != null && addRow == null) {
+      return Center(child: Text(emptyMessage));
     }
 
     // Active first, then former employees under their own header —
     // each group keeps the repository's alphabetical order.
     return ListView(
       children: [
-        for (final e in active) _EmployeeTile(employee: e),
+        ?addRow,
+        if (emptyMessage != null)
+          Padding(padding: const EdgeInsets.all(16), child: Text(emptyMessage)),
+        for (final e in active)
+          _EmployeeTile(employee: e, selected: e.id == widget.selectedId),
         if (inactive.isNotEmpty) ...[
           const _SectionHeader('Inactive'),
-          for (final e in inactive) _EmployeeTile(employee: e, inactive: true),
+          for (final e in inactive)
+            _EmployeeTile(
+              employee: e,
+              inactive: true,
+              selected: e.id == widget.selectedId,
+            ),
         ],
       ],
     );
@@ -129,10 +171,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _EmployeeTile extends StatelessWidget {
-  const _EmployeeTile({required this.employee, this.inactive = false});
+  const _EmployeeTile({
+    required this.employee,
+    this.inactive = false,
+    this.selected = false,
+  });
 
   final Employee employee;
   final bool inactive;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -144,7 +191,10 @@ class _EmployeeTile extends StatelessWidget {
             ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
             : null,
       ),
-      onTap: () => EmployeeDetailRoute(employee.id).push(context),
+      selected: selected,
+      selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
+      onTap: () =>
+          openInPane(context, EmployeeDetailRoute(employee.id).location),
     );
   }
 }

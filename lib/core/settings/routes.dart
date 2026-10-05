@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../layout/window_size.dart';
+import '../widgets/empty_state.dart';
 import 'pages/allow_list_manager_page.dart';
 import 'pages/module_access_manager_page.dart';
 import 'pages/roles_manager_page.dart';
@@ -13,8 +15,19 @@ class SettingsRoute extends GoRouteData with $SettingsRoute {
   const SettingsRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const SettingsPage();
+  Widget build(BuildContext context, GoRouterState state) {
+    // Wide: the hub is the left pane, so the right pane waits for a pick.
+    if (context.isTwoPane) {
+      return const Scaffold(
+        body: EmptyState(
+          icon: Icons.tune,
+          title: 'Choose a setting',
+          message: 'Pick something from the list to change it here.',
+        ),
+      );
+    }
+    return const SettingsPage();
+  }
 }
 
 @TypedGoRoute<AllowListRoute>(path: '/settings/allow-list')
