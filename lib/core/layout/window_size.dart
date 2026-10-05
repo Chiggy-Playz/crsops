@@ -4,7 +4,7 @@ import 'package:flutter/widgets.dart';
 enum WindowSize {
   compact, // < 600: phones
   medium, // 600–839: small tablets, portrait foldables
-  expanded, // 840–1199: two panes
+  expanded, // 840–1199
   large; // ≥ 1200: room for wider dashboards
 
   static WindowSize of(double width) {
@@ -15,9 +15,47 @@ enum WindowSize {
   }
 }
 
+/// Which app navigation shows at a window width — the one source of truth
+/// for both the navigation (AdaptiveNavScaffold) and the panes, so the panes
+/// always know how much room the navigation takes.
+enum NavStyle {
+  bottomBar, // phones: takes no width
+  rail, // tablets, half-screen windows: icons only (names as tooltips)
+  drawer; // desktop: icons + labels
+
+  static NavStyle of(double windowWidth) {
+    if (windowWidth < 600) return bottomBar;
+    if (windowWidth < 1200) return rail;
+    return drawer;
+  }
+
+  /// Horizontal space this navigation takes from the content.
+  double get width {
+    switch (this) {
+      case NavStyle.bottomBar:
+        return 0;
+      case NavStyle.rail:
+        return 80;
+      case NavStyle.drawer:
+        return 240;
+    }
+  }
+}
+
+/// Content width needed for two panes (a ~480 px list/calendar pane plus a
+/// usable right pane).
+const double twoPaneMinContentWidth = 840;
+
 extension WindowSizeContext on BuildContext {
   WindowSize get windowSize => WindowSize.of(MediaQuery.sizeOf(this).width);
 
-  /// Wide enough for two panes (expanded or large).
-  bool get isTwoPane => windowSize.index >= WindowSize.expanded.index;
+  NavStyle get navStyle => NavStyle.of(MediaQuery.sizeOf(this).width);
+
+  /// The width left for page content once the app navigation is drawn.
+  double get contentWidth => MediaQuery.sizeOf(this).width - navStyle.width;
+
+  /// Room for two panes *after* the navigation. Every two-pane decision
+  /// (layouts, back arrows, dialog vs sheet, go vs push) reads this, so they
+  /// can't disagree.
+  bool get isTwoPane => contentWidth >= twoPaneMinContentWidth;
 }

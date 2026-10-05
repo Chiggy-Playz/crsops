@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../layout/window_size.dart';
+
 class AdaptiveNavScaffold extends StatelessWidget {
   const AdaptiveNavScaffold({
     super.key,
@@ -8,8 +10,6 @@ class AdaptiveNavScaffold extends StatelessWidget {
     required this.onDestinationSelected,
     required this.child,
   });
-
-  static const double compactBreakpoint = 600;
 
   final List<NavigationDestination> destinations;
   final int selectedIndex;
@@ -22,9 +22,11 @@ class AdaptiveNavScaffold extends StatelessWidget {
     // asserts on fewer than two) — show the page alone.
     if (destinations.length < 2) return child;
 
-    final isCompact = MediaQuery.sizeOf(context).width < compactBreakpoint;
+    // Which navigation, and how wide, comes from NavStyle — the same source
+    // the panes use, so they always know how much room this takes.
+    final style = context.navStyle;
 
-    if (isCompact) {
+    if (style == NavStyle.bottomBar) {
       return Scaffold(
         body: child,
         bottomNavigationBar: NavigationBar(
@@ -35,24 +37,72 @@ class AdaptiveNavScaffold extends StatelessWidget {
       );
     }
 
+    final theme = Theme.of(context);
+
+    if (style == NavStyle.rail) {
+      // Collapsed: icons only, the name as a tooltip — no tiny under-icon
+      // captions. Same surface tone as the drawer.
+      return Scaffold(
+        body: Row(
+          children: [
+            NavigationRail(
+              minWidth: style.width,
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
+              labelType: NavigationRailLabelType.none,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              destinations: [
+                for (final d in destinations)
+                  NavigationRailDestination(
+                    icon: Tooltip(message: d.label, child: d.icon),
+                    selectedIcon: Tooltip(
+                      message: d.label,
+                      child: d.selectedIcon ?? d.icon,
+                    ),
+                    label: Text(d.label),
+                  ),
+              ],
+            ),
+            Expanded(child: child),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: selectedIndex,
-            onDestinationSelected: onDestinationSelected,
-            labelType: NavigationRailLabelType.all,
-            destinations: destinations
-                .map(
-                  (d) => NavigationRailDestination(
+          // M3's standard navigation drawer, shown permanently: full-row
+          // selection pill, normal-size labels, and its own surface tone so it
+          // reads as navigation rather than a third content column.
+          Theme(
+            data: theme.copyWith(
+              drawerTheme: theme.drawerTheme.copyWith(
+                width: style.width,
+                // Permanent, so square edges (the default rounded end
+                // corners are for a drawer that slides over content).
+                shape: const RoundedRectangleBorder(),
+              ),
+            ),
+            child: NavigationDrawer(
+              backgroundColor: theme.colorScheme.surfaceContainerLow,
+              elevation: 0,
+              selectedIndex: selectedIndex,
+              onDestinationSelected: onDestinationSelected,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 20, 16, 16),
+                  child: Text('CRS Ops', style: theme.textTheme.titleMedium),
+                ),
+                for (final d in destinations)
+                  NavigationDrawerDestination(
                     icon: d.icon,
                     selectedIcon: d.selectedIcon,
                     label: Text(d.label),
                   ),
-                )
-                .toList(),
+              ],
+            ),
           ),
-          const VerticalDivider(width: 1),
           Expanded(child: child),
         ],
       ),

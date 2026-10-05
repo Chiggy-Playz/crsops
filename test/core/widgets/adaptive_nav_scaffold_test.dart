@@ -23,20 +23,26 @@ void main() {
     );
   }
 
-  testWidgets('shows a bottom NavigationBar below the compact breakpoint', (
-    tester,
-  ) async {
+  testWidgets('shows a bottom NavigationBar below 600px', (tester) async {
     await tester.pumpWidget(buildTestable(const Size(400, 800)));
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationDrawer), findsNothing);
   });
 
-  testWidgets('shows a NavigationRail at/above the compact breakpoint', (
+  testWidgets('shows an icons-only rail from 600 to 1199px', (tester) async {
+    await tester.pumpWidget(buildTestable(const Size(1000, 600)));
+    final rail = tester.widget<NavigationRail>(find.byType(NavigationRail));
+    expect(rail.labelType, NavigationRailLabelType.none);
+    expect(find.byType(NavigationDrawer), findsNothing);
+    expect(find.byType(NavigationBar), findsNothing);
+  });
+
+  testWidgets('shows a permanent navigation drawer from 1200px', (
     tester,
   ) async {
-    await tester.pumpWidget(buildTestable(const Size(800, 600)));
-    expect(find.byType(NavigationRail), findsOneWidget);
-    expect(find.byType(NavigationBar), findsNothing);
+    await tester.pumpWidget(buildTestable(const Size(1300, 800)));
+    expect(find.byType(NavigationDrawer), findsOneWidget);
+    expect(find.byType(NavigationRail), findsNothing);
   });
 
   testWidgets('shows just the page with fewer than two destinations', (
@@ -59,6 +65,6 @@ void main() {
     );
     expect(find.text('body'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationDrawer), findsNothing);
   });
 }

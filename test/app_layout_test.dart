@@ -331,4 +331,26 @@ void main() {
       expect(find.text('Previous month'), findsOneWidget); // filter kept
     });
   }
+
+  // Regression: the two-pane decision used the window width and ignored the
+  // navigation's own width, so at ~860px the drawer + calendar left the day
+  // pane ~140px wide. Navigation and panes now share one width rule.
+  for (final (width, nav, twoPanes) in [
+    (860.0, NavigationRail, false), // rail + one page (the reported case)
+    (1000.0, NavigationRail, true), // rail + two panes
+    (1300.0, NavigationDrawer, true), // drawer + two panes
+  ]) {
+    testWidgets('at ${width}px: $nav, two panes: $twoPanes', (tester) async {
+      await _pumpApp(tester, Size(width, 900));
+
+      expect(find.byType(nav), findsOneWidget);
+      if (twoPanes) {
+        expect(find.byType(CalendarPage), findsOneWidget);
+        expect(find.byType(AttendanceDayPage), findsOneWidget);
+      } else {
+        expect(find.byType(CalendarPage), findsOneWidget);
+        expect(find.byType(AttendanceDayPage), findsNothing);
+      }
+    });
+  }
 }

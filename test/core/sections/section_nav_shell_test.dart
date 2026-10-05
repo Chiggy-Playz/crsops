@@ -116,6 +116,6 @@ void main() {
 
     expect(find.text('page s'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byType(NavigationRail), findsNothing);
+    expect(find.byType(NavigationDrawer), findsNothing);
   });
 }
