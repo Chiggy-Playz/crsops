@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -16,13 +17,26 @@ class AuthRepository {
   // memoized here rather than in bootstrap so this file stays self-contained.
   static Future<void>? _googleSignInInitialization;
 
+  // Desktop sign-in finishes in the system browser, which redirects back to a
+  // tiny local server on this port. Fixed (not random) because Supabase's
+  // Redirect URLs allow list can't wildcard a port; it lists
+  // http://127.0.0.1:43823/** for this.
+  static const _desktopCallbackPort = 43823;
+
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
   User? get currentUser => _client.auth.currentUser;
 
   Future<void> signInWithGoogle() async {
     try {
-      if (kIsWeb || Platform.isLinux) {
-        await _client.auth.signInWithOAuth(OAuthProvider.google);
+      if (kIsWeb) {
+        // Come back to whichever site started sign-in (live site or local dev).
+        // Without redirectTo, Supabase always sends users to the Site URL.
+        await _client.auth.signInWithOAuth(
+          OAuthProvider.google,
+          redirectTo: Uri.base.origin,
+        );
+      } else if (Platform.isLinux || Platform.isWindows) {
+        await _signInWithGoogleInBrowser();
       } else if (Platform.isAndroid) {
         await _signInWithGoogleNative();
       } else {
@@ -30,6 +44,47 @@ class AuthRepository {
       }
     } catch (error) {
       throw translateException(error);
+    }
+  }
+
+  Future<void> _signInWithGoogleInBrowser() async {
+    final HttpServer server;
+    try {
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, _desktopCallbackPort);
+    } on SocketException {
+      throw const AuthFailureException(
+        'Could not start sign-in: port $_desktopCallbackPort is already in use.',
+      );
+    }
+
+    try {
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'http://127.0.0.1:$_desktopCallbackPort/',
+      );
+
+      final HttpRequest request;
+      try {
+        request = await server.first.timeout(const Duration(minutes: 5));
+      } on TimeoutException {
+        throw const AuthFailureException('Sign-in timed out. Please try again.');
+      }
+
+      final code = request.uri.queryParameters['code'];
+      final pageText = code == null
+          ? 'Sign-in did not complete. You can close this tab and try again in CRS Ops.'
+          : 'Signed in. You can close this tab and return to CRS Ops.';
+      request.response.headers.contentType = ContentType.html;
+      request.response.write('<!doctype html><title>CRS Ops</title><p>$pageText</p>');
+      await request.response.close();
+
+      if (code == null) {
+        final reason = request.uri.queryParameters['error_description'];
+        throw AuthFailureException(reason ?? 'Sign-in was cancelled.');
+      }
+      await _client.auth.exchangeCodeForSession(code);
+    } finally {
+      await server.close(force: true);
     }
   }
 
