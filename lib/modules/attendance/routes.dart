@@ -81,10 +81,11 @@ class CalendarRoute extends GoRouteData with $CalendarRoute {
   const CalendarRoute();
 
   // Wide windows open on today's day pane next to the calendar, so the daily
-  // marking needs no clicks.
+  // marking needs no clicks. (isTwoPaneWindow, not context.isTwoPane: see
+  // there for why a redirect mustn't read MediaQuery.)
   @override
   String? redirect(BuildContext context, GoRouterState state) =>
-      context.isTwoPane
+      isTwoPaneWindow(context)
       ? AttendanceDayRoute(dateOnly(DateTime.now())).location
       : null;
 

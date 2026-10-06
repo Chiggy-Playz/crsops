@@ -59,3 +59,14 @@ extension WindowSizeContext on BuildContext {
   /// can't disagree.
   bool get isTwoPane => contentWidth >= twoPaneMinContentWidth;
 }
+
+/// [WindowSizeContext.isTwoPane] for route redirects, read from the window
+/// itself rather than MediaQuery. A redirect that reads MediaQuery makes the
+/// router depend on the window size, and go_router then replays the current
+/// navigation on every resize: pushed pages get pushed again, and a form's
+/// "Discard changes?" check fires as if it were being left.
+bool isTwoPaneWindow(BuildContext context) {
+  final view = View.of(context);
+  final width = view.physicalSize.width / view.devicePixelRatio;
+  return width - NavStyle.of(width).width >= twoPaneMinContentWidth;
+}
