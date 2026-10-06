@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/pane_list_tile.dart';
+import '../../widgets/inset_list_tile.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -156,7 +156,7 @@ class _EmployeeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PaneListTile(
+    return InsetListTile(
       leading: EmployeeAvatar(name: employee.name, dimmed: inactive),
       title: Text(
         employee.name,

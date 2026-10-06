@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/inset_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/models/app_session.dart';
@@ -54,7 +57,7 @@ class RolesManagerPage extends ConsumerWidget {
         final role = roles[profile.id];
         String subtitle = 'No role granted';
         if (role != null) subtitle = 'Role: ${displayLabel(role)}';
-        return ListTile(
+        return InsetListTile(
           title: Text(profile.email),
           subtitle: Text(subtitle),
           onTap: () => showFormDialog<void>(

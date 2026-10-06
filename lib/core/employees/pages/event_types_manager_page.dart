@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/inset_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
@@ -30,7 +33,7 @@ class EventTypesManagerPage extends ConsumerWidget {
           itemCount: types.length,
           itemBuilder: (context, index) {
             final type = types[index];
-            return ListTile(
+            return InsetListTile(
               leading: CircleAvatar(
                 backgroundColor: colorFor(type.colorHex),
                 child: Icon(iconFor(type.iconName), color: Colors.white),

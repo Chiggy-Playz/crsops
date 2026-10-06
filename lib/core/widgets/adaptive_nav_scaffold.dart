@@ -89,6 +89,12 @@ class AdaptiveNavScaffold extends StatelessWidget {
               elevation: 0,
               selectedIndex: selectedIndex,
               onDestinationSelected: onDestinationSelected,
+              // A little space between destinations, so two hover
+              // highlights never touch.
+              tilePadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 2,
+              ),
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(28, 20, 16, 16),

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/inset_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -228,7 +231,7 @@ class _AddressTile extends ConsumerWidget {
       'GSTIN: ${address.gstin ?? 'none'}',
     ];
 
-    return ListTile(
+    return InsetListTile(
       isThreeLine: true,
       leading: Icon(
         address.isArchived ? Icons.location_off_outlined : Icons.place_outlined,

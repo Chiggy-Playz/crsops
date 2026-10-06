@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/pane_list_tile.dart';
+import '../../widgets/inset_list_tile.dart';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,7 +59,7 @@ class SettingsPage extends ConsumerWidget {
           for (final group in groups) ...[
             SectionHeader(group.title),
             for (final entry in group.entries)
-              PaneListTile(
+              InsetListTile(
                 leading: Icon(entry.icon),
                 title: Text(entry.title),
                 selected: entry.location == selectedLocation,
@@ -69,7 +69,7 @@ class SettingsPage extends ConsumerWidget {
           const SectionHeader('About'),
           const _VersionTile(),
           const Divider(),
-          ListTile(
+          InsetListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sign out'),
             onTap: () async {
@@ -112,7 +112,7 @@ class _ThemeTile extends ConsumerWidget {
     final mode = ref.watch(themeModeControllerProvider);
     final current = _themeOptions.firstWhere((o) => o.value == mode);
 
-    return ListTile(
+    return InsetListTile(
       leading: Icon(current.icon),
       title: const Text('Theme'),
       subtitle: Text(current.label),
@@ -177,7 +177,7 @@ class _VersionTile extends ConsumerWidget {
       );
     }
 
-    return ListTile(
+    return InsetListTile(
       leading: const Icon(Icons.info_outline),
       title: const Text('Version'),
       subtitle: Text(subtitle),

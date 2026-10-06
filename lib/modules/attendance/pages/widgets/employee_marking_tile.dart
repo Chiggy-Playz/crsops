@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/inset_list_tile.dart';
 import '../../../../core/employees/models/employee.dart';
 import '../../../../core/utils/date_time_format.dart';
 import '../../../../core/utils/status_metadata.dart';
@@ -97,7 +98,7 @@ class EmployeeMarkingTile extends StatelessWidget {
 
     // The whole row opens the status sheet — the badge already shows the
     // status, so a separate button only repeated it.
-    return ListTile(
+    return InsetListTile(
       key: Key('mark-status-${employee.id}'),
       enabled: !busy && statusTypes.isNotEmpty,
       onTap: () => _openStatusPicker(context),

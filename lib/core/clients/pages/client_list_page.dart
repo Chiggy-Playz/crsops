@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../widgets/pane_list_tile.dart';
+import '../../widgets/inset_list_tile.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -170,7 +170,7 @@ class _ClientTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return PaneListTile(
+    return InsetListTile(
       title: Text(
         client.name,
         style: dimmed ? TextStyle(color: scheme.onSurfaceVariant) : null,

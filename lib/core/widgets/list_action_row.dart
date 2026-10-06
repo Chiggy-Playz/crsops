@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'inset_list_tile.dart';
+
 /// An action shown as the first row of a list ("New employee", "Mark all
 /// present"): the icon in an avatar-sized circle so it lines up with the rows
 /// below, the label in the primary colour so it reads as an action. Used on
@@ -20,7 +22,7 @@ class ListActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return ListTile(
+    return InsetListTile(
       leading: CircleAvatar(
         backgroundColor: scheme.primaryContainer,
         foregroundColor: scheme.onPrimaryContainer,

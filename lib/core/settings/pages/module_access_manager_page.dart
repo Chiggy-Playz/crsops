@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/inset_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/models/app_session.dart';
@@ -67,7 +70,7 @@ class ModuleAccessManagerPage extends ConsumerWidget {
         if (granted.isEmpty) subtitle = 'No module access granted';
         // Nothing left to grant → no form that would open empty.
         final canGrant = modules.isNotEmpty && !hasAll;
-        return ListTile(
+        return InsetListTile(
           title: Text(profile.email),
           subtitle: Text(subtitle),
           trailing: Icon(hasAll ? Icons.check : Icons.add),
