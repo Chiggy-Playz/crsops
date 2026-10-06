@@ -5,14 +5,18 @@ security, the attendance functions. Written with [pgTAP](https://pgtap.org),
 Postgres's standard test framework.
 
 ```sh
-supabase/tests/run.sh             # everything
-supabase/tests/run.sh clients     # just clients_test.sql
+supabase/tests/run.sh                    # everything, on the local database
+supabase/tests/run.sh clients            # just clients_test.sql
+supabase/tests/run.sh --linked           # on the hosted project (prod)
 ```
 
-It runs against the **linked project** (prod, for now), inside one
-transaction that is always rolled back, so nothing is left behind: not the
-test data, not the throwaway users, not the `tests` schema. No Docker needed;
-it goes through `supabase db query --linked`.
+By default it runs against the local stack (`supabase start`) through `psql`;
+apply new migrations there first (`supabase migration up --local`). With
+`--linked` it runs on the hosted project through `supabase db query --linked`.
+Either way it all happens inside one transaction that is always rolled back,
+so nothing is left behind: not the test data, not the throwaway users, not the
+`tests` schema. `run.sh` refuses test files that end the transaction
+themselves (`commit`, `rollback`, …).
 
 ## What you get
 

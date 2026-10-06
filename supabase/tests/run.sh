@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
-# Runs the database tests against the linked Supabase project, inside one
-# transaction that is always rolled back. See README.md.
+# Runs the database tests inside one transaction that is always rolled back.
+# See README.md.
 #
-#   supabase/tests/run.sh            every *_test.sql
-#   supabase/tests/run.sh clients    only clients_test.sql
+#   supabase/tests/run.sh                    every *_test.sql, local database
+#   supabase/tests/run.sh clients            only clients_test.sql
+#   supabase/tests/run.sh --linked [names]   against the linked project (prod)
+#
+# Local means the stack `supabase start` runs; set LOCAL_DB_URL to use
+# another database.
 set -euo pipefail
 
 cd "$(dirname "$0")"
+
+linked=false
+if [ "${1:-}" = --linked ]; then
+  linked=true
+  shift
+fi
+local_db_url=${LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}
 
 if [ $# -eq 0 ]; then
   test_files=(*_test.sql)
@@ -29,14 +40,22 @@ trap 'rm -f "$run_sql" "$result"' EXIT
 
 cat _begin.sql "${test_files[@]}" _end.sql > "$run_sql"
 
-if ! supabase db query --linked -f "$run_sql" > "$result" 2>&1; then
-  cat "$result"
-  exit 1
+if $linked; then
+  # Goes through the Management API, which returns only the last query's rows
+  # (the TAP lines), after a status line.
+  if ! supabase db query --linked -f "$run_sql" > "$result" 2>&1; then
+    cat "$result"
+    exit 1
+  fi
+  sed -n '/^{/,$p' "$result" | jq -r '.rows[].line' > "$result.tap"
+  mv "$result.tap" "$result"
+else
+  # Quiet, rows only: the only rows printed are the TAP lines.
+  if ! psql "$local_db_url" -X -q -A -t -v ON_ERROR_STOP=1 -f "$run_sql" > "$result" 2>&1; then
+    cat "$result"
+    exit 1
+  fi
 fi
-
-# The CLI prints a status line before the JSON.
-sed -n '/^{/,$p' "$result" | jq -r '.rows[].line' > "$result.tap"
-mv "$result.tap" "$result"
 cat "$result"
 
 # Top-level lines are one per test function; indented ones are its checks.
