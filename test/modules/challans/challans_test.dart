@@ -1,3 +1,4 @@
+import 'package:crs_ops/modules/challans/challan_search.dart';
 import 'package:crs_ops/modules/challans/financial_year.dart';
 import 'package:crs_ops/modules/challans/history_text.dart';
 import 'package:crs_ops/modules/challans/models/challan.dart';
@@ -5,6 +6,8 @@ import 'package:crs_ops/modules/challans/models/challan_direction.dart';
 import 'package:crs_ops/modules/challans/models/challan_event.dart';
 import 'package:crs_ops/modules/challans/pages/challan_list_page.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'fakes/fake_challan_repository.dart';
 
 /// A row as `challans.challan_overview` returns it.
 Map<String, dynamic> _overviewRow({
@@ -174,6 +177,30 @@ void main() {
           ChallanDirection.outward,
         ).title,
         'Bill number removed',
+      );
+    });
+  });
+
+  group('search', () {
+    test('groups by client name, keeping each client\'s order', () {
+      final groups = groupByClient([
+        fakeChallan(id: 'a', number: 9, clientId: 'v', clientName: 'vega'),
+        fakeChallan(id: 'b', number: 8, clientId: 'o', clientName: 'Offshoot'),
+        fakeChallan(id: 'c', number: 7, clientId: 'v', clientName: 'vega'),
+      ]);
+      expect(groups.map((g) => g.clientName), ['Offshoot', 'vega']);
+      expect(groups[1].challans.map((c) => c.number), [9, 7]);
+    });
+
+    test('filters with only whitespace count as empty', () {
+      expect(const ChallanSearchFilters(text: '  ').isEmpty, isTrue);
+      expect(ChallanSearchFilters(from: DateTime(2026)).isEmpty, isFalse);
+    });
+
+    test('equal filters are equal, so results are cached', () {
+      expect(
+        const ChallanSearchFilters(text: 'x', clientIds: ['a']),
+        const ChallanSearchFilters(text: 'x', clientIds: ['a']),
       );
     });
   });

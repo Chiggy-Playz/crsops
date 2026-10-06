@@ -68,6 +68,12 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
       appBar: AppBar(
         title: const Text('Challans'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.manage_search),
+            tooltip: 'Search all years',
+            onPressed: () =>
+                openInPane(context, const ChallanSearchRoute().location),
+          ),
           if (direction == ChallanDirection.outward)
             IconButton(
               isSelected: _onlyNotReceived,

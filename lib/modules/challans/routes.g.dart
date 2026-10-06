@@ -23,6 +23,11 @@ RouteBase get $challansShellRoute => ShellRouteData.$route(
           factory: $ChallanNewRoute._fromState,
         ),
         GoRouteData.$route(
+          path: 'search',
+          hasOverriddenOnExit: false,
+          factory: $ChallanSearchRoute._fromState,
+        ),
+        GoRouteData.$route(
           path: ':id',
           hasOverriddenOnExit: false,
           factory: $ChallanDetailRoute._fromState,
@@ -107,6 +112,27 @@ const _$ChallanDirectionEnumMap = {
   ChallanDirection.outward: 'outward',
   ChallanDirection.inward: 'inward',
 };
+
+mixin $ChallanSearchRoute on GoRouteData {
+  static ChallanSearchRoute _fromState(GoRouterState state) =>
+      const ChallanSearchRoute();
+
+  @override
+  String get location => GoRouteData.$location('/challans/search');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
 
 mixin $ChallanDetailRoute on GoRouteData {
   static ChallanDetailRoute _fromState(GoRouterState state) =>

@@ -10,6 +10,7 @@ import 'models/challan_direction.dart';
 import 'pages/challan_detail_page.dart';
 import 'pages/challan_edit_page.dart';
 import 'pages/challan_list_page.dart';
+import 'pages/challan_search_page.dart';
 import 'pages/challans_split_layout.dart';
 
 part 'routes.g.dart';
@@ -23,6 +24,8 @@ part 'routes.g.dart';
       path: '/challans',
       routes: [
         TypedGoRoute<ChallanNewRoute>(path: 'new'),
+        // Before ':id', so "search" isn't read as a challan id.
+        TypedGoRoute<ChallanSearchRoute>(path: 'search'),
         TypedGoRoute<ChallanDetailRoute>(
           path: ':id',
           routes: [TypedGoRoute<ChallanEditRoute>(path: 'edit')],
@@ -83,6 +86,15 @@ class ChallanNewRoute extends GoRouteData with $ChallanNewRoute {
       clientId: clientId,
     ),
   );
+}
+
+/// Right pane on wide windows, its own page on narrow ones.
+class ChallanSearchRoute extends GoRouteData with $ChallanSearchRoute {
+  const ChallanSearchRoute();
+
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ChallanSearchPage();
 }
 
 class ChallanDetailRoute extends GoRouteData with $ChallanDetailRoute {

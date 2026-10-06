@@ -708,3 +708,91 @@ final class ItemUnitsProvider
 }
 
 String _$itemUnitsHash() => r'e2a754d01f2dd4b9652fe08d128811e88203656e';
+
+/// Results for the search page; refreshed after any challan change.
+
+@ProviderFor(challanSearch)
+final challanSearchProvider = ChallanSearchFamily._();
+
+/// Results for the search page; refreshed after any challan change.
+
+final class ChallanSearchProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<Challan>>,
+          List<Challan>,
+          FutureOr<List<Challan>>
+        >
+    with $FutureModifier<List<Challan>>, $FutureProvider<List<Challan>> {
+  /// Results for the search page; refreshed after any challan change.
+  ChallanSearchProvider._({
+    required ChallanSearchFamily super.from,
+    required ChallanSearchFilters super.argument,
+  }) : super(
+         retry: null,
+         name: r'challanSearchProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$challanSearchHash();
+
+  @override
+  String toString() {
+    return r'challanSearchProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<List<Challan>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<Challan>> create(Ref ref) {
+    final argument = this.argument as ChallanSearchFilters;
+    return challanSearch(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is ChallanSearchProvider && other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$challanSearchHash() => r'2ee8a41f19fa9a25e2b7c095bc642e0a97977732';
+
+/// Results for the search page; refreshed after any challan change.
+
+final class ChallanSearchFamily extends $Family
+    with
+        $FunctionalFamilyOverride<
+          FutureOr<List<Challan>>,
+          ChallanSearchFilters
+        > {
+  ChallanSearchFamily._()
+    : super(
+        retry: null,
+        name: r'challanSearchProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// Results for the search page; refreshed after any challan change.
+
+  ChallanSearchProvider call(ChallanSearchFilters filters) =>
+      ChallanSearchProvider._(argument: filters, from: this);
+
+  @override
+  String toString() => r'challanSearchProvider';
+}

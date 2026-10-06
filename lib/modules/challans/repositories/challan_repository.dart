@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/errors/app_exception.dart';
 import '../../../core/errors/exception_translator.dart';
 import '../../../core/utils/date_time_format.dart';
+import '../challan_search.dart';
 import '../models/challan.dart';
 import '../models/challan_direction.dart';
 import '../models/challan_event.dart';
@@ -63,6 +64,10 @@ abstract class ChallanRepository {
   /// A client's challans, both directions, newest first.
   Future<List<Challan>> fetchForClient(String clientId);
   Future<List<ChallanEvent>> fetchHistory(String challanId);
+
+  /// Challans of any financial year matching [filters], newest first, at
+  /// most 1000.
+  Future<List<Challan>> search(ChallanSearchFilters filters);
 
   /// Names typed before into "Delivered by" / "Received by", most used first.
   Future<List<String>> fetchHandledByNames();
@@ -166,6 +171,28 @@ class SupabaseChallanRepository implements ChallanRepository {
           .eq('challan_id', challanId)
           .order('created_at', ascending: false);
       return rows.map(ChallanEventMapper.fromMap).toList();
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<List<Challan>> search(ChallanSearchFilters filters) async {
+    final from = filters.from;
+    final to = filters.to;
+    final text = filters.text.trim();
+    try {
+      final rows = await _rpc('search_challans', {
+        'p_text': text.isEmpty ? null : text,
+        'p_client_ids': filters.clientIds.isEmpty ? null : filters.clientIds,
+        'p_from': from == null ? null : dateOnly(from),
+        'p_to': to == null ? null : dateOnly(to),
+        'p_direction': filters.direction?.name,
+      });
+      return [
+        for (final row in rows as List)
+          ChallanMapper.fromMap(row as Map<String, dynamic>),
+      ];
     } catch (error) {
       throw translateException(error);
     }

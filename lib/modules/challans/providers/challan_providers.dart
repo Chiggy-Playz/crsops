@@ -2,6 +2,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/clients/providers/client_providers.dart';
 import '../../../core/data/supabase_client_provider.dart';
+import '../challan_search.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
 import '../models/challan_direction.dart';
@@ -97,4 +98,12 @@ Future<List<String>> handledByNames(Ref ref) {
 Future<List<String>> itemUnits(Ref ref) {
   ref.watch(challansRevisionProvider);
   return ref.watch(challanRepositoryProvider).fetchUnits();
+}
+
+/// Results for the search page; refreshed after any challan change.
+@riverpod
+Future<List<Challan>> challanSearch(Ref ref, ChallanSearchFilters filters) {
+  ref.watch(challansRevisionProvider);
+  ref.watch(clientsRevisionProvider);
+  return ref.watch(challanRepositoryProvider).search(filters);
 }
