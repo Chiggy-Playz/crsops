@@ -73,7 +73,9 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
       clientName: challan.clientName,
       addressLabel: challan.addressLabel,
       nameOnChallan: challan.nameOnChallan,
+      address: challan.address,
       stateName: challan.stateName,
+      gstin: challan.gstin,
     );
   }
 
