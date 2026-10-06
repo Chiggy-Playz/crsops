@@ -167,9 +167,11 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
         leading = (leading: null, implyLeading: true);
       }
     } else {
+      // No ✕ beside the calendar: wide windows always show a day there.
       leading = paneLeading(
         context,
         parentLocation: const CalendarRoute().location,
+        closable: false,
       );
     }
 

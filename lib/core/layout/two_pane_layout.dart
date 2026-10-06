@@ -36,16 +36,22 @@ class TwoPaneLayout extends StatelessWidget {
 
 /// Leading-widget rules for a page that is the right pane on wide windows and
 /// a full page on narrow ones:
-/// - two panes: no back arrow (the list is right there on the left);
+/// - two panes: ✕, which closes the pane back to [parentLocation] (the list
+///   stays on the left), or nothing when [closable] is false;
 /// - single pane with something to pop: the normal back arrow;
 /// - single pane with nothing to pop (deep link, or resized from wide):
 ///   a back arrow that goes to [parentLocation].
 ({Widget? leading, bool implyLeading}) paneLeading(
   BuildContext context, {
   required String parentLocation,
+  bool closable = true,
 }) {
   if (context.isTwoPane) {
-    return (leading: null, implyLeading: false);
+    if (!closable) return (leading: null, implyLeading: false);
+    return (
+      leading: CloseButton(onPressed: () => context.go(parentLocation)),
+      implyLeading: false,
+    );
   }
   if (Navigator.of(context).canPop()) {
     return (leading: null, implyLeading: true);
