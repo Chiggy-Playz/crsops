@@ -12,12 +12,18 @@ class DateFormField extends StatefulWidget {
     required this.value,
     required this.onChanged,
     this.fieldKey,
+    this.lastDate,
+    this.helperText,
   });
 
   final String label;
   final DateTime value;
   final ValueChanged<DateTime> onChanged;
   final Key? fieldKey;
+
+  /// The latest date the picker allows; open-ended when null.
+  final DateTime? lastDate;
+  final String? helperText;
 
   @override
   State<DateFormField> createState() => _DateFormFieldState();
@@ -45,7 +51,7 @@ class _DateFormFieldState extends State<DateFormField> {
       context: context,
       initialDate: widget.value,
       firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
+      lastDate: widget.lastDate ?? DateTime(2100),
     );
     if (picked != null) widget.onChanged(picked);
   }
@@ -59,6 +65,7 @@ class _DateFormFieldState extends State<DateFormField> {
       onTap: _pick,
       decoration: InputDecoration(
         labelText: widget.label,
+        helperText: widget.helperText,
         suffixIcon: IconButton(
           icon: const Icon(Icons.calendar_month),
           tooltip: 'Pick date',
