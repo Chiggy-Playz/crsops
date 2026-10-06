@@ -83,20 +83,22 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - uses: supabase/setup-cli@v1
+      # Same version as locally, so CI builds the database the same way.
+      - uses: supabase/setup-cli@v3
         with:
           version: 2.119.0
       # diff.sh's pg_dump must be at least the database's version
       # (major_version in config.toml); the runner ships an older one.
       - name: Install PostgreSQL 17 client
         run: |
+          sudo apt-get update
           sudo apt-get install -y postgresql-common
           sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
           sudo apt-get install -y postgresql-client-17
           echo /usr/lib/postgresql/17/bin >> "$GITHUB_PATH"
-      # Only Postgres, not auth or the other services, so no secrets needed.
+      # Starts only Postgres (no auth or other services, so no secrets) and,
+      # on a fresh database, applies the migrations.
       - run: supabase db start
-      - run: supabase migration up --local
       - run: supabase/tests/run.sh
       - run: supabase/schemas/diff.sh
 
