@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../../utils/status_metadata.dart';
+import '../utils/status_metadata.dart';
 
-/// Initials on the theme's primaryContainer — one colour for everyone,
-/// matching the nav pill and Flutter's M3 CircleAvatar default (the quieter
-/// secondaryContainer read as dull grey in dark mode). [dimmed] for inactive
-/// employees.
-class EmployeeAvatar extends StatelessWidget {
-  const EmployeeAvatar({
+/// A person's or company's initials on the theme's primaryContainer — one
+/// colour for everyone, matching the nav pill and Flutter's M3 CircleAvatar
+/// default (the quieter secondaryContainer read as dull grey in dark mode).
+/// [dimmed] for inactive employees and archived clients.
+class InitialsAvatar extends StatelessWidget {
+  const InitialsAvatar({
     super.key,
     required this.name,
     this.radius,

@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
 import '../../layout/window_size.dart';
+import '../../widgets/initials_avatar.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../../widgets/list_action_row.dart';
 import '../../widgets/section_header.dart';
 import '../models/employee.dart';
 import '../providers/employee_providers.dart';
 import '../routes.dart';
-import 'widgets/employee_avatar.dart';
 
 const employeeListRoutePath = '/employees';
 
@@ -157,7 +155,7 @@ class _EmployeeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InsetListTile(
-      leading: EmployeeAvatar(name: employee.name, dimmed: inactive),
+      leading: InitialsAvatar(name: employee.name, dimmed: inactive),
       title: Text(
         employee.name,
         style: inactive

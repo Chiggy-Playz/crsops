@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -15,6 +12,7 @@ import '../../updates/update_controller.dart';
 import '../../updates/update_listener.dart';
 import '../../widgets/app_snack_bar.dart';
 import '../../widgets/error_snackbar.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/selection_sheet.dart';
 import '../settings_section.dart';

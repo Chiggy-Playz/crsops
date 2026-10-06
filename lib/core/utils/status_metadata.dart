@@ -55,7 +55,8 @@ String slugify(String input) => input
 String initialsFor(String name) => name
     .trim()
     .split(RegExp(r'\s+'))
-    .where((w) => w.isNotEmpty)
+    // Words, not "&" or "/" (client names like "SHARMA & SONS / DELHI").
+    .where((w) => RegExp(r'^[\p{L}\p{N}]', unicode: true).hasMatch(w))
     .take(2)
     .map((w) => w[0].toUpperCase())
     .join();

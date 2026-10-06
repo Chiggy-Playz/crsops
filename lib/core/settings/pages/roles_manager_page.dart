@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/models/app_session.dart';
@@ -10,6 +7,7 @@ import '../../layout/two_pane_layout.dart';
 import '../../utils/status_metadata.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../routes.dart';
 
 class RolesManagerPage extends ConsumerWidget {

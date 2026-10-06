@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
 import '../../layout/window_size.dart';
+import '../../widgets/initials_avatar.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../../widgets/list_action_row.dart';
 import '../../widgets/section_header.dart';
 import '../models/client.dart';
@@ -171,6 +170,7 @@ class _ClientTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return InsetListTile(
+      leading: InitialsAvatar(name: client.name, dimmed: dimmed),
       title: Text(
         client.name,
         style: dimmed ? TextStyle(color: scheme.onSurfaceVariant) : null,

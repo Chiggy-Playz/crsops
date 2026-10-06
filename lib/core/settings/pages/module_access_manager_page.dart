@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/models/app_session.dart';
@@ -9,6 +6,7 @@ import '../../auth/providers/admin_providers.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../widgets/form_dialog.dart';
 import '../../widgets/guarded_save.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../routes.dart';
 
 class ModuleAccessManagerPage extends ConsumerWidget {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../widgets/form_dialog.dart';
 import '../../../widgets/section_header.dart';
 import '../../models/employee.dart';
-import 'employee_avatar.dart';
+import '../../../widgets/initials_avatar.dart';
 
 /// Multi-select employee picker (e.g. the Reports filter): search, active
 /// employees first, then a dimmed Inactive group — they still matter for past
@@ -110,7 +110,7 @@ class _EmployeeMultiPickerState extends State<_EmployeeMultiPicker> {
         ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
         : null;
     return CheckboxListTile(
-      secondary: EmployeeAvatar(name: e.name, dimmed: inactive),
+      secondary: InitialsAvatar(name: e.name, dimmed: inactive),
       title: Text(e.name, style: dimmedText),
       value: _selection.contains(e.id),
       onChanged: (checked) => _toggle(e.id, checked ?? false),

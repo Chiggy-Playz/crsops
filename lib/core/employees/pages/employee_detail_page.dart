@@ -15,7 +15,7 @@ import '../providers/employee_providers.dart';
 import '../routes.dart';
 import 'widgets/add_event_dialog.dart';
 import 'widgets/add_payment_dialog.dart';
-import 'widgets/employee_avatar.dart';
+import '../../widgets/initials_avatar.dart';
 import 'widgets/history_timeline.dart';
 
 /// "19 days" / "3 months" / "2 years" — how long ago [since] was.
@@ -230,7 +230,7 @@ class _ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         children: [
-          EmployeeAvatar(name: employee.name, radius: 40, dimmed: !isActive),
+          InitialsAvatar(name: employee.name, radius: 40, dimmed: !isActive),
           const SizedBox(height: 12),
           Text(
             employee.name,
