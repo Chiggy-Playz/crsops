@@ -76,9 +76,18 @@ class _SuggestionFieldState extends State<SuggestionField> {
           ),
       optionsViewBuilder: (context, onSelected, options) => Align(
         alignment: Alignment.topLeft,
+        // Same look as the client picker's list: a menu's container tone
+        // and a thin outline.
         child: Material(
           elevation: 3,
-          borderRadius: BorderRadius.circular(4),
+          color: Theme.of(context).colorScheme.surfaceContainer,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 280, maxWidth: 480),
             child: ListView(

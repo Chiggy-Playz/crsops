@@ -284,9 +284,17 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
             ),
         optionsViewBuilder: (context, onSelected, options) => Align(
           alignment: Alignment.topLeft,
+          // A menu's container tone and a thin outline, so it stands apart
+          // from the form behind it.
           child: Material(
             elevation: 3,
-            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.surfaceContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
             clipBehavior: Clip.antiAlias,
             child: ConstrainedBox(
               constraints: BoxConstraints(
