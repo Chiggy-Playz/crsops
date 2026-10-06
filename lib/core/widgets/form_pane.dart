@@ -61,10 +61,17 @@ final _openForms = <LocalKey, bool Function()>{};
 
 /// For a form route's `onExit`: lets it go, or asks first if the form on it
 /// has unsaved changes.
+///
+/// Switching to another section doesn't ask: each section keeps its own
+/// pages, so the form waits there, as typed, until you come back.
 Future<bool> confirmLeavingForm(
   BuildContext context,
   GoRouterState state,
 ) async {
+  // Already where the router is heading (it updates this before leaving).
+  final destination = GoRouter.of(context).routeInformationProvider.value.uri;
+  if (_sectionOf(destination) != _sectionOf(state.uri)) return true;
+
   final hasUnsavedChanges = _openForms[state.pageKey];
   if (hasUnsavedChanges == null || !hasUnsavedChanges()) return true;
   return showConfirmDialog(
@@ -74,6 +81,13 @@ Future<bool> confirmLeavingForm(
     confirmLabel: 'Discard',
     isDestructive: true,
   );
+}
+
+/// The section a location belongs to: its first path segment ("challans"
+/// in /challans/new).
+String _sectionOf(Uri uri) {
+  if (uri.pathSegments.isEmpty) return '';
+  return uri.pathSegments.first;
 }
 
 class _FormPaneState extends State<FormPane> {
