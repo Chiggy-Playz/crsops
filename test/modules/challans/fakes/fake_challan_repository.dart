@@ -71,12 +71,6 @@ class FakeChallanRepository implements ChallanRepository {
         ..sort((a, b) => b.number.compareTo(a.number));
 
   @override
-  Future<List<int>> fetchFinancialYears(ChallanDirection direction) async => {
-    for (final c in _challans)
-      if (c.direction == direction) c.financialYear,
-  }.toList();
-
-  @override
   Future<Challan> fetchById(String id) async =>
       _challans.firstWhere((c) => c.id == id);
 

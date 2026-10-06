@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-
-import '../../widgets/inset_list_tile.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,9 +7,9 @@ import '../../layout/two_pane_layout.dart';
 import '../../sections/app_sections_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/guarded_save.dart';
-import '../../widgets/list_action_row.dart';
+import '../../widgets/inset_list_tile.dart';
 import '../../widgets/overflow_menu.dart';
-import '../../widgets/section_header.dart';
+import '../../widgets/section_card.dart';
 import '../models/client.dart';
 import '../models/client_address.dart';
 import '../providers/client_providers.dart';
@@ -127,31 +124,62 @@ class ClientDetailPage extends ConsumerWidget {
       body: clientAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('$error')),
-        data: (client) => ListView(
-          padding: const EdgeInsets.only(bottom: 24),
-          children: [
-            _Header(client: client),
-            if (client.notes != null)
-              ListTile(
-                leading: const Icon(Icons.notes),
-                title: Text(client.notes!),
-                subtitle: const Text('Notes'),
+        data: (client) {
+          final notes = client.notes;
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+            children: [
+              MaxWidthBox(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  spacing: 16,
+                  children: [
+                    _Header(client: client),
+                    if (notes != null)
+                      SectionCard(
+                        icon: Icons.notes,
+                        title: 'Notes',
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Text(notes),
+                        ),
+                      ),
+                    SectionCard(
+                      icon: Icons.place_outlined,
+                      title: 'Addresses',
+                      action: TextButton.icon(
+                        onPressed: () => AddressNewRoute(
+                          clientId,
+                          $extra: client,
+                        ).push(context),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add address'),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Column(
+                          children: [
+                            for (final address in client.addresses)
+                              _AddressTile(address: address),
+                          ],
+                        ),
+                      ),
+                    ),
+                    for (final panel in panels)
+                      SectionCard(
+                        icon: panel.icon,
+                        title: panel.title,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: panel.builder(context, client.id),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            const SectionHeader('Addresses'),
-            for (final address in client.addresses)
-              _AddressTile(address: address),
-            ListActionRow(
-              icon: Icons.add_location_alt_outlined,
-              label: 'Add address',
-              onTap: () =>
-                  AddressNewRoute(clientId, $extra: client).push(context),
-            ),
-            for (final panel in panels) ...[
-              SectionHeader(panel.title),
-              panel.builder(context, client.id),
             ],
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -165,21 +193,61 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final activeAddresses = client.addresses.where((a) => !a.isArchived);
+
+    final String summary;
+    if (activeAddresses.length == 1) {
+      summary = activeAddresses.single.stateName;
+    } else {
+      summary = '${activeAddresses.length} addresses';
+    }
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      padding: const EdgeInsets.only(top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 8,
         children: [
           Text(client.name, style: theme.textTheme.headlineSmall),
-          if (client.isArchived) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Archived',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                summary,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
-            ),
-          ],
+              if (client.isArchived)
+                Container(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
+                  decoration: BoxDecoration(
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 6,
+                    children: [
+                      Icon(
+                        Icons.archive_outlined,
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      Text(
+                        'Archived',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );

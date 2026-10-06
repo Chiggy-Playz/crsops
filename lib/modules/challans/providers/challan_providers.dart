@@ -37,36 +37,23 @@ class SelectedDirection extends _$SelectedDirection {
   void select(ChallanDirection direction) => state = direction;
 }
 
-/// The financial year the list shows; starts at the current one.
-@Riverpod(keepAlive: true)
-class SelectedFinancialYear extends _$SelectedFinancialYear {
-  @override
-  int build() => financialYearOf(DateTime.now());
-
-  void select(int year) => state = year;
-}
-
+/// The list's challans: this financial year's and last year's, newest first,
+/// so the list never starts empty on 1 April. Anything older is found with
+/// the search page.
 @riverpod
-Future<List<Challan>> challanList(
+Future<List<Challan>> recentChallans(
   Ref ref,
   ChallanDirection direction,
-  int year,
-) {
+) async {
   ref.watch(challansRevisionProvider);
   ref.watch(clientsRevisionProvider);
-  return ref.watch(challanRepositoryProvider).fetchList(direction, year);
-}
-
-/// The years to offer in the list's year picker: those with challans, plus
-/// the current one (which may have none yet), newest first.
-@riverpod
-Future<List<int>> financialYears(Ref ref, ChallanDirection direction) async {
-  ref.watch(challansRevisionProvider);
-  final years = await ref
-      .watch(challanRepositoryProvider)
-      .fetchFinancialYears(direction);
-  final current = financialYearOf(DateTime.now());
-  return {current, ...years}.toList()..sort((a, b) => b.compareTo(a));
+  final repo = ref.watch(challanRepositoryProvider);
+  final thisYear = financialYearOf(DateTime.now());
+  final lists = await Future.wait([
+    repo.fetchList(direction, thisYear),
+    repo.fetchList(direction, thisYear - 1),
+  ]);
+  return [...lists[0], ...lists[1]];
 }
 
 @riverpod

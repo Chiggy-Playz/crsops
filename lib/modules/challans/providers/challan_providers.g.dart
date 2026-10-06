@@ -184,69 +184,18 @@ abstract class _$SelectedDirection extends $Notifier<ChallanDirection> {
   }
 }
 
-/// The financial year the list shows; starts at the current one.
+/// The list's challans: this financial year's and last year's, newest first,
+/// so the list never starts empty on 1 April. Anything older is found with
+/// the search page.
 
-@ProviderFor(SelectedFinancialYear)
-final selectedFinancialYearProvider = SelectedFinancialYearProvider._();
+@ProviderFor(recentChallans)
+final recentChallansProvider = RecentChallansFamily._();
 
-/// The financial year the list shows; starts at the current one.
-final class SelectedFinancialYearProvider
-    extends $NotifierProvider<SelectedFinancialYear, int> {
-  /// The financial year the list shows; starts at the current one.
-  SelectedFinancialYearProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'selectedFinancialYearProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
+/// The list's challans: this financial year's and last year's, newest first,
+/// so the list never starts empty on 1 April. Anything older is found with
+/// the search page.
 
-  @override
-  String debugGetCreateSourceHash() => _$selectedFinancialYearHash();
-
-  @$internal
-  @override
-  SelectedFinancialYear create() => SelectedFinancialYear();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(int value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<int>(value),
-    );
-  }
-}
-
-String _$selectedFinancialYearHash() =>
-    r'2491e1939e4a0fa875d2384331f62bc861b3a817';
-
-/// The financial year the list shows; starts at the current one.
-
-abstract class _$SelectedFinancialYear extends $Notifier<int> {
-  int build();
-  @$mustCallSuper
-  @override
-  WhenComplete runBuild() {
-    final ref = this.ref as $Ref<int, int>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<int, int>,
-              int,
-              Object?,
-              Object?
-            >;
-    return element.handleCreate(ref, build);
-  }
-}
-
-@ProviderFor(challanList)
-final challanListProvider = ChallanListFamily._();
-
-final class ChallanListProvider
+final class RecentChallansProvider
     extends
         $FunctionalProvider<
           AsyncValue<List<Challan>>,
@@ -254,25 +203,28 @@ final class ChallanListProvider
           FutureOr<List<Challan>>
         >
     with $FutureModifier<List<Challan>>, $FutureProvider<List<Challan>> {
-  ChallanListProvider._({
-    required ChallanListFamily super.from,
-    required (ChallanDirection, int) super.argument,
+  /// The list's challans: this financial year's and last year's, newest first,
+  /// so the list never starts empty on 1 April. Anything older is found with
+  /// the search page.
+  RecentChallansProvider._({
+    required RecentChallansFamily super.from,
+    required ChallanDirection super.argument,
   }) : super(
          retry: null,
-         name: r'challanListProvider',
+         name: r'recentChallansProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$challanListHash();
+  String debugGetCreateSourceHash() => _$recentChallansHash();
 
   @override
   String toString() {
-    return r'challanListProvider'
+    return r'recentChallansProvider'
         ''
-        '$argument';
+        '($argument)';
   }
 
   @$internal
@@ -283,99 +235,13 @@ final class ChallanListProvider
 
   @override
   FutureOr<List<Challan>> create(Ref ref) {
-    final argument = this.argument as (ChallanDirection, int);
-    return challanList(ref, argument.$1, argument.$2);
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return other is ChallanListProvider && other.argument == argument;
-  }
-
-  @override
-  int get hashCode {
-    return argument.hashCode;
-  }
-}
-
-String _$challanListHash() => r'032ec6a93168b2bc49081309d99ff04f102be38e';
-
-final class ChallanListFamily extends $Family
-    with
-        $FunctionalFamilyOverride<
-          FutureOr<List<Challan>>,
-          (ChallanDirection, int)
-        > {
-  ChallanListFamily._()
-    : super(
-        retry: null,
-        name: r'challanListProvider',
-        dependencies: null,
-        $allTransitiveDependencies: null,
-        isAutoDispose: true,
-      );
-
-  ChallanListProvider call(ChallanDirection direction, int year) =>
-      ChallanListProvider._(argument: (direction, year), from: this);
-
-  @override
-  String toString() => r'challanListProvider';
-}
-
-/// The years to offer in the list's year picker: those with challans, plus
-/// the current one (which may have none yet), newest first.
-
-@ProviderFor(financialYears)
-final financialYearsProvider = FinancialYearsFamily._();
-
-/// The years to offer in the list's year picker: those with challans, plus
-/// the current one (which may have none yet), newest first.
-
-final class FinancialYearsProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<List<int>>,
-          List<int>,
-          FutureOr<List<int>>
-        >
-    with $FutureModifier<List<int>>, $FutureProvider<List<int>> {
-  /// The years to offer in the list's year picker: those with challans, plus
-  /// the current one (which may have none yet), newest first.
-  FinancialYearsProvider._({
-    required FinancialYearsFamily super.from,
-    required ChallanDirection super.argument,
-  }) : super(
-         retry: null,
-         name: r'financialYearsProvider',
-         isAutoDispose: true,
-         dependencies: null,
-         $allTransitiveDependencies: null,
-       );
-
-  @override
-  String debugGetCreateSourceHash() => _$financialYearsHash();
-
-  @override
-  String toString() {
-    return r'financialYearsProvider'
-        ''
-        '($argument)';
-  }
-
-  @$internal
-  @override
-  $FutureProviderElement<List<int>> $createElement($ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
-
-  @override
-  FutureOr<List<int>> create(Ref ref) {
     final argument = this.argument as ChallanDirection;
-    return financialYears(ref, argument);
+    return recentChallans(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is FinancialYearsProvider && other.argument == argument;
+    return other is RecentChallansProvider && other.argument == argument;
   }
 
   @override
@@ -384,30 +250,32 @@ final class FinancialYearsProvider
   }
 }
 
-String _$financialYearsHash() => r'862e487fdebc762542851f1e9c105da7a0119c3c';
+String _$recentChallansHash() => r'ac2c335b6b79c7c32be3e877f616af8fc8baf4f5';
 
-/// The years to offer in the list's year picker: those with challans, plus
-/// the current one (which may have none yet), newest first.
+/// The list's challans: this financial year's and last year's, newest first,
+/// so the list never starts empty on 1 April. Anything older is found with
+/// the search page.
 
-final class FinancialYearsFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<List<int>>, ChallanDirection> {
-  FinancialYearsFamily._()
+final class RecentChallansFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<List<Challan>>, ChallanDirection> {
+  RecentChallansFamily._()
     : super(
         retry: null,
-        name: r'financialYearsProvider',
+        name: r'recentChallansProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// The years to offer in the list's year picker: those with challans, plus
-  /// the current one (which may have none yet), newest first.
+  /// The list's challans: this financial year's and last year's, newest first,
+  /// so the list never starts empty on 1 April. Anything older is found with
+  /// the search page.
 
-  FinancialYearsProvider call(ChallanDirection direction) =>
-      FinancialYearsProvider._(argument: direction, from: this);
+  RecentChallansProvider call(ChallanDirection direction) =>
+      RecentChallansProvider._(argument: direction, from: this);
 
   @override
-  String toString() => r'financialYearsProvider';
+  String toString() => r'recentChallansProvider';
 }
 
 @ProviderFor(challan)

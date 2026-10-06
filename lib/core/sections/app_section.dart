@@ -85,11 +85,13 @@ class SettingsEntry {
 /// A block on a client's detail page, contributed by another section.
 class ClientPanel {
   const ClientPanel({
+    required this.icon,
     required this.title,
     required this.canSee,
     required this.builder,
   });
 
+  final IconData icon;
   final String title;
   final SessionCheck canSee;
   final Widget Function(BuildContext context, String clientId) builder;

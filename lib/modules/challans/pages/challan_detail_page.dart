@@ -7,6 +7,7 @@ import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/utils/date_time_format.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/overflow_menu.dart';
+import '../../../core/widgets/section_card.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
 import '../providers/challan_providers.dart';
@@ -105,11 +106,13 @@ class ChallanDetailPage extends ConsumerWidget {
                   _ItemsCard(challan: challan),
                   _DetailsCard(challan: challan),
                   if (challan.isOutward)
-                    _SectionCard(
+                    SectionCard(
+                      icon: Icons.assignment_turned_in_outlined,
                       title: 'After delivery',
                       child: FollowUpsSection(challan: challan),
                     ),
-                  _SectionCard(
+                  SectionCard(
+                    icon: Icons.history,
                     title: 'History',
                     child: ChallanHistorySection(challan: challan),
                   ),
@@ -118,51 +121,6 @@ class ChallanDetailPage extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// A titled, outlined block of the challan's page.
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, required this.child, this.action});
-
-  final String title;
-  final Widget child;
-
-  /// A button at the right of the title (e.g. "Open client").
-  final Widget? action;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card.outlined(
-      margin: EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, action == null ? 16 : 6, 8, 4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Semantics(
-                    header: true,
-                    child: Text(
-                      title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ),
-                ?action,
-              ],
-            ),
-          ),
-          child,
-        ],
       ),
     );
   }
@@ -349,7 +307,8 @@ class _ClientCard extends StatelessWidget {
     );
     final gstin = challan.gstin;
 
-    return _SectionCard(
+    return SectionCard(
+      icon: Icons.business_outlined,
       title: 'Client',
       action: TextButton(
         onPressed: () => ClientDetailRoute(challan.clientId).go(context),
@@ -399,7 +358,8 @@ class _ItemsCard extends StatelessWidget {
       color: theme.colorScheme.onSurfaceVariant,
     );
 
-    return _SectionCard(
+    return SectionCard(
+      icon: Icons.inventory_2_outlined,
       title: 'Items',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -448,8 +408,8 @@ class _ItemsCard extends StatelessWidget {
   }
 }
 
-/// Who took or brought the goods, the vehicle, the value and the notes, as
-/// label and value side by side.
+/// Who took or brought the goods, the vehicle and the value as facts side by
+/// side (wrapping on narrow windows), then the notes.
 class _DetailsCard extends StatelessWidget {
   const _DetailsCard({required this.challan});
 
@@ -461,22 +421,40 @@ class _DetailsCard extends StatelessWidget {
     final value = challan.declaredValue;
     final notes = challan.notes;
 
-    return _SectionCard(
+    return SectionCard(
+      icon: Icons.info_outline,
       title: 'Details',
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          spacing: 8,
+          spacing: 16,
           children: [
-            _Field(
-              label: challan.direction.handledByLabel,
-              value: challan.handledByName,
+            Wrap(
+              spacing: 32,
+              runSpacing: 16,
+              children: [
+                _Fact(
+                  icon: Icons.person_outline,
+                  value: challan.handledByName,
+                  label: challan.direction.handledByLabel,
+                ),
+                if (vehicle != null)
+                  _Fact(
+                    icon: Icons.local_shipping_outlined,
+                    value: vehicle,
+                    label: 'Vehicle',
+                  ),
+                if (value != null)
+                  _Fact(
+                    icon: Icons.currency_rupee,
+                    value: formatRupees(value),
+                    label: 'Value of goods',
+                  ),
+              ],
             ),
-            if (vehicle != null) _Field(label: 'Vehicle', value: vehicle),
-            if (value != null)
-              _Field(label: 'Value of goods', value: formatRupees(value)),
-            if (notes != null) _Field(label: 'Notes', value: notes),
+            if (notes != null)
+              _Fact(icon: Icons.notes, value: notes, label: 'Notes'),
           ],
         ),
       ),
@@ -484,28 +462,39 @@ class _DetailsCard extends StatelessWidget {
   }
 }
 
-class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.value});
+/// One detail: an icon, the value, and what it is in small text under it.
+class _Fact extends StatelessWidget {
+  const _Fact({required this.icon, required this.value, required this.label});
 
-  final String label;
+  final IconData icon;
   final String value;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     return Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 12,
       children: [
-        SizedBox(
-          width: 140,
-          child: Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(icon, size: 20, color: muted),
+        ),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value, style: theme.textTheme.bodyLarge),
+              Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ],
           ),
         ),
-        Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
       ],
     );
   }

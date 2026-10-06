@@ -15,6 +15,7 @@ import 'package:crs_ops/modules/challans/financial_year.dart';
 import 'package:crs_ops/modules/challans/models/challan_direction.dart';
 import 'package:crs_ops/modules/challans/providers/challan_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -135,7 +136,8 @@ void main() {
     await _pumpApp(tester, _phone);
 
     expect(find.text('Challans'), findsWidgets);
-    expect(find.text(financialYearLabel(_thisYear)), findsOneWidget);
+    // Under this month's heading.
+    expect(find.text(DateFormat('MMMM y').format(_today)), findsOneWidget);
     expect(find.text('12'), findsOneWidget);
     expect(find.text('Offshoot Agency'), findsOneWidget);
     expect(find.text('3'), findsNothing);
@@ -144,18 +146,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('3'), findsOneWidget);
     expect(find.text('12'), findsNothing);
-  });
-
-  testWidgets('the not-received filter hides received challans', (
-    tester,
-  ) async {
-    await _pumpApp(tester, _phone);
-    expect(find.text('11'), findsOneWidget);
-
-    await tester.tap(find.widgetWithText(FilterChip, 'Not received'));
-    await tester.pumpAndSettle();
-    expect(find.text('11'), findsNothing);
-    expect(find.text('12'), findsOneWidget);
   });
 
   testWidgets('a challan page shows it and saves follow-ups', (tester) async {

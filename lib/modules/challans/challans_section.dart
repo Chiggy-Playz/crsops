@@ -15,6 +15,7 @@ final challansSection = AppSection(
   routes: routes.$appRoutes,
   clientPanels: [
     ClientPanel(
+      icon: Icons.receipt_long_outlined,
       title: 'Challans',
       canSee: (s) => s.hasModuleAccess(ModuleNames.challans),
       builder: (context, clientId) => ClientChallansPanel(clientId: clientId),

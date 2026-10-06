@@ -55,9 +55,6 @@ abstract class ChallanRepository {
   /// One direction's challans for one financial year, newest number first.
   Future<List<Challan>> fetchList(ChallanDirection direction, int year);
 
-  /// The financial years that have challans in [direction], newest first.
-  Future<List<int>> fetchFinancialYears(ChallanDirection direction);
-
   /// One challan with its items.
   Future<Challan> fetchById(String id);
 
@@ -112,19 +109,6 @@ class SupabaseChallanRepository implements ChallanRepository {
           .eq('financial_year', year)
           .order('number', ascending: false);
       return rows.map(ChallanMapper.fromMap).toList();
-    } catch (error) {
-      throw translateException(error);
-    }
-  }
-
-  @override
-  Future<List<int>> fetchFinancialYears(ChallanDirection direction) async {
-    try {
-      final rows = await _from('financial_years')
-          .select('financial_year')
-          .eq('direction', direction.name)
-          .order('financial_year', ascending: false);
-      return [for (final row in rows) row['financial_year'] as int];
     } catch (error) {
       throw translateException(error);
     }
