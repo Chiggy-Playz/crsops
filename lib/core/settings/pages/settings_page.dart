@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/pane_list_tile.dart';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -56,13 +59,10 @@ class SettingsPage extends ConsumerWidget {
           for (final group in groups) ...[
             SectionHeader(group.title),
             for (final entry in group.entries)
-              ListTile(
+              PaneListTile(
                 leading: Icon(entry.icon),
                 title: Text(entry.title),
                 selected: entry.location == selectedLocation,
-                selectedTileColor: Theme.of(context)
-                    .colorScheme
-                    .secondaryContainer,
                 onTap: () => openInPane(context, entry.location),
               ),
           ],

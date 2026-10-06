@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/pane_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
@@ -153,7 +156,7 @@ class _EmployeeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
+    return PaneListTile(
       leading: EmployeeAvatar(name: employee.name, dimmed: inactive),
       title: Text(
         employee.name,
@@ -162,7 +165,6 @@ class _EmployeeTile extends StatelessWidget {
             : null,
       ),
       selected: selected,
-      selectedTileColor: Theme.of(context).colorScheme.secondaryContainer,
       onTap: () =>
           openInPane(context, EmployeeDetailRoute(employee.id).location),
     );

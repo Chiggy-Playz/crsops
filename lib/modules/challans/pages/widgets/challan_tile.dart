@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/pane_list_tile.dart';
 import '../../../../core/utils/date_time_format.dart';
 import '../../models/challan.dart';
 
@@ -45,7 +46,7 @@ class ChallanTile extends StatelessWidget {
       trailing = null;
     }
 
-    return ListTile(
+    return PaneListTile(
       leading: SizedBox(
         width: 48,
         child: Text(
@@ -69,7 +70,6 @@ class ChallanTile extends StatelessWidget {
       ),
       trailing: trailing,
       selected: selected,
-      selectedTileColor: scheme.secondaryContainer,
       onTap: onTap,
     );
   }

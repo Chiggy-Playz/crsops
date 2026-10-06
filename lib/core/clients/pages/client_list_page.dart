@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../widgets/pane_list_tile.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../layout/two_pane_layout.dart';
@@ -167,14 +170,13 @@ class _ClientTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return ListTile(
+    return PaneListTile(
       title: Text(
         client.name,
         style: dimmed ? TextStyle(color: scheme.onSurfaceVariant) : null,
       ),
       subtitle: Text(_subtitle()),
       selected: selected,
-      selectedTileColor: scheme.secondaryContainer,
       onTap: () => openInPane(context, ClientDetailRoute(client.id).location),
     );
   }
