@@ -15,6 +15,7 @@ import '../routes.dart';
 import 'widgets/cancel_challan_dialog.dart';
 import 'widgets/challan_action.dart';
 import 'widgets/challan_history_section.dart';
+import 'widgets/challan_pdf_button.dart';
 import 'widgets/follow_ups_section.dart';
 
 class ChallanDetailPage extends ConsumerWidget {
@@ -57,13 +58,7 @@ class ChallanDetailPage extends ConsumerWidget {
         leading: leading.leading,
         automaticallyImplyLeading: leading.implyLeading,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined),
-            tooltip: 'Print or share PDF',
-            onPressed: challan == null
-                ? null
-                : () => ChallanPdfRoute(challan.id).push(context),
-          ),
+          if (challan != null) ChallanPdfButton(challan: challan),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit challan',

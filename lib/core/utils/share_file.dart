@@ -7,15 +7,23 @@ import 'package:share_plus/share_plus.dart';
 
 import '../widgets/app_snack_bar.dart';
 
-/// Hands a file the app made (an export) to the user: the share sheet on
-/// phones and Windows, a download on the web. Linux has no share sheet for
-/// files, so there it's saved to Downloads and a snackbar says where.
+/// Hands a file the app made (an export, a challan PDF) to the user: a
+/// download on the web, the share sheet on phones and Windows. Linux has no
+/// share sheet for files, so there it's saved to Downloads and a snackbar
+/// says where.
 Future<void> shareGeneratedFile({
   required Uint8List bytes,
   required String fileName,
   required String mimeType,
 }) async {
-  if (!kIsWeb && Platform.isLinux) {
+  if (kIsWeb) {
+    // Always a download: browsers that support sharing files would
+    // otherwise open their share dialog instead.
+    final file = XFile.fromData(bytes, mimeType: mimeType, name: fileName);
+    await file.saveTo(fileName);
+    return;
+  }
+  if (Platform.isLinux) {
     final path = await _saveToDownloads(bytes, fileName);
     showAppSnackBar('Saved to $path');
     return;

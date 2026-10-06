@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout/window_size.dart';
-import '../../core/router/navigator_keys.dart';
 import '../../core/widgets/empty_state.dart';
 import '../../core/widgets/form_pane.dart';
 import 'models/challan.dart';
@@ -12,7 +11,6 @@ import 'models/challan_direction.dart';
 import 'pages/challan_detail_page.dart';
 import 'pages/challan_edit_page.dart';
 import 'pages/challan_list_page.dart';
-import 'pages/challan_pdf_page.dart';
 import 'pages/challan_search_page.dart';
 import 'pages/challans_split_layout.dart';
 
@@ -31,10 +29,7 @@ part 'routes.g.dart';
         TypedGoRoute<ChallanSearchRoute>(path: 'search'),
         TypedGoRoute<ChallanDetailRoute>(
           path: ':id',
-          routes: [
-            TypedGoRoute<ChallanEditRoute>(path: 'edit'),
-            TypedGoRoute<ChallanPdfRoute>(path: 'pdf'),
-          ],
+          routes: [TypedGoRoute<ChallanEditRoute>(path: 'edit')],
         ),
       ],
     ),
@@ -126,21 +121,4 @@ class ChallanEditRoute extends GoRouteData with $ChallanEditRoute {
   @override
   FutureOr<bool> onExit(BuildContext context, GoRouterState state) =>
       confirmLeavingForm(context, state);
-}
-
-/// The PDF preview, full screen above everything. Loads the challan itself,
-/// so it works from a link too.
-class ChallanPdfRoute extends GoRouteData with $ChallanPdfRoute {
-  const ChallanPdfRoute(this.id);
-  final String id;
-
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
-
-  @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      MaterialPage(
-        key: state.pageKey,
-        fullscreenDialog: true,
-        child: ChallanPdfPage(challanId: id),
-      );
 }

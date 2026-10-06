@@ -68,7 +68,12 @@ class ChallanPdfAssets {
 /// "challan_12_2026-27_VEGA CORPORATE.pdf", like the old file names.
 String challanPdfFileName(Challan challan) {
   final direction = challan.isOutward ? '' : 'inward_';
-  final name = challan.nameOnChallan.replaceAll(RegExp(r'[\\/:*?"<>|]'), ' ');
+  // Characters Windows and Android don't allow in file names (client names
+  // often have a "/") become spaces, then runs of spaces become one.
+  final name = challan.nameOnChallan
+      .replaceAll(RegExp(r'[\\/:*?"<>|]'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
   return '$direction${challan.number}_'
       '${financialYearLabel(challan.financialYear)}_$name.pdf';
 }
