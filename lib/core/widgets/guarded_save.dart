@@ -24,3 +24,16 @@ Future<void> runGuardedSave(
     if (context.mounted) setSaving(false);
   }
 }
+
+/// The no-form counterpart of [runGuardedSave], for one-tap writes (archive,
+/// delete, a switch): runs [action] and shows its error as a snackbar.
+/// Returns whether it worked, so the caller can refresh on success.
+Future<bool> runGuardedAction(Future<void> Function() action) async {
+  try {
+    await action();
+    return true;
+  } on AppException catch (e) {
+    showErrorSnackBar(e);
+    return false;
+  }
+}

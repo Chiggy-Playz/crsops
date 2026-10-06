@@ -161,7 +161,7 @@ void main() {
     await _pumpApp(tester, _phone);
     expect(find.text('11'), findsOneWidget);
 
-    await tester.tap(find.byTooltip('Show only ones not received back'));
+    await tester.tap(find.widgetWithText(FilterChip, 'Not received'));
     await tester.pumpAndSettle();
     expect(find.text('11'), findsNothing);
     expect(find.text('12'), findsOneWidget);
@@ -273,7 +273,7 @@ void main() {
 
     await tester.tap(find.text('12'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More'));
+    await tester.tap(find.byTooltip('More options'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel challan'));
     await tester.pumpAndSettle();
@@ -303,7 +303,7 @@ void main() {
 
     await tester.tap(find.text('12'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('More'));
+    await tester.tap(find.byTooltip('More options'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel challan'));
     await tester.pumpAndSettle();
@@ -381,9 +381,23 @@ void main() {
     expect(app.challans.searches.last.text, 'printer');
     expect(find.text('Offshoot Agency · 1'), findsOneWidget);
 
+    await tester.tap(find.text('Outward and inward'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Inward').last);
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.direction, ChallanDirection.inward);
+
+    // Filtering by client goes through the picker's Apply.
+    await tester.tap(find.text('All clients'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Vega Corporate'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(app.challans.searches.last.clientIds, ['client-1']);
+    expect(find.widgetWithText(InputChip, 'Vega Corporate'), findsOneWidget);
+
+    // Results can be exported.
+    expect(find.byTooltip('Export'), findsOneWidget);
   });
 
   testWidgets('a new client copies its name into "Name on challan"', (

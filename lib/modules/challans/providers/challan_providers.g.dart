@@ -796,3 +796,47 @@ final class ChallanSearchFamily extends $Family
   @override
   String toString() => r'challanSearchProvider';
 }
+
+/// The PDF's font and CANCELLED stamp, loaded once.
+
+@ProviderFor(challanPdfAssets)
+final challanPdfAssetsProvider = ChallanPdfAssetsProvider._();
+
+/// The PDF's font and CANCELLED stamp, loaded once.
+
+final class ChallanPdfAssetsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ChallanPdfAssets>,
+          ChallanPdfAssets,
+          FutureOr<ChallanPdfAssets>
+        >
+    with $FutureModifier<ChallanPdfAssets>, $FutureProvider<ChallanPdfAssets> {
+  /// The PDF's font and CANCELLED stamp, loaded once.
+  ChallanPdfAssetsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'challanPdfAssetsProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$challanPdfAssetsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<ChallanPdfAssets> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<ChallanPdfAssets> create(Ref ref) {
+    return challanPdfAssets(ref);
+  }
+}
+
+String _$challanPdfAssetsHash() => r'd710d3bffbdf09001f96928032d46dad73c24218';

@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/errors/app_exception.dart';
-import '../../../../core/widgets/error_snackbar.dart';
+import '../../../../core/widgets/guarded_save.dart';
 import '../../providers/challan_providers.dart';
 
 /// Runs a challan write, shows its error if it fails, and refreshes
@@ -10,12 +9,7 @@ Future<bool> runChallanAction(
   WidgetRef ref,
   Future<void> Function() action,
 ) async {
-  try {
-    await action();
-    ref.read(challansRevisionProvider.notifier).bump();
-    return true;
-  } on AppException catch (e) {
-    showErrorSnackBar(e);
-    return false;
-  }
+  final succeeded = await runGuardedAction(action);
+  if (succeeded) ref.read(challansRevisionProvider.notifier).bump();
+  return succeeded;
 }

@@ -70,8 +70,8 @@ challans.challan_events  append-only: challan_id, event_type, changes jsonb, not
   keep their number.
 - Date rules (enforced in the create function): never in the future.
   **Outward:** on or after the latest outward challan in that FY.
-  **Inward:** any date within the FY *(data: inward entries are routinely made
-  weeks late)*. Direction, FY, number and date are immutable after save.
+  **Inward:** any past date; its FY follows the date *(data: inward entries
+  are routinely made weeks late)*. Direction, FY, number and date are immutable after save.
 - Unit is optional *(data: 97% empty)*; quantity is a whole number > 0.
 
 ### Writes go only through functions
@@ -110,13 +110,17 @@ lib/modules/challans/  section, routes, models, repositories, providers,
 - Challan list per direction, newest first, paged; quick search; FY /
   cancelled / not-received filters.
 - Search runs server-side (`search_challans`: clients, date range, text,
-  direction), results grouped by client. Exports (xlsx via `excel`): Detailed
-  and Index, same columns as legacy.
+  direction), results grouped by client. Exports: Detailed and Index, same
+  columns as legacy, written by a small in-app .xlsx writer on `archive`
+  (the `excel` package can't resolve alongside flutter_gen). Shared with
+  `share_plus`; saved to Downloads on Linux, which can't share files.
 - PDF: a faithful port of the legacy layout, copy labels included
   ("Original for Recipient / Duplicate for Supplier / Triplicate for
   Transporter", 1–3 copies or unlabelled, CANCELLED stamp). Additions only:
   items continue onto further pages, a font with ₹, an inward variant
-  ("INWARD CHALLAN", "Received by", no bill number). Packages: `pdf`, `printing`.
+  ("Inward Challan", "Received by", no bill number). Packages: `pdf`, `printing`.
+  One deliberate change: the Quantity column is 60 wide, ending on the border
+  (the old grid's 70 ran 10 points past it).
   Letterhead and terms are Dart constants.
 
 ## Deferred

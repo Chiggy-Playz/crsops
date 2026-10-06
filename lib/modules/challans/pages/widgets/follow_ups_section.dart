@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/utils/date_time_format.dart';
+import '../../../../core/widgets/form_dialog.dart';
 import '../../models/challan.dart';
 import '../../providers/challan_providers.dart';
 import 'challan_action.dart';
@@ -31,7 +32,7 @@ class FollowUpsSection extends ConsumerWidget {
   }
 
   Future<void> _editBillNumber(BuildContext context, WidgetRef ref) async {
-    final entered = await showDialog<String>(
+    final entered = await showFormDialog<String>(
       context: context,
       builder: (_) => _BillNumberDialog(initial: challan.billNumber ?? ''),
     );
@@ -109,6 +110,7 @@ class _BillNumberDialog extends StatefulWidget {
 
 class _BillNumberDialogState extends State<_BillNumberDialog> {
   late final _controller = TextEditingController(text: widget.initial);
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void dispose() {
@@ -116,28 +118,23 @@ class _BillNumberDialogState extends State<_BillNumberDialog> {
     super.dispose();
   }
 
-  void _save() => Navigator.of(context).pop(_controller.text);
-
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Bill number'),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        textCapitalization: TextCapitalization.characters,
-        decoration: const InputDecoration(
-          labelText: 'Bill number',
-          helperText: 'Leave empty to remove it',
+    return FormDialog(
+      title: 'Bill number',
+      formKey: _formKey,
+      saving: false,
+      onSave: () => Navigator.of(context).pop(_controller.text),
+      children: [
+        TextFormField(
+          controller: _controller,
+          autofocus: !FormDialog.isCompact(context),
+          textCapitalization: TextCapitalization.characters,
+          decoration: const InputDecoration(
+            labelText: 'Bill number',
+            helperText: 'Leave empty to remove it',
+          ),
         ),
-        onSubmitted: (_) => _save(),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(onPressed: _save, child: const Text('Save')),
       ],
     );
   }

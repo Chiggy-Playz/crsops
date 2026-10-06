@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_providers.dart';
-import '../../errors/app_exception.dart';
 import '../../layout/two_pane_layout.dart';
 import '../../sections/app_sections_provider.dart';
 import '../../widgets/confirm_dialog.dart';
-import '../../widgets/error_snackbar.dart';
+import '../../widgets/guarded_save.dart';
 import '../../widgets/list_action_row.dart';
+import '../../widgets/overflow_menu.dart';
 import '../../widgets/section_header.dart';
 import '../models/client.dart';
 import '../models/client_address.dart';
@@ -21,61 +21,46 @@ Future<bool> _runClientAction(
   WidgetRef ref,
   Future<void> Function() action,
 ) async {
-  try {
-    await action();
-    ref.read(clientsRevisionProvider.notifier).bump();
-    return true;
-  } on AppException catch (e) {
-    showErrorSnackBar(e);
-    return false;
-  }
+  final succeeded = await runGuardedAction(action);
+  if (succeeded) ref.read(clientsRevisionProvider.notifier).bump();
+  return succeeded;
 }
-
-enum _ClientMenuAction { archive, unarchive, delete }
-
-enum _AddressMenuAction { edit, archive, unarchive, delete }
 
 class ClientDetailPage extends ConsumerWidget {
   const ClientDetailPage({super.key, required this.clientId});
 
   final String clientId;
 
-  Future<void> _onMenu(
+  Future<void> _setArchived(
+    WidgetRef ref,
+    Client client, {
+    required bool archived,
+  }) => _runClientAction(
+    ref,
+    () => ref
+        .read(clientRepositoryProvider)
+        .setArchived(client.id, archived: archived),
+  );
+
+  Future<void> _delete(
     BuildContext context,
     WidgetRef ref,
     Client client,
-    _ClientMenuAction action,
   ) async {
     final repo = ref.read(clientRepositoryProvider);
-    switch (action) {
-      case _ClientMenuAction.archive:
-        await _runClientAction(
-          ref,
-          () => repo.setArchived(client.id, archived: true),
-        );
-      case _ClientMenuAction.unarchive:
-        await _runClientAction(
-          ref,
-          () => repo.setArchived(client.id, archived: false),
-        );
-      case _ClientMenuAction.delete:
-        final confirmed = await showConfirmDialog(
-          context,
-          title: 'Delete client?',
-          message:
-              '${client.name} and all its addresses will be removed. '
-              "This only works if it isn't on any challan.",
-          confirmLabel: 'Delete',
-          isDestructive: true,
-        );
-        if (!confirmed) return;
-        final deleted = await _runClientAction(
-          ref,
-          () => repo.delete(client.id),
-        );
-        if (deleted && context.mounted) {
-          context.go(const ClientsRoute().location);
-        }
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete client?',
+      message:
+          '${client.name} and all its addresses will be removed. '
+          "This only works if it isn't on any challan.",
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+    final deleted = await _runClientAction(ref, () => repo.delete(client.id));
+    if (deleted && context.mounted) {
+      context.go(const ClientsRoute().location);
     }
   }
 
@@ -112,23 +97,25 @@ class ClientDetailPage extends ConsumerWidget {
                 : () => ClientEditRoute(clientId, $extra: client).push(context),
           ),
           if (client != null)
-            PopupMenuButton<_ClientMenuAction>(
-              tooltip: 'More',
-              onSelected: (action) => _onMenu(context, ref, client, action),
-              itemBuilder: (context) => [
+            OverflowMenu(
+              items: [
                 if (client.isArchived)
-                  const PopupMenuItem(
-                    value: _ClientMenuAction.unarchive,
-                    child: Text('Unarchive'),
+                  OverflowMenuItem(
+                    icon: Icons.unarchive_outlined,
+                    label: 'Unarchive',
+                    onPressed: () => _setArchived(ref, client, archived: false),
                   )
                 else
-                  const PopupMenuItem(
-                    value: _ClientMenuAction.archive,
-                    child: Text('Archive'),
+                  OverflowMenuItem(
+                    icon: Icons.archive_outlined,
+                    label: 'Archive',
+                    onPressed: () => _setArchived(ref, client, archived: true),
                   ),
-                const PopupMenuItem(
-                  value: _ClientMenuAction.delete,
-                  child: Text('Delete'),
+                OverflowMenuItem(
+                  icon: Icons.delete_outline,
+                  label: 'Delete',
+                  destructive: true,
+                  onPressed: () => _delete(context, ref, client),
                 ),
               ],
             ),
@@ -201,45 +188,33 @@ class _AddressTile extends ConsumerWidget {
 
   final ClientAddress address;
 
-  Future<void> _onMenu(
-    BuildContext context,
-    WidgetRef ref,
-    _AddressMenuAction action,
-  ) async {
+  void _edit(BuildContext context) => AddressEditRoute(
+    address.clientId,
+    address.addressId,
+    $extra: address,
+  ).push(context);
+
+  Future<void> _setArchived(WidgetRef ref, {required bool archived}) =>
+      _runClientAction(
+        ref,
+        () => ref
+            .read(clientRepositoryProvider)
+            .setAddressArchived(address.addressId, archived: archived),
+      );
+
+  Future<void> _delete(BuildContext context, WidgetRef ref) async {
     final repo = ref.read(clientRepositoryProvider);
-    switch (action) {
-      case _AddressMenuAction.edit:
-        AddressEditRoute(
-          address.clientId,
-          address.addressId,
-          $extra: address,
-        ).push(context);
-      case _AddressMenuAction.archive:
-        await _runClientAction(
-          ref,
-          () => repo.setAddressArchived(address.addressId, archived: true),
-        );
-      case _AddressMenuAction.unarchive:
-        await _runClientAction(
-          ref,
-          () => repo.setAddressArchived(address.addressId, archived: false),
-        );
-      case _AddressMenuAction.delete:
-        final confirmed = await showConfirmDialog(
-          context,
-          title: 'Delete address?',
-          message:
-              '"${address.label}" will be removed. '
-              "This only works if it isn't on any challan.",
-          confirmLabel: 'Delete',
-          isDestructive: true,
-        );
-        if (!confirmed) return;
-        await _runClientAction(
-          ref,
-          () => repo.deleteAddress(address.addressId),
-        );
-    }
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete address?',
+      message:
+          '"${address.label}" will be removed. '
+          "This only works if it isn't on any challan.",
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+    await _runClientAction(ref, () => repo.deleteAddress(address.addressId));
   }
 
   @override
@@ -263,35 +238,35 @@ class _AddressTile extends ConsumerWidget {
         style: address.isArchived ? TextStyle(color: muted) : null,
       ),
       subtitle: Text(lines.join('\n')),
-      trailing: PopupMenuButton<_AddressMenuAction>(
+      trailing: OverflowMenu(
         tooltip: 'Address options',
-        onSelected: (action) => _onMenu(context, ref, action),
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: _AddressMenuAction.edit,
-            child: Text('Edit'),
+        items: [
+          OverflowMenuItem(
+            icon: Icons.edit_outlined,
+            label: 'Edit',
+            onPressed: () => _edit(context),
           ),
           if (address.isArchived)
-            const PopupMenuItem(
-              value: _AddressMenuAction.unarchive,
-              child: Text('Unarchive'),
+            OverflowMenuItem(
+              icon: Icons.unarchive_outlined,
+              label: 'Unarchive',
+              onPressed: () => _setArchived(ref, archived: false),
             )
           else
-            const PopupMenuItem(
-              value: _AddressMenuAction.archive,
-              child: Text('Archive'),
+            OverflowMenuItem(
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+              onPressed: () => _setArchived(ref, archived: true),
             ),
-          const PopupMenuItem(
-            value: _AddressMenuAction.delete,
-            child: Text('Delete'),
+          OverflowMenuItem(
+            icon: Icons.delete_outline,
+            label: 'Delete',
+            destructive: true,
+            onPressed: () => _delete(context, ref),
           ),
         ],
       ),
-      onTap: () => AddressEditRoute(
-        address.clientId,
-        address.addressId,
-        $extra: address,
-      ).push(context),
+      onTap: () => _edit(context),
     );
   }
 }

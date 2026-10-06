@@ -6,6 +6,7 @@ import '../../../core/clients/routes.dart';
 import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/utils/date_time_format.dart';
 import '../../../core/utils/money_format.dart';
+import '../../../core/widgets/overflow_menu.dart';
 import '../../../core/widgets/section_header.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
@@ -16,38 +17,30 @@ import 'widgets/challan_action.dart';
 import 'widgets/challan_history_section.dart';
 import 'widgets/follow_ups_section.dart';
 
-enum _MenuAction { openClient, cancel }
-
 class ChallanDetailPage extends ConsumerWidget {
   const ChallanDetailPage({super.key, required this.challanId});
 
   final String challanId;
 
-  Future<void> _onMenu(
+  Future<void> _cancel(
     BuildContext context,
     WidgetRef ref,
     Challan challan,
-    _MenuAction action,
   ) async {
-    switch (action) {
-      case _MenuAction.openClient:
-        ClientDetailRoute(challan.clientId).go(context);
-      case _MenuAction.cancel:
-        final choice = await showCancelChallanDialog(context, challan);
-        if (choice == null) return;
-        final cancelled = await runChallanAction(
-          ref,
-          () => ref
-              .read(challanRepositoryProvider)
-              .cancel(
-                challan.id,
-                reason: choice.reason,
-                createReturn: choice.createReturn,
-              ),
-        );
-        // A return challan locks nothing new, but the client page lists it.
-        if (cancelled) ref.read(clientsRevisionProvider.notifier).bump();
-    }
+    final choice = await showCancelChallanDialog(context, challan);
+    if (choice == null) return;
+    final cancelled = await runChallanAction(
+      ref,
+      () => ref
+          .read(challanRepositoryProvider)
+          .cancel(
+            challan.id,
+            reason: choice.reason,
+            createReturn: choice.createReturn,
+          ),
+    );
+    // A return challan locks nothing new, but the client page lists it.
+    if (cancelled) ref.read(clientsRevisionProvider.notifier).bump();
   }
 
   @override
@@ -65,6 +58,13 @@ class ChallanDetailPage extends ConsumerWidget {
         automaticallyImplyLeading: leading.implyLeading,
         actions: [
           IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            tooltip: 'Print or share PDF',
+            onPressed: challan == null
+                ? null
+                : () => ChallanPdfRoute(challan.id).push(context),
+          ),
+          IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit challan',
             onPressed: challan == null || challan.isCancelled
@@ -75,18 +75,20 @@ class ChallanDetailPage extends ConsumerWidget {
                   ).push(context),
           ),
           if (challan != null)
-            PopupMenuButton<_MenuAction>(
-              tooltip: 'More',
-              onSelected: (action) => _onMenu(context, ref, challan, action),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: _MenuAction.openClient,
-                  child: Text('Open client'),
+            OverflowMenu(
+              items: [
+                OverflowMenuItem(
+                  icon: Icons.business_outlined,
+                  label: 'Open client',
+                  onPressed: () =>
+                      ClientDetailRoute(challan.clientId).go(context),
                 ),
                 if (!challan.isCancelled)
-                  const PopupMenuItem(
-                    value: _MenuAction.cancel,
-                    child: Text('Cancel challan'),
+                  OverflowMenuItem(
+                    icon: Icons.block,
+                    label: 'Cancel challan',
+                    destructive: true,
+                    onPressed: () => _cancel(context, ref, challan),
                   ),
               ],
             ),

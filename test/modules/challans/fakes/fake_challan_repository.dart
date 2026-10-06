@@ -110,6 +110,11 @@ class FakeChallanRepository implements ChallanRepository {
   }
 
   @override
+  Future<List<Challan>> withItems(List<Challan> challans) async => [
+    for (final c in challans) _challans.firstWhere((s) => s.id == c.id),
+  ];
+
+  @override
   Future<List<String>> fetchHandledByNames() async => ['RAMESH', 'SURESH'];
 
   @override

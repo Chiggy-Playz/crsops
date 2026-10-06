@@ -69,6 +69,9 @@ abstract class ChallanRepository {
   /// most 1000.
   Future<List<Challan>> search(ChallanSearchFilters filters);
 
+  /// [challans] with their items filled in (for the detailed export).
+  Future<List<Challan>> withItems(List<Challan> challans);
+
   /// Names typed before into "Delivered by" / "Received by", most used first.
   Future<List<String>> fetchHandledByNames();
 
@@ -196,6 +199,35 @@ class SupabaseChallanRepository implements ChallanRepository {
     } catch (error) {
       throw translateException(error);
     }
+  }
+
+  @override
+  Future<List<Challan>> withItems(List<Challan> challans) async {
+    // In batches, so the id list stays well inside a request URL.
+    const batchSize = 100;
+    final itemsByChallan = <String, List<ChallanItem>>{};
+    try {
+      for (var start = 0; start < challans.length; start += batchSize) {
+        final ids = [
+          for (final c in challans.skip(start).take(batchSize)) c.id,
+        ];
+        final rows = await _from('challan_items')
+            .select()
+            .inFilter('challan_id', ids)
+            .order('position', ascending: true);
+        for (final row in rows) {
+          itemsByChallan
+              .putIfAbsent(row['challan_id'] as String, () => [])
+              .add(ChallanItemMapper.fromMap(row));
+        }
+      }
+    } catch (error) {
+      throw translateException(error);
+    }
+    return [
+      for (final c in challans)
+        c.copyWith(items: itemsByChallan[c.id] ?? const []),
+    ];
   }
 
   @override

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/layout/two_pane_layout.dart';
 import '../../../core/layout/window_size.dart';
 import '../../../core/widgets/list_action_row.dart';
+import '../../../core/widgets/menu_chip.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
 import '../models/challan_direction.dart';
@@ -31,7 +32,8 @@ bool challanMatches(Challan challan, String query) {
 }
 
 /// Full page on narrow windows; the left pane of the challans two-pane
-/// layout on wide ones, where [selectedId] is highlighted.
+/// layout on wide ones, where [selectedId] is highlighted. One financial
+/// year of one direction at a time; "Search all years" goes further.
 class ChallanListPage extends ConsumerStatefulWidget {
   const ChallanListPage({super.key, this.selectedId});
 
@@ -51,18 +53,17 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
     final year = ref.watch(selectedFinancialYearProvider);
     final years = ref.watch(financialYearsProvider(direction)).value ?? [year];
     final challansAsync = ref.watch(challanListProvider(direction, year));
+    final newLabel = 'New ${direction.label.toLowerCase()} challan';
 
-    final Widget body;
+    final Widget list;
     final challans = challansAsync.value;
     if (challansAsync.hasError) {
-      body = Center(child: Text('${challansAsync.error}'));
+      list = Center(child: Text('${challansAsync.error}'));
     } else if (challans != null) {
-      body = _buildList(challans, direction);
+      list = _buildList(challans, direction, newLabel);
     } else {
-      body = const Center(child: CircularProgressIndicator());
+      list = const Center(child: CircularProgressIndicator());
     }
-
-    final newRoute = ChallanNewRoute(direction: direction);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,39 +74,6 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
             tooltip: 'Search all years',
             onPressed: () =>
                 openInPane(context, const ChallanSearchRoute().location),
-          ),
-          if (direction == ChallanDirection.outward)
-            IconButton(
-              isSelected: _onlyNotReceived,
-              icon: const Icon(Icons.pending_actions_outlined),
-              selectedIcon: const Icon(Icons.pending_actions),
-              tooltip: _onlyNotReceived
-                  ? 'Show all'
-                  : 'Show only ones not received back',
-              onPressed: () =>
-                  setState(() => _onlyNotReceived = !_onlyNotReceived),
-            ),
-          PopupMenuButton<int>(
-            tooltip: 'Financial year',
-            initialValue: year,
-            onSelected: (picked) =>
-                ref.read(selectedFinancialYearProvider.notifier).select(picked),
-            itemBuilder: (context) => [
-              for (final option in years)
-                PopupMenuItem(
-                  value: option,
-                  child: Text(financialYearLabel(option)),
-                ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Text(financialYearLabel(year)),
-                  const Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
           ),
         ],
         bottom: PreferredSize(
@@ -140,30 +108,70 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
           ),
         ),
       ),
-      body: body,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                MenuChip<int>(
+                  icon: Icons.calendar_month_outlined,
+                  label: financialYearLabel(year),
+                  selected: year,
+                  options: [
+                    for (final option in years)
+                      MenuChipOption(option, financialYearLabel(option)),
+                  ],
+                  onSelected: (picked) => ref
+                      .read(selectedFinancialYearProvider.notifier)
+                      .select(picked),
+                ),
+                if (direction == ChallanDirection.outward)
+                  FilterChip(
+                    label: const Text('Not received'),
+                    selected: _onlyNotReceived,
+                    onSelected: (selected) =>
+                        setState(() => _onlyNotReceived = selected),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(child: list),
+        ],
+      ),
       floatingActionButton: context.isTwoPane
           ? null
           : FloatingActionButton(
               heroTag: 'add-challan',
-              tooltip: 'New ${direction.label.toLowerCase()} challan',
-              onPressed: () => newRoute.push(context),
+              tooltip: newLabel,
+              onPressed: () =>
+                  ChallanNewRoute(direction: direction).push(context),
               child: const Icon(Icons.add),
             ),
     );
   }
 
-  Widget _buildList(List<Challan> challans, ChallanDirection direction) {
+  Widget _buildList(
+    List<Challan> challans,
+    ChallanDirection direction,
+    String newLabel,
+  ) {
     final addRow = context.isTwoPane
         ? ListActionRow(
             icon: Icons.add,
-            label: 'New ${direction.label.toLowerCase()} challan',
+            label: newLabel,
             onTap: () => ChallanNewRoute(direction: direction).push(context),
           )
         : null;
 
+    final notReceivedOnly =
+        _onlyNotReceived && direction == ChallanDirection.outward;
     final matching = challans.where((c) {
-      if (_onlyNotReceived && direction == ChallanDirection.outward) {
-        if (c.receivedOn != null || c.isCancelled) return false;
+      if (notReceivedOnly && (c.receivedOn != null || c.isCancelled)) {
+        return false;
       }
       return challanMatches(c, _query);
     }).toList();
@@ -181,18 +189,18 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
       return Center(child: Text(emptyMessage));
     }
 
+    final leadingRows = [
+      ?addRow,
+      if (emptyMessage != null)
+        Padding(padding: const EdgeInsets.all(16), child: Text(emptyMessage)),
+    ];
+
+    // A builder: a year can hold a few hundred challans.
     return ListView.builder(
-      itemCount: matching.length + 2,
+      itemCount: leadingRows.length + matching.length,
       itemBuilder: (context, index) {
-        if (index == 0) return addRow ?? const SizedBox.shrink();
-        if (index == 1) {
-          if (emptyMessage == null) return const SizedBox.shrink();
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(emptyMessage),
-          );
-        }
-        final challan = matching[index - 2];
+        if (index < leadingRows.length) return leadingRows[index];
+        final challan = matching[index - leadingRows.length];
         return ChallanTile(
           challan: challan,
           selected: challan.id == widget.selectedId,

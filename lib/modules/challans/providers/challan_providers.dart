@@ -7,6 +7,7 @@ import '../financial_year.dart';
 import '../models/challan.dart';
 import '../models/challan_direction.dart';
 import '../models/challan_event.dart';
+import '../pdf/challan_pdf.dart';
 import '../repositories/challan_repository.dart';
 
 part 'challan_providers.g.dart';
@@ -107,3 +108,7 @@ Future<List<Challan>> challanSearch(Ref ref, ChallanSearchFilters filters) {
   ref.watch(clientsRevisionProvider);
   return ref.watch(challanRepositoryProvider).search(filters);
 }
+
+/// The PDF's font and CANCELLED stamp, loaded once.
+@Riverpod(keepAlive: true)
+Future<ChallanPdfAssets> challanPdfAssets(Ref ref) => ChallanPdfAssets.load();

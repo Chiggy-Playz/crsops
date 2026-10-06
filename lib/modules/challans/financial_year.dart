@@ -15,3 +15,9 @@ String financialYearLabel(int year) {
 /// How a challan is referred to everywhere: "12 / 2026-27".
 String challanNumberLabel(int number, int financialYear) =>
     '$number / ${financialYearLabel(financialYear)}';
+
+/// "26-27", as the old exports wrote it.
+String shortFinancialYearLabel(int year) {
+  String twoDigits(int y) => (y % 100).toString().padLeft(2, '0');
+  return '${twoDigits(year)}-${twoDigits(year + 1)}';
+}

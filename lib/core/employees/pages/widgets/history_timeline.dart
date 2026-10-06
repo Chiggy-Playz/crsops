@@ -8,6 +8,7 @@ import '../../../utils/money_format.dart';
 import '../../../utils/status_metadata.dart';
 import '../../../widgets/confirm_dialog.dart';
 import '../../../widgets/error_snackbar.dart';
+import '../../../widgets/overflow_menu.dart';
 import '../../models/event_type.dart';
 import '../../models/timeline_entry.dart';
 import '../../providers/employee_providers.dart';
@@ -198,9 +199,8 @@ class HistoryRow extends ConsumerWidget {
   }
 }
 
-/// Overflow menu for a history entry — M3 MenuAnchor (keyboard navigation,
-/// focus handling) rather than the older PopupMenuButton. Delete is in the
-/// error colour so it doesn't look as harmless as Edit.
+/// Overflow menu for a history entry. Delete is in the error colour so it
+/// doesn't look as harmless as Edit.
 class _EntryMenu extends StatelessWidget {
   const _EntryMenu({required this.onEdit, required this.onDelete});
 
@@ -208,33 +208,21 @@ class _EntryMenu extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    final error = Theme.of(context).colorScheme.error;
-
-    return MenuAnchor(
-      // Off by default in Flutter; turns on the M3 open/close motion.
-      animated: true,
-      menuChildren: [
-        MenuItemButton(
-          leadingIcon: const Icon(Icons.edit_outlined),
-          onPressed: onEdit,
-          child: const Text('Edit'),
-        ),
-        MenuItemButton(
-          leadingIcon: Icon(Icons.delete_outline, color: error),
-          style: MenuItemButton.styleFrom(foregroundColor: error),
-          onPressed: onDelete,
-          child: const Text('Delete'),
-        ),
-      ],
-      builder: (context, controller, _) => IconButton(
-        icon: const Icon(Icons.more_vert),
-        tooltip: 'More options',
-        onPressed: () =>
-            controller.isOpen ? controller.close() : controller.open(),
+  Widget build(BuildContext context) => OverflowMenu(
+    items: [
+      OverflowMenuItem(
+        icon: Icons.edit_outlined,
+        label: 'Edit',
+        onPressed: onEdit,
       ),
-    );
-  }
+      OverflowMenuItem(
+        icon: Icons.delete_outline,
+        label: 'Delete',
+        onPressed: onDelete,
+        destructive: true,
+      ),
+    ],
+  );
 }
 
 /// "Add event or payment" as the first History row on wide windows, opening

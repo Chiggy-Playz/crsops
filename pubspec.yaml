@@ -54,6 +54,10 @@ dependencies:
   shared_preferences: ^2.5.5
   material_color_utilities: ^0.13.0
   http: ^1.6.0
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  archive: ^4.3.0
+  share_plus: ^13.3.1
 
 dev_dependencies:
   flutter_test:
@@ -112,6 +116,9 @@ flutter:
 
   assets:
     - assets/icons/
+    # Challan PDF: Helvetica with the ₹ sign, and the CANCELLED stamp, both
+    # from the old CRS Manager app so printed challans look the same.
+    - assets/challans/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
