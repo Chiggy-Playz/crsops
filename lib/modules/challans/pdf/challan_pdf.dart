@@ -95,7 +95,7 @@ Future<Uint8List> buildChallanPdf(
     for (var pageIndex = 0; pageIndex < itemPages.length; pageIndex++) {
       document.addPage(
         pw.Page(
-          pageFormat: PdfPageFormat.a4,
+          pageFormat: _pageFormat,
           margin: const pw.EdgeInsets.all(5),
           build: (_) => _ChallanPage(
             challan: challan,
@@ -112,7 +112,11 @@ Future<Uint8List> buildChallanPdf(
   return document.save();
 }
 
-// Inside the 5-point margin an A4 page is 585 × 832.
+/// A4 as the old app's PDF library sized it: 595 × 842 exactly (the `pdf`
+/// package's A4 is 595.28 × 841.89, which shifts the right and bottom edges).
+const _pageFormat = PdfPageFormat(595, 842);
+
+// Inside the 5-point margin the page is 585 × 832.
 const _width = 585.0;
 const _height = 832.0;
 
@@ -238,7 +242,7 @@ class _ChallanPage {
               '\u{20B9}${NumberFormat('#,##,##0', 'en_IN').format(value)}/- '
               '(Rs. ${amountInWords(value)} only) inclusive of taxes.',
               pw.TextStyle(font: assets.rupeeFont, fontSize: 12),
-              width: 365,
+              width: 375,
             ),
           _text(
             50,
@@ -268,7 +272,9 @@ class _ChallanPage {
             705,
             challan.handledByName.toUpperCase(),
             _boldUnderlined,
-            width: 120,
+            // As wide as the old app allowed: a long name runs on one line,
+            // even over "Total", rather than wrapping below the box.
+            width: 200,
           ),
           if (isLastPage) ...[
             _text(450, 705, 'Total', _normal, width: 60),
@@ -286,7 +292,13 @@ class _ChallanPage {
             pw.Positioned(
               left: 0,
               top: 300,
-              child: pw.Image(assets.cancelled, width: 500, height: 300),
+              // Stretched to fill, as the old app drew it.
+              child: pw.Image(
+                assets.cancelled,
+                width: 500,
+                height: 300,
+                fit: pw.BoxFit.fill,
+              ),
             ),
         ],
       ),
@@ -298,7 +310,9 @@ class _ChallanPage {
   pw.Widget _clientBlock() {
     pw.Widget row(String text, {required bool ruled}) => pw.Container(
       width: 405,
-      padding: const pw.EdgeInsets.only(left: 28, top: 3, bottom: 2),
+      // Bottom 7: the old grid added its 5-point line spacing after the
+      // last line too.
+      padding: const pw.EdgeInsets.only(left: 28, top: 3, bottom: 7),
       decoration: ruled
           ? pw.BoxDecoration(
               border: pw.Border(bottom: pw.BorderSide(color: _black)),
@@ -320,7 +334,9 @@ class _ChallanPage {
   /// #, description (+ second line), serial, quantity. Grey header row; the
   /// item rows have only vertical lines between them.
   pw.Widget _itemsTable() {
-    const padding = pw.EdgeInsets.only(left: 5, top: 5, right: 2, bottom: 2);
+    // Measured against the old app's output: its rows were sized for the
+    // grid's 14-point font while drawing 12-point text, 2.5 points taller.
+    const padding = pw.EdgeInsets.only(left: 5, top: 5, bottom: 4.5);
 
     pw.Widget cell(String text, {bool center = false}) => pw.Padding(
       padding: padding,
@@ -365,8 +381,7 @@ class _ChallanPage {
         0: pw.FixedColumnWidth(26),
         1: pw.FixedColumnWidth(379),
         2: pw.FixedColumnWidth(100),
-        // The old grid gave this column the rest of the page (70), which ran
-        // 10 points past the border; 60 ends it on the border.
+        // The rest of the box, as the old grid gave it.
         3: pw.FixedColumnWidth(60),
       },
       border: pw.TableBorder(
@@ -411,6 +426,11 @@ class _ChallanPage {
     for (final top in boxTops) {
       box(555, top, 14, 15);
     }
+    // Stroked before the diagonal tick marks are added: viewers snap paths
+    // of only straight lines to the pixel grid, so mixing in diagonals would
+    // blur the borders.
+    canvas.strokePath();
+
     final ticked = tickedCopy;
     if (ticked != null) {
       for (final (index, top) in boxTops.indexed) {

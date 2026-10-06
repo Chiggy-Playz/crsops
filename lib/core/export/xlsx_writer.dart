@@ -3,18 +3,16 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 
-/// How a spreadsheet row looks.
+/// How a spreadsheet row looks. Plain fills only, like the old app's
+/// exports: no bold, no wrapping.
 enum XlsxRowStyle {
   plain(0),
 
-  /// Bold: column headings.
-  header(1),
+  /// Grey #E0E0E0: a group heading, like a client's name.
+  group(1),
 
-  /// Bold on grey: a group heading, like a client's name.
-  group(2),
-
-  /// Red fill: a cancelled challan.
-  highlighted(3);
+  /// Red #FF0000: a cancelled challan.
+  highlighted(2);
 
   const XlsxRowStyle(this.styleIndex);
 
@@ -40,12 +38,12 @@ class XlsxRow {
 const xlsxMimeType =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-/// A one-sheet .xlsx file of text cells. Small on purpose: an .xlsx is a zip
-/// of a few XML files, and the exports only need text, a few fills, merged
-/// group rows and column widths.
+/// A one-sheet .xlsx file of text cells, [columnCount] wide. Small on
+/// purpose: an .xlsx is a zip of a few XML files, and the exports only need
+/// text, two fills and merged group rows.
 Uint8List buildXlsx({
   required String sheetName,
-  required List<double> columnWidths,
+  required int columnCount,
   required List<XlsxRow> rows,
 }) {
   final archive = Archive();
@@ -59,7 +57,7 @@ Uint8List buildXlsx({
   add('xl/workbook.xml', _workbookXml(sheetName));
   add('xl/_rels/workbook.xml.rels', _workbookRelsXml);
   add('xl/styles.xml', _stylesXml);
-  add('xl/worksheets/sheet1.xml', _sheetXml(columnWidths, rows));
+  add('xl/worksheets/sheet1.xml', _sheetXml(columnCount, rows));
 
   return Uint8List.fromList(ZipEncoder().encode(archive));
 }
@@ -84,8 +82,7 @@ String _escape(String text) => text
     // Control characters other than tab and newline aren't allowed in XML.
     .replaceAll(RegExp(r'[\x00-\x08\x0B\x0C\x0E-\x1F]'), '');
 
-String _sheetXml(List<double> columnWidths, List<XlsxRow> rows) {
-  final columnCount = columnWidths.length;
+String _sheetXml(int columnCount, List<XlsxRow> rows) {
   final lastColumn = columnLetter(columnCount - 1);
   final sheetRows = StringBuffer();
   final merges = <String>[];
@@ -111,11 +108,6 @@ String _sheetXml(List<double> columnWidths, List<XlsxRow> rows) {
     if (row.mergeAcross) merges.add('A$rowNumber:$lastColumn$rowNumber');
   }
 
-  final columns = [
-    for (final (index, width) in columnWidths.indexed)
-      '<col min="${index + 1}" max="${index + 1}" width="$width" '
-          'customWidth="1"/>',
-  ].join();
   final mergeXml = merges.isEmpty
       ? ''
       : '<mergeCells count="${merges.length}">'
@@ -124,11 +116,7 @@ String _sheetXml(List<double> columnWidths, List<XlsxRow> rows) {
 
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
       '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-      '<sheetViews><sheetView workbookViewId="0">'
-      // Keep the heading row in view while scrolling.
-      '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
-      '</sheetView></sheetViews>'
-      '<cols>$columns</cols>'
+      '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
       '<sheetData>$sheetRows</sheetData>'
       '$mergeXml'
       '</worksheet>';
@@ -164,29 +152,24 @@ const _workbookRelsXml =
     '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
     '</Relationships>';
 
-// cellXfs, in XlsxRowStyle order: plain, header (bold), group (bold on
-// grey #E0E0E0), highlighted (red #FF0000). Wrapped, top-aligned text so
-// multi-line cells show in full.
+// cellXfs, in XlsxRowStyle order: plain, group (grey #E0E0E0), highlighted
+// (red #FF0000) — the old app's export styles.
 const _stylesXml =
     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-    '<fonts count="2">'
-    '<font><sz val="11"/><name val="Calibri"/></font>'
-    '<font><b/><sz val="11"/><name val="Calibri"/></font>'
-    '</fonts>'
+    '<fonts count="1"><font><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/></font></fonts>'
     '<fills count="4">'
     '<fill><patternFill patternType="none"/></fill>'
     '<fill><patternFill patternType="gray125"/></fill>'
-    '<fill><patternFill patternType="solid"><fgColor rgb="FFE0E0E0"/><bgColor indexed="64"/></patternFill></fill>'
-    '<fill><patternFill patternType="solid"><fgColor rgb="FFFF0000"/><bgColor indexed="64"/></patternFill></fill>'
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFE0E0E0"/><bgColor rgb="FFFFFFFF"/></patternFill></fill>'
+    '<fill><patternFill patternType="solid"><fgColor rgb="FFFF0000"/><bgColor rgb="FFFFFFFF"/></patternFill></fill>'
     '</fills>'
     '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-    '<cellXfs count="4">'
-    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>'
-    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>'
-    '<xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>'
-    '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment wrapText="1" vertical="top"/></xf>'
+    '<cellXfs count="3">'
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+    '<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1"/>'
+    '<xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/>'
     '</cellXfs>'
     '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
     '</styleSheet>';

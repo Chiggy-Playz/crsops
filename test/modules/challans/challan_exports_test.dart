@@ -39,39 +39,54 @@ final _offshoot = fakeChallan(
 );
 
 void main() {
-  test('detailed: a heading per client, a row per item, cancelled in red', () {
-    final rows = detailedExportRows([_vega1, _vega2, _offshoot]);
+  test(
+    'detailed: a heading per printed name, a row per item, cancelled red',
+    () {
+      final rows = detailedExportRows([_vega1, _vega2, _offshoot]);
 
-    expect(rows.first.style, XlsxRowStyle.header);
-    expect(rows.first.cells, [
-      'Date',
-      'Challan No.',
-      'Description',
-      'Qty',
-      'Serial',
-      'Bill No.',
-      'Additional Description',
-      'Notes',
-    ]);
-    // Offshoot sorts before Vega Corporate.
-    expect(rows[1].cells, ['Offshoot']);
-    expect(rows[1].mergeAcross, isTrue);
-    expect(rows[3].cells, ['Vega Corporate']);
-    expect(rows[4].cells, [
-      '06-10-2026',
+      expect(rows.first.style, XlsxRowStyle.plain);
+      expect(rows.first.cells, [
+        'Date',
+        'Challan No.',
+        'Description',
+        'Qty',
+        'Serial',
+        'Bill No.',
+        'Additional Description',
+        'Notes',
+      ]);
+      // Grouped by printed name; OFFSHOOT sorts before VEGA CORPORATE.
+      expect(rows[1].cells, ['OFFSHOOT']);
+      expect(rows[1].style, XlsxRowStyle.group);
+      expect(rows[1].mergeAcross, isTrue);
+      expect(rows[3].cells, ['VEGA CORPORATE']);
+      expect(rows[4].cells, [
+        '06-10-2026',
+        'Out 12 / 26-27',
+        'LAPTOP',
+        '2 SET',
+        'S1',
+        'B-7',
+        '',
+        'urgent',
+      ]);
+      // No unit: the old export still wrote "1 ".
+      expect(rows[5].cells.sublist(2, 4), ['MOUSE', '1 ']);
+      final cancelledRow = rows[6];
+      expect(cancelledRow.cells[1], 'In 3 / 26-27');
+      expect(cancelledRow.cells[5], 'NA');
+      expect(cancelledRow.style, XlsxRowStyle.highlighted);
+    },
+  );
+
+  test('detailed: outward before inward under one name, newest first', () {
+    final older = fakeChallan(id: 'd', number: 5, date: DateTime(2026, 6, 1));
+    final rows = detailedExportRows([older, _vega2, _vega1]);
+    expect(rows.skip(2).map((r) => r.cells[1]).toSet().toList(), [
       'Out 12 / 26-27',
-      'LAPTOP',
-      '2 SET',
-      'S1',
-      'B-7',
-      '',
-      'urgent',
+      'Out 5 / 26-27',
+      'In 3 / 26-27',
     ]);
-    expect(rows[5].cells[2], 'MOUSE');
-    final cancelledRow = rows[6];
-    expect(cancelledRow.cells[1], 'In 3 / 26-27');
-    expect(cancelledRow.cells[5], 'NA');
-    expect(cancelledRow.style, XlsxRowStyle.highlighted);
   });
 
   test('index: one numbered row per challan, oldest first', () {
@@ -109,7 +124,7 @@ void main() {
   test('text is escaped for XML', () {
     final bytes = buildXlsx(
       sheetName: 'S',
-      columnWidths: const [10],
+      columnCount: 1,
       rows: const [
         XlsxRow(['A & B <C> "D"']),
       ],

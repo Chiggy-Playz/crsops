@@ -87,6 +87,11 @@ begin
     raise exception 'FAIL: bad GSTIN message was: %', message;
   end if;
 
+  -- A lone \r (old Mac line break) is a line break, not deleted.
+  if core.clean_text(E'A,\rB\r\nC') <> E'A,\nB\nC' then
+    raise exception 'FAIL: line breaks not normalised: %', core.clean_text(E'A,\rB\r\nC');
+  end if;
+
   -- An unused version is edited in place.
   perform core.save_client_address(test_address_id, test_client_id, 'Main', 'ZZ TEST CLIENT', E'Line 1\nLine 2', '07', null);
   if (select count(*) from core.client_address_versions where address_id = test_address_id) <> 1 then

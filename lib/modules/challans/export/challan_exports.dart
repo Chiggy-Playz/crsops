@@ -3,12 +3,12 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 
 import '../../../core/export/xlsx_writer.dart';
-import '../challan_search.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
 
-// The two spreadsheets the old app exported from search results, with the
-// same columns and look.
+// The two spreadsheets the old app exported from search results: same
+// columns, text, order and look (checked cell by cell against the old app's
+// output for real challans).
 
 final _date = DateFormat('dd-MM-yyyy');
 
@@ -22,8 +22,32 @@ String _numberWithDirection(Challan challan) {
 String _number(Challan challan) =>
     '${challan.number} / ${shortFinancialYearLabel(challan.financialYear)}';
 
-/// Every item of every challan, one row each, under a heading row per
-/// client. Cancelled challans' rows are red. [challans] need their items.
+/// The challans grouped under their printed name, as the old export did:
+/// names in plain (case-sensitive) order; within one, outward challans then
+/// inward, each newest first (the order the old search returned them in).
+List<MapEntry<String, List<Challan>>> _byPrintedName(List<Challan> challans) {
+  int newestFirst(Challan a, Challan b) {
+    final byDate = b.challanDate.compareTo(a.challanDate);
+    if (byDate != 0) return byDate;
+    return b.number.compareTo(a.number);
+  }
+
+  final ordered = [
+    ...challans.where((c) => c.isOutward).toList()..sort(newestFirst),
+    ...challans.where((c) => !c.isOutward).toList()..sort(newestFirst),
+  ];
+  final groups = <String, List<Challan>>{};
+  for (final challan in ordered) {
+    groups.putIfAbsent(challan.nameOnChallan, () => []).add(challan);
+  }
+  return groups.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+}
+
+/// "2 SET", or "2 " with no unit — the old export always added the space.
+String _quantity(int quantity, String? unit) => '$quantity ${unit ?? ''}';
+
+/// Every item of every challan, one row each, under a grey heading row per
+/// printed name. Cancelled challans' rows are red. [challans] need items.
 List<XlsxRow> detailedExportRows(List<Challan> challans) {
   const headings = [
     'Date',
@@ -36,17 +60,17 @@ List<XlsxRow> detailedExportRows(List<Challan> challans) {
     'Notes',
   ];
   return [
-    const XlsxRow(headings, style: XlsxRowStyle.header),
-    for (final group in groupByClient(challans)) ...[
-      XlsxRow([group.clientName], style: XlsxRowStyle.group, mergeAcross: true),
-      for (final challan in group.challans)
+    const XlsxRow(headings),
+    for (final group in _byPrintedName(challans)) ...[
+      XlsxRow([group.key], style: XlsxRowStyle.group, mergeAcross: true),
+      for (final challan in group.value)
         for (final item in challan.items)
           XlsxRow(
             [
               _date.format(challan.challanDate),
               _numberWithDirection(challan),
               item.description,
-              item.quantityText,
+              _quantity(item.quantity, item.unit),
               item.serial ?? '',
               challan.billNumber ?? 'NA',
               item.additionalDescription ?? '',
@@ -69,12 +93,7 @@ List<XlsxRow> indexExportRows(List<Challan> challans) {
       return a.number.compareTo(b.number);
     });
   return [
-    const XlsxRow([
-      'S. No',
-      'Date',
-      'Challan No.',
-      'Buyer',
-    ], style: XlsxRowStyle.header),
+    const XlsxRow(['S. No', 'Date', 'Challan No.', 'Buyer']),
     for (final (index, challan) in byDate.indexed)
       XlsxRow([
         '${index + 1}',
@@ -87,12 +106,12 @@ List<XlsxRow> indexExportRows(List<Challan> challans) {
 
 Uint8List buildDetailedExport(List<Challan> challans) => buildXlsx(
   sheetName: 'Challans',
-  columnWidths: const [12, 14, 40, 10, 20, 10, 30, 30],
+  columnCount: 8,
   rows: detailedExportRows(challans),
 );
 
 Uint8List buildIndexExport(List<Challan> challans) => buildXlsx(
   sheetName: 'Index',
-  columnWidths: const [7, 12, 14, 45],
+  columnCount: 4,
   rows: indexExportRows(challans),
 );
