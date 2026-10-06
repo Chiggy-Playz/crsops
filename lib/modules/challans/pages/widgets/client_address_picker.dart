@@ -7,6 +7,9 @@ import '../../../../core/clients/models/client_address.dart';
 import '../../../../core/clients/providers/client_providers.dart';
 import '../../../../core/clients/routes.dart';
 import '../../../../core/layout/window_size.dart';
+import '../../../../core/widgets/inset_list_tile.dart';
+import '../../../../core/widgets/list_action_row.dart';
+import '../../../../core/widgets/section_header.dart';
 
 /// The client address a challan goes to, as shown in the form.
 class AddressChoice {
@@ -290,7 +293,7 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
             elevation: 3,
             color: Theme.of(context).colorScheme.surfaceContainer,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(16),
               side: BorderSide(
                 color: Theme.of(context).colorScheme.outlineVariant,
               ),
@@ -420,8 +423,10 @@ class _FullScreenSearchState extends ConsumerState<_FullScreenSearch> {
   }
 }
 
-/// The addresses grouped by client (the client's name above its first
-/// address), then "New client".
+/// The addresses grouped by client (the client's name as a heading above
+/// its first address), then "New client". Built from the same rows as the
+/// app's lists: section headings, inset rows with a rounded highlight, and
+/// the "New …" action row.
 class _OptionList extends StatelessWidget {
   const _OptionList({
     required this.options,
@@ -450,13 +455,10 @@ class _OptionList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const Divider(),
-              _OptionRow(
-                highlighted: false,
+              ListActionRow(
+                icon: Icons.add,
+                label: 'New client',
                 onTap: onNewClient,
-                child: const Row(
-                  spacing: 12,
-                  children: [Icon(Icons.add), Text('New client')],
-                ),
               ),
             ],
           );
@@ -472,88 +474,35 @@ class _OptionList extends StatelessWidget {
 
         final previous = index > 0 ? options[index - 1].choice : null;
         final startsClient = previous?.clientName != choice.clientName;
-        return _AddressOption(
-          choice: choice,
-          showClientName: startsClient,
-          highlighted: index == highlightedIndex,
-          onTap: () => onSelected(options[index]),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (startsClient)
+              SectionHeader(choice.clientName, topPadding: index == 0 ? 8 : 16),
+            _AddressRow(
+              choice: choice,
+              highlighted: index == highlightedIndex,
+              onTap: () => onSelected(options[index]),
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _AddressOption extends StatelessWidget {
-  const _AddressOption({
+/// One address: which one (label · state) and what prints. ↑/↓ highlight it
+/// like a selected list row, and scroll it into view.
+class _AddressRow extends StatelessWidget {
+  const _AddressRow({
     required this.choice,
-    required this.showClientName,
     required this.highlighted,
     required this.onTap,
   });
 
   final AddressChoice choice;
-
-  /// On the first of a client's addresses.
-  final bool showClientName;
   final bool highlighted;
   final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (showClientName)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Text(
-              choice.clientName,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ),
-        _OptionRow(
-          highlighted: highlighted,
-          onTap: onTap,
-          indent: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(choice.title, style: theme.textTheme.bodyLarge),
-              Text(
-                choice.printedSummary,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A tappable row, tinted while ↑/↓ are on it and scrolled into view.
-class _OptionRow extends StatelessWidget {
-  const _OptionRow({
-    required this.highlighted,
-    required this.onTap,
-    required this.child,
-    this.indent = false,
-  });
-
-  final bool highlighted;
-  final VoidCallback onTap;
-  final Widget child;
-
-  /// Addresses sit under their client's name.
-  final bool indent;
 
   @override
   Widget build(BuildContext context) {
@@ -565,16 +514,16 @@ class _OptionRow extends StatelessWidget {
       });
     }
 
-    final colors = Theme.of(context).colorScheme;
-    return Material(
-      color: highlighted ? colors.secondaryContainer : Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(indent ? 32 : 16, 8, 16, 8),
-          child: child,
-        ),
+    return InsetListTile(
+      leading: const Icon(Icons.place_outlined),
+      title: Text(choice.title),
+      subtitle: Text(
+        choice.printedSummary,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
+      selected: highlighted,
+      onTap: onTap,
     );
   }
 }
