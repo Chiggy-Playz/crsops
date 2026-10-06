@@ -15,6 +15,14 @@ else
   for name in "$@"; do test_files+=("${name%_test.sql}_test.sql"); done
 fi
 
+# The run is only harmless because it all ends in one rollback. A test file
+# that ends the transaction itself would make everything before it permanent,
+# on prod. (`end;` alone is fine: plpgsql blocks end with it.)
+if grep -niwE 'commit|rollback|abort|end +(transaction|work)|start +transaction' "${test_files[@]}"; then
+  echo "Refusing to run: test files must not end or start transactions (lines above)." >&2
+  exit 1
+fi
+
 run_sql=$(mktemp --suffix=.sql)
 result=$(mktemp)
 trap 'rm -f "$run_sql" "$result"' EXIT
