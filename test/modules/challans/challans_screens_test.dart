@@ -131,9 +131,7 @@ Future<_Harness> _pumpApp(WidgetTester tester, Size size) async {
 Finder _field(String label) => find.widgetWithText(TextFormField, label);
 
 void main() {
-  testWidgets('the list shows one direction, switches, and searches', (
-    tester,
-  ) async {
+  testWidgets('the list shows one direction and switches', (tester) async {
     await _pumpApp(tester, _phone);
 
     expect(find.text('Challans'), findsWidgets);
@@ -146,13 +144,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('3'), findsOneWidget);
     expect(find.text('12'), findsNothing);
-
-    await tester.tap(find.text('Outward'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(SearchBar), 'printer');
-    await tester.pumpAndSettle();
-    expect(find.text('Offshoot Agency'), findsOneWidget);
-    expect(find.text('Vega Corporate'), findsNothing);
   });
 
   testWidgets('the not-received filter hides received challans', (
@@ -179,13 +170,14 @@ void main() {
     expect(find.text('DELL LAPTOP'), findsOneWidget);
     expect(find.text('Delivered by'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Digitally signed'), 200);
+    await tester.scrollUntilVisible(find.text('Created'), 200);
+    // scrollUntilVisible stops once a row is built, which can be just past
+    // the bottom edge; this brings the switch fully into view.
+    await tester.ensureVisible(find.text('Digitally signed'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Digitally signed'));
     await tester.pumpAndSettle();
     expect(app.challans.signed['o12'], isTrue);
-
-    await tester.scrollUntilVisible(find.text('History'), 200);
-    expect(find.text('Created'), findsOneWidget);
   });
 
   testWidgets('saving an empty form shows what is missing', (tester) async {
@@ -408,7 +400,7 @@ void main() {
   testWidgets('search groups results by client', (tester) async {
     final app = await _pumpApp(tester, _wide);
 
-    await tester.tap(find.byTooltip('Search all years'));
+    await tester.tap(find.byTooltip('Search challans'));
     await tester.pumpAndSettle();
     expect(app.router.state.matchedLocation, '/challans/search');
 

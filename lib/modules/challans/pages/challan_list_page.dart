@@ -12,28 +12,10 @@ import '../providers/challan_providers.dart';
 import '../routes.dart';
 import 'widgets/challan_tile.dart';
 
-/// Whether [challan] matches a lower-cased search [query]: its number, the
-/// client, the printed name, the address label, who handled it, the first
-/// item, vehicle, bill number or notes.
-bool challanMatches(Challan challan, String query) {
-  if (query.isEmpty) return true;
-  if ('${challan.number}' == query) return true;
-  final fields = [
-    challan.clientName,
-    challan.nameOnChallan,
-    challan.addressLabel,
-    challan.handledByName,
-    challan.firstItem ?? '',
-    challan.vehicleNumber ?? '',
-    challan.billNumber ?? '',
-    challan.notes ?? '',
-  ];
-  return fields.any((field) => field.toLowerCase().contains(query));
-}
-
 /// Full page on narrow windows; the left pane of the challans two-pane
 /// layout on wide ones, where [selectedId] is highlighted. One financial
-/// year of one direction at a time; "Search all years" goes further.
+/// year of one direction at a time; searching is the search page's job
+/// (every year, more filters), one tap away.
 class ChallanListPage extends ConsumerStatefulWidget {
   const ChallanListPage({super.key, this.selectedId});
 
@@ -44,7 +26,6 @@ class ChallanListPage extends ConsumerStatefulWidget {
 }
 
 class _ChallanListPageState extends ConsumerState<ChallanListPage> {
-  String _query = '';
   bool _onlyNotReceived = false;
 
   @override
@@ -70,40 +51,29 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
         title: const Text('Challans'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.manage_search),
-            tooltip: 'Search all years',
+            icon: const Icon(Icons.search),
+            tooltip: 'Search challans',
             onPressed: () =>
                 openInPane(context, const ChallanSearchRoute().location),
           ),
         ],
         bottom: PreferredSize(
-          // 8 + 40 segmented button + 8 + 56 search bar + 8.
-          preferredSize: const Size.fromHeight(120),
+          // 8 + 40 segmented button + 8.
+          preferredSize: const Size.fromHeight(56),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Column(
-              spacing: 8,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: SegmentedButton<ChallanDirection>(
-                    segments: [
-                      for (final option in ChallanDirection.values)
-                        ButtonSegment(value: option, label: Text(option.label)),
-                    ],
-                    selected: {direction},
-                    onSelectionChanged: (picked) => ref
-                        .read(selectedDirectionProvider.notifier)
-                        .select(picked.single),
-                  ),
-                ),
-                SearchBar(
-                  hintText: 'Search number, client, item',
-                  leading: const Icon(Icons.search),
-                  onChanged: (value) =>
-                      setState(() => _query = value.trim().toLowerCase()),
-                ),
-              ],
+            child: SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<ChallanDirection>(
+                segments: [
+                  for (final option in ChallanDirection.values)
+                    ButtonSegment(value: option, label: Text(option.label)),
+                ],
+                selected: {direction},
+                onSelectionChanged: (picked) => ref
+                    .read(selectedDirectionProvider.notifier)
+                    .select(picked.single),
+              ),
             ),
           ),
         ),
@@ -170,17 +140,15 @@ class _ChallanListPageState extends ConsumerState<ChallanListPage> {
     final notReceivedOnly =
         _onlyNotReceived && direction == ChallanDirection.outward;
     final matching = challans.where((c) {
-      if (notReceivedOnly && (c.receivedOn != null || c.isCancelled)) {
-        return false;
-      }
-      return challanMatches(c, _query);
+      if (!notReceivedOnly) return true;
+      return c.receivedOn == null && !c.isCancelled;
     }).toList();
 
     final String? emptyMessage;
     if (challans.isEmpty) {
       emptyMessage = 'No ${direction.label.toLowerCase()} challans this year';
     } else if (matching.isEmpty) {
-      emptyMessage = 'No challans match';
+      emptyMessage = 'Every challan this year is received';
     } else {
       emptyMessage = null;
     }

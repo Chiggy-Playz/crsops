@@ -4,7 +4,6 @@ import 'package:crs_ops/modules/challans/history_text.dart';
 import 'package:crs_ops/modules/challans/models/challan.dart';
 import 'package:crs_ops/modules/challans/models/challan_direction.dart';
 import 'package:crs_ops/modules/challans/models/challan_event.dart';
-import 'package:crs_ops/modules/challans/pages/challan_list_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes/fake_challan_repository.dart';
@@ -110,22 +109,6 @@ void main() {
         ChallanMapper.fromMap(_overviewRow(itemCount: 1)).itemsSummary,
         'DELL LAPTOP',
       );
-    });
-  });
-
-  group('challanMatches', () {
-    final challan = ChallanMapper.fromMap(_overviewRow());
-
-    test('an exact number matches', () {
-      expect(challanMatches(challan, '12'), isTrue);
-    });
-
-    test('client, printed name, person and item match', () {
-      expect(challanMatches(challan, 'vega'), isTrue);
-      expect(challanMatches(challan, 'pvt ltd'), isTrue);
-      expect(challanMatches(challan, 'ramesh'), isTrue);
-      expect(challanMatches(challan, 'laptop'), isTrue);
-      expect(challanMatches(challan, 'printer'), isFalse);
     });
   });
 
