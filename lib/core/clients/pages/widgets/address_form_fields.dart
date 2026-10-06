@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../widgets/form_pane.dart';
 import '../../gstin.dart';
 import '../../models/indian_state.dart';
 
@@ -33,7 +34,8 @@ class AddressFormValues {
 }
 
 /// Label, name on challan, address, state and GSTIN — shared by the new
-/// client form (its first address) and the address form.
+/// client form (its first address) and the address form. Paired side by
+/// side where there's room.
 class AddressFormFields extends StatefulWidget {
   const AddressFormFields({
     super.key,
@@ -90,26 +92,28 @@ class _AddressFormFieldsState extends State<AddressFormFields> {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 16,
       children: [
-        TextFormField(
-          controller: values.label,
-          textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(
-            labelText: 'Label',
-            helperText: 'Only for you, like "Head office" or "Sector 4"',
+        FieldPair(
+          first: TextFormField(
+            controller: values.label,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Label',
+              helperText: 'Only for you, like "Head office" or "Sector 4"',
+              helperMaxLines: 2,
+            ),
+            validator: (value) =>
+                (value ?? '').trim().isEmpty ? 'Enter a label' : null,
           ),
-          validator: (value) =>
-              (value ?? '').trim().isEmpty ? 'Enter a label' : null,
+          second: TextFormField(
+            controller: values.nameOnChallan,
+            textCapitalization: TextCapitalization.characters,
+            decoration: const InputDecoration(labelText: 'Name on challan'),
+            validator: (value) =>
+                (value ?? '').trim().isEmpty ? 'Enter the name to print' : null,
+          ),
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: values.nameOnChallan,
-          textCapitalization: TextCapitalization.characters,
-          decoration: const InputDecoration(labelText: 'Name on challan'),
-          validator: (value) =>
-              (value ?? '').trim().isEmpty ? 'Enter the name to print' : null,
-        ),
-        const SizedBox(height: 16),
         TextFormField(
           controller: values.address,
           textCapitalization: TextCapitalization.characters,
@@ -120,32 +124,32 @@ class _AddressFormFieldsState extends State<AddressFormFields> {
           validator: (value) =>
               (value ?? '').trim().isEmpty ? 'Enter the address' : null,
         ),
-        const SizedBox(height: 16),
-        DropdownMenuFormField<String>(
-          initialSelection: values.stateCode,
-          dropdownMenuEntries: [
-            for (final state in widget.states)
-              DropdownMenuEntry(value: state.code, label: state.name),
-          ],
-          requestFocusOnTap: true,
-          enableFilter: true,
-          expandedInsets: EdgeInsets.zero,
-          menuHeight: 320,
-          label: const Text('State'),
-          helperText: 'Where the goods go',
-          onSelected: (code) => setState(() => values.stateCode = code),
-          validator: (code) => code == null ? 'Pick a state' : null,
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: values.gstin,
-          textCapitalization: TextCapitalization.characters,
-          decoration: InputDecoration(
-            labelText: 'GSTIN (optional)',
-            helperText: mismatch,
-            helperMaxLines: 3,
+        FieldPair(
+          first: DropdownMenuFormField<String>(
+            initialSelection: values.stateCode,
+            dropdownMenuEntries: [
+              for (final state in widget.states)
+                DropdownMenuEntry(value: state.code, label: state.name),
+            ],
+            requestFocusOnTap: true,
+            enableFilter: true,
+            expandedInsets: EdgeInsets.zero,
+            menuHeight: 320,
+            label: const Text('State'),
+            helperText: 'Where the goods go',
+            onSelected: (code) => setState(() => values.stateCode = code),
+            validator: (code) => code == null ? 'Pick a state' : null,
           ),
-          validator: validateGstin,
+          second: TextFormField(
+            controller: values.gstin,
+            textCapitalization: TextCapitalization.characters,
+            decoration: InputDecoration(
+              labelText: 'GSTIN (optional)',
+              helperText: mismatch,
+              helperMaxLines: 3,
+            ),
+            validator: validateGstin,
+          ),
         ),
       ],
     );

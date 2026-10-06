@@ -29,7 +29,8 @@ class _ClientChallansPanelState extends ConsumerState<ClientChallansPanel> {
     final newRow = ListActionRow(
       icon: Icons.add,
       label: 'New outward challan',
-      onTap: () => ChallanNewRoute(clientId: widget.clientId).push(context),
+      // The form belongs to the Challans section, so this switches to it.
+      onTap: () => ChallanNewRoute(clientId: widget.clientId).go(context),
     );
 
     return challansAsync.when(

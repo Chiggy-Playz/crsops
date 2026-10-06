@@ -18,8 +18,7 @@ RouteBase get $clientsShellRoute => ShellRouteData.$route(
       routes: [
         GoRouteData.$route(
           path: 'new',
-          hasOverriddenOnExit: false,
-          parentNavigatorKey: ClientNewRoute.$parentNavigatorKey,
+          hasOverriddenOnExit: true,
           factory: $ClientNewRoute._fromState,
         ),
         GoRouteData.$route(
@@ -29,8 +28,7 @@ RouteBase get $clientsShellRoute => ShellRouteData.$route(
           routes: [
             GoRouteData.$route(
               path: 'edit',
-              hasOverriddenOnExit: false,
-              parentNavigatorKey: ClientEditRoute.$parentNavigatorKey,
+              hasOverriddenOnExit: true,
               factory: $ClientEditRoute._fromState,
             ),
             GoRouteData.$route(

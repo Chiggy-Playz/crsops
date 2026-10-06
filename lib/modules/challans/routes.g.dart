@@ -18,8 +18,7 @@ RouteBase get $challansShellRoute => ShellRouteData.$route(
       routes: [
         GoRouteData.$route(
           path: 'new',
-          hasOverriddenOnExit: false,
-          parentNavigatorKey: ChallanNewRoute.$parentNavigatorKey,
+          hasOverriddenOnExit: true,
           factory: $ChallanNewRoute._fromState,
         ),
         GoRouteData.$route(
@@ -34,8 +33,7 @@ RouteBase get $challansShellRoute => ShellRouteData.$route(
           routes: [
             GoRouteData.$route(
               path: 'edit',
-              hasOverriddenOnExit: false,
-              parentNavigatorKey: ChallanEditRoute.$parentNavigatorKey,
+              hasOverriddenOnExit: true,
               factory: $ChallanEditRoute._fromState,
             ),
             GoRouteData.$route(

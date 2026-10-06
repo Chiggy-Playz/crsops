@@ -220,9 +220,10 @@ void main() {
     await tester.tap(find.text('Add item'));
     await tester.pumpAndSettle();
     await tester.enterText(_field('Description').last, 'Keyboard');
-    await tester.enterText(_field('Quantity').last, '3');
+    // The new row's quantity, which starts at 1.
+    await tester.enterText(_field('1').last, '3');
     await tester.pumpAndSettle();
-    expect(find.text('Items · total 4'), findsOneWidget);
+    expect(find.text('Total 4'), findsOneWidget);
 
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -255,9 +256,13 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(_field('Description').last, 'Third');
 
-    await tester.tap(find.byTooltip('Move up').last);
+    await tester.tap(find.byTooltip('Item 3 options'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Remove item 1'));
+    await tester.tap(find.text('Move up'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Item 1 options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove item'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -266,6 +271,43 @@ void main() {
       'Third',
       'Second',
     ]);
+  });
+
+  testWidgets('the form opens beside the list and asks before losing edits', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Description'), 'Mouse');
+    // The list is still there; picking a challan would lose the typing.
+    await tester.tap(find.text('12'));
+    await tester.pumpAndSettle();
+    expect(find.text('Discard changes?'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(app.router.state.matchedLocation, '/challans/new');
+    expect(find.text('Mouse'), findsOneWidget);
+
+    await tester.tap(find.text('12'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(app.router.state.matchedLocation, '/challans/o12');
+  });
+
+  testWidgets('an untouched form closes without asking', (tester) async {
+    final app = await _pumpApp(tester, _wide);
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard changes?'), findsNothing);
+    expect(app.router.state.matchedLocation, '/challans');
   });
 
   testWidgets('cancelling can bring the goods back in', (tester) async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -5,6 +7,7 @@ import '../layout/window_size.dart';
 import '../router/dialog_page.dart';
 import '../router/navigator_keys.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/form_pane.dart';
 import 'models/client.dart';
 import 'models/client_address.dart';
 import 'pages/address_edit_page.dart';
@@ -16,9 +19,10 @@ import 'pages/clients_split_layout.dart';
 part 'routes.g.dart';
 
 /// Same shape as the employees routes: list + detail as two panes on wide
-/// windows, list → detail pages on narrow ones. The forms are nested
-/// sub-routes so they can open above everything as dialogs (see the
-/// employees routes for why that needs nesting).
+/// windows, list → detail pages on narrow ones. The client form takes the
+/// right pane (a page on phones) and asks before leaving with unsaved
+/// changes; the short address forms open above everything as dialogs (see
+/// the employees routes for why those are nested sub-routes).
 @TypedShellRoute<ClientsShellRoute>(
   routes: [
     TypedGoRoute<ClientsRoute>(
@@ -70,13 +74,13 @@ class ClientsRoute extends GoRouteData with $ClientsRoute {
 class ClientNewRoute extends GoRouteData with $ClientNewRoute {
   const ClientNewRoute();
 
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      const ClientEditPage(existing: null);
 
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
-    key: state.pageKey,
-    child: const ClientEditPage(existing: null),
-  );
+  FutureOr<bool> onExit(BuildContext context, GoRouterState state) =>
+      confirmLeavingForm(context, state);
 }
 
 class ClientDetailRoute extends GoRouteData with $ClientDetailRoute {
@@ -96,17 +100,17 @@ class ClientEditRoute extends GoRouteData with $ClientEditRoute {
   final String id;
   final Client? $extra;
 
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
-
   @override
   String? redirect(BuildContext context, GoRouterState state) =>
       state.extra is Client ? null : ClientDetailRoute(id).location;
 
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
-    key: state.pageKey,
-    child: ClientEditPage(existing: $extra as Client),
-  );
+  Widget build(BuildContext context, GoRouterState state) =>
+      ClientEditPage(existing: $extra as Client);
+
+  @override
+  FutureOr<bool> onExit(BuildContext context, GoRouterState state) =>
+      confirmLeavingForm(context, state);
 }
 
 /// [$extra] is the client, so the new address can start with its name.

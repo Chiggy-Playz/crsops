@@ -8,18 +8,26 @@ class SuggestionField extends StatefulWidget {
     super.key,
     required this.controller,
     required this.suggestions,
-    required this.label,
+    this.label,
     this.helperText,
     this.validator,
     this.textCapitalization = TextCapitalization.characters,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   final TextEditingController controller;
   final List<String> suggestions;
-  final String label;
+
+  /// Null for a table cell, which its column heading names.
+  final String? label;
   final String? helperText;
   final FormFieldValidator<String>? validator;
   final TextCapitalization textCapitalization;
+  final TextInputAction? textInputAction;
+
+  /// Enter in the field, after any highlighted suggestion is picked.
+  final VoidCallback? onFieldSubmitted;
 
   @override
   State<SuggestionField> createState() => _SuggestionFieldState();
@@ -55,12 +63,16 @@ class _SuggestionFieldState extends State<SuggestionField> {
             controller: controller,
             focusNode: focusNode,
             textCapitalization: widget.textCapitalization,
+            textInputAction: widget.textInputAction,
             decoration: InputDecoration(
               labelText: widget.label,
               helperText: widget.helperText,
             ),
             validator: widget.validator,
-            onFieldSubmitted: (_) => onSubmitted(),
+            onFieldSubmitted: (_) {
+              onSubmitted();
+              widget.onFieldSubmitted?.call();
+            },
           ),
       optionsViewBuilder: (context, onSelected, options) => Align(
         alignment: Alignment.topLeft,

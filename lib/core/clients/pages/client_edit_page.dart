@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../widgets/form_dialog.dart';
+import '../../layout/window_size.dart';
+import '../../widgets/form_pane.dart';
 import '../../widgets/guarded_save.dart';
 import '../../widgets/section_header.dart';
 import '../gstin.dart';
@@ -11,8 +12,9 @@ import '../routes.dart';
 import 'widgets/address_form_fields.dart';
 
 /// New client (with its first address, since a client needs one to go on a
-/// challan) or editing a client's name and notes. Addresses are edited on
-/// their own form, from the client's page.
+/// challan) or editing a client's name and notes: the right pane on wide
+/// windows, a page on phones. Addresses are edited on their own form, from
+/// the client's page.
 class ClientEditPage extends ConsumerStatefulWidget {
   const ClientEditPage({super.key, required this.existing});
 
@@ -32,6 +34,9 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
   final _address = AddressFormValues(label: 'Main');
   bool _saving = false;
   final _formKey = GlobalKey<FormState>();
+
+  /// Anything entered since the form opened, so leaving asks first.
+  bool _changed = false;
 
   bool get _isEditing => widget.existing != null;
 
@@ -91,9 +96,12 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
       },
       onSuccess: () {
         ref.read(clientsRevisionProvider.notifier).bump();
-        Navigator.of(context).pop();
+        // Saved: nothing to ask about on the way out.
+        _changed = false;
         final createdId = newClientId;
-        if (createdId != null) {
+        if (createdId == null) {
+          Navigator.of(context).pop();
+        } else {
           ClientDetailRoute(createdId).go(context);
         }
       },
@@ -104,15 +112,23 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
   Widget build(BuildContext context) {
     final statesAsync = ref.watch(indianStatesProvider);
 
-    return FormDialog(
+    final existing = widget.existing;
+
+    return FormPane(
       title: _isEditing ? 'Edit client' : 'New client',
       formKey: _formKey,
       saving: _saving,
       onSave: _save,
+      onChanged: () => _changed = true,
+      hasUnsavedChanges: () => _changed,
+      closeLocation: existing == null
+          ? const ClientsRoute().location
+          : ClientDetailRoute(existing.id).location,
       children: [
         TextFormField(
           controller: _nameController,
-          autofocus: !FormDialog.isCompact(context),
+          // Not on phones, where it would pop the keyboard over the form.
+          autofocus: context.windowSize != WindowSize.compact,
           textCapitalization: TextCapitalization.characters,
           decoration: const InputDecoration(labelText: 'Client name'),
           validator: (value) =>

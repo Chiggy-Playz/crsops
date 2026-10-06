@@ -1,10 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout/window_size.dart';
-import '../../core/router/dialog_page.dart';
 import '../../core/router/navigator_keys.dart';
 import '../../core/widgets/empty_state.dart';
+import '../../core/widgets/form_pane.dart';
 import 'models/challan.dart';
 import 'models/challan_direction.dart';
 import 'pages/challan_detail_page.dart';
@@ -17,8 +19,8 @@ import 'pages/challans_split_layout.dart';
 part 'routes.g.dart';
 
 /// Same shape as the clients routes: list + detail as two panes on wide
-/// windows, list → detail pages on narrow ones; the form opens above
-/// everything as a dialog.
+/// windows, list → detail pages on narrow ones. The form takes the right
+/// pane (a page on phones) and asks before leaving with unsaved changes.
 @TypedShellRoute<ChallansShellRoute>(
   routes: [
     TypedGoRoute<ChallansRoute>(
@@ -79,17 +81,13 @@ class ChallanNewRoute extends GoRouteData with $ChallanNewRoute {
   final ChallanDirection direction;
   final String? clientId;
 
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
+  @override
+  Widget build(BuildContext context, GoRouterState state) =>
+      ChallanEditPage(existing: null, direction: direction, clientId: clientId);
 
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
-    key: state.pageKey,
-    child: ChallanEditPage(
-      existing: null,
-      direction: direction,
-      clientId: clientId,
-    ),
-  );
+  FutureOr<bool> onExit(BuildContext context, GoRouterState state) =>
+      confirmLeavingForm(context, state);
 }
 
 /// Right pane on wide windows, its own page on narrow ones.
@@ -117,17 +115,17 @@ class ChallanEditRoute extends GoRouteData with $ChallanEditRoute {
   final String id;
   final Challan? $extra;
 
-  static final GlobalKey<NavigatorState> $parentNavigatorKey = rootNavigatorKey;
-
   @override
   String? redirect(BuildContext context, GoRouterState state) =>
       state.extra is Challan ? null : ChallanDetailRoute(id).location;
 
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => DialogPage(
-    key: state.pageKey,
-    child: ChallanEditPage(existing: $extra as Challan),
-  );
+  Widget build(BuildContext context, GoRouterState state) =>
+      ChallanEditPage(existing: $extra as Challan);
+
+  @override
+  FutureOr<bool> onExit(BuildContext context, GoRouterState state) =>
+      confirmLeavingForm(context, state);
 }
 
 /// The PDF preview, full screen above everything. Loads the challan itself,
