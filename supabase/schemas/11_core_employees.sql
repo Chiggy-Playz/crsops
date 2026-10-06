@@ -151,6 +151,7 @@ create policy employees_select on core.employees
 create policy employees_write on core.employees
   for all using ((select core.is_admin_or_above()))
   with check ((select core.is_admin_or_above()));
+grant insert, update, delete on core.employees to authenticated;
 
 -- Structural types (with a status_effect) are superadmin-only; admins may add
 -- descriptive ones.
@@ -163,6 +164,7 @@ create policy event_types_insert on core.event_types
   );
 create policy event_types_update on core.event_types
   for update using (core.is_superadmin()) with check (core.is_superadmin());
+grant insert, update on core.event_types to authenticated;
 
 alter table core.employee_events enable row level security;
 create policy employee_events_select on core.employee_events
@@ -176,6 +178,7 @@ create policy employee_events_select on core.employee_events
 create policy employee_events_write on core.employee_events
   for all using ((select core.is_admin_or_above()))
   with check ((select core.is_admin_or_above()));
+grant insert, update, delete on core.employee_events to authenticated;
 
 alter table core.employee_ledger_entries enable row level security;
 create policy employee_ledger_entries_select on core.employee_ledger_entries
@@ -185,3 +188,4 @@ create policy employee_ledger_entries_select on core.employee_ledger_entries
   );
 create policy employee_ledger_entries_write on core.employee_ledger_entries
   for all using (core.is_admin_or_above()) with check (core.is_admin_or_above());
+grant insert, update, delete on core.employee_ledger_entries to authenticated;

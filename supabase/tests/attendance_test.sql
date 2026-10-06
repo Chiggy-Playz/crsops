@@ -142,7 +142,6 @@ declare
   admin_id uuid := tests.create_user('admin');
   staff_id uuid := tests.create_user('employee', '{attendance}');
   outsider_id uuid := tests.create_user('employee');
-  changed_rows bigint;
 begin
   insert into core.employees (name, color) values ('ZZ Other', 0) returning id into other_employee;
   update core.employees set user_id = staff_id where id = employee;
@@ -169,8 +168,8 @@ begin
   return next lives_ok(
     format($sql$ insert into attendance.attendance_days (employee_id, date, first_half_status) values (%L, '2099-01-07', 'present') $sql$, employee),
     'and can mark attendance');
-  update attendance.shift_defaults set default_start = '09:00' where effective_from = '2099-01-01';
-  get diagnostics changed_rows = row_count;
-  return next is(changed_rows, 0::bigint, 'shift rows can''t be edited, only added (even by an admin)');
+  return next throws_ok(
+    $sql$ update attendance.shift_defaults set default_start = '09:00' where effective_from = '2099-01-01' $sql$,
+    '42501', null, 'shift rows can''t be edited, only added (even by an admin)');
 end;
 $$;

@@ -126,13 +126,8 @@ alter table core.client_address_versions enable row level security;
 create policy client_address_versions_select on core.client_address_versions
   for select using (core.has_module_access('challans'));
 
--- `core` gives signed-in users insert/update/delete on new tables by default
--- (see the grant_core_schema_privileges migration). Take that back here: the
--- functions below are the only way to change these tables.
-revoke insert, update, delete on core.indian_states from authenticated;
-revoke insert, update, delete on core.clients from authenticated;
-revoke insert, update, delete on core.client_addresses from authenticated;
-revoke insert, update, delete on core.client_address_versions from authenticated;
+-- No write grants: like every core table, these are read-only for the app,
+-- and the functions below are the only way to change them.
 
 -- ── Helpers ────────────────────────────────────────────────────────────────
 

@@ -11,11 +11,11 @@ create schema if not exists core;
 -- No `anon` grants: everything in the app needs sign-in.
 grant usage on schema core to authenticated;
 
--- The default: every table, view and function created in core from here on
--- gives signed-in users full access, and row-level security narrows it.
--- Tables only functions may write (clients, …) revoke it again where they're
--- created. Careful: a new table here is writable by the app unless revoked.
-alter default privileges in schema core grant select, insert, update, delete on tables to authenticated;
+-- The default for everything created in core from here on: signed-in users
+-- can read tables and views (row-level security narrows which rows) and call
+-- functions. Writing a table is granted table by table, next to its write
+-- policy, so a new table is read-only for the app unless it says otherwise.
+alter default privileges in schema core grant select on tables to authenticated;
 alter default privileges in schema core grant execute on functions to authenticated;
 
 -- ── Sign-up allow-list ─────────────────────────────────────────────────────
@@ -199,6 +199,7 @@ create policy allowed_signup_emails_select on core.allowed_signup_emails
   for select using (core.is_superadmin());
 create policy allowed_signup_emails_write on core.allowed_signup_emails
   for all using (core.is_superadmin()) with check (core.is_superadmin());
+grant insert, update, delete on core.allowed_signup_emails to authenticated;
 
 alter table core.profiles enable row level security;
 create policy profiles_select_own_or_admin on core.profiles
@@ -213,6 +214,7 @@ create policy user_roles_select on core.user_roles
   for select using (user_id = auth.uid() or core.is_admin_or_above());
 create policy user_roles_write on core.user_roles
   for all using (core.is_superadmin()) with check (core.is_superadmin());
+grant insert, update, delete on core.user_roles to authenticated;
 
 alter table core.modules enable row level security;
 create policy modules_select_authenticated on core.modules
@@ -223,3 +225,4 @@ create policy module_access_select on core.module_access
   for select using (user_id = auth.uid() or core.is_admin_or_above());
 create policy module_access_write on core.module_access
   for all using (core.is_admin_or_above()) with check (core.is_admin_or_above());
+grant insert, update, delete on core.module_access to authenticated;

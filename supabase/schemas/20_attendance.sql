@@ -4,9 +4,10 @@
 create schema if not exists attendance;
 
 -- Row-level security decides which rows; these grants are the baseline it
--- narrows. Every table and function created here from now on gets them too.
+-- narrows. By default signed-in users can read every table created here and
+-- call every function; writing a table is granted next to its write policy.
 grant usage on schema attendance to authenticated;
-alter default privileges in schema attendance grant select, insert, update, delete on tables to authenticated;
+alter default privileges in schema attendance grant select on tables to authenticated;
 alter default privileges in schema attendance grant execute on functions to authenticated;
 
 -- ── Tables ─────────────────────────────────────────────────────────────────
@@ -240,6 +241,7 @@ create policy shift_defaults_select on attendance.shift_defaults
   for select using ((select core.has_module_access('attendance')));
 create policy shift_defaults_insert on attendance.shift_defaults
   for insert with check (core.is_admin_or_above());
+grant insert on attendance.shift_defaults to authenticated;
 
 alter table attendance.status_types enable row level security;
 create policy status_types_select on attendance.status_types
@@ -248,6 +250,7 @@ create policy status_types_insert on attendance.status_types
   for insert with check (core.is_admin_or_above());
 create policy status_types_update on attendance.status_types
   for update using (core.is_admin_or_above()) with check (core.is_admin_or_above());
+grant insert, update on attendance.status_types to authenticated;
 
 alter table attendance.attendance_days enable row level security;
 create policy attendance_days_select on attendance.attendance_days
@@ -264,3 +267,4 @@ create policy attendance_days_select on attendance.attendance_days
 create policy attendance_days_write on attendance.attendance_days
   for all using ((select core.is_admin_or_above()))
   with check ((select core.is_admin_or_above()));
+grant insert, update, delete on attendance.attendance_days to authenticated;
