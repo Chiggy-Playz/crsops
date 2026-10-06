@@ -383,7 +383,7 @@ class _ItemsCard extends StatelessWidget {
                         if (item.additionalDescription != null)
                           Text(item.additionalDescription!, style: muted),
                         if (item.serial != null)
-                          Text('Serial ${item.serial}', style: muted),
+                          Text('Serial: ${item.serial}', style: muted),
                       ],
                     ),
                   ),
