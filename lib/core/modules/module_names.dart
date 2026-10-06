@@ -5,4 +5,5 @@
 /// This is the *module registry* id, not the Postgres schema name.
 abstract final class ModuleNames {
   static const attendance = 'attendance';
+  static const challans = 'challans';
 }

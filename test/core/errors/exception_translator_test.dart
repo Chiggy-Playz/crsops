@@ -36,6 +36,16 @@ void main() {
       },
     );
 
+    test("a database function's own refusal is shown as written", () {
+      final result = translateException(
+        PostgrestException(
+          message: 'A client named "Vega" already exists.',
+          code: 'P0001',
+        ),
+      );
+      expect(result.message, 'A client named "Vega" already exists.');
+    });
+
     test('an unrecognised database error gets the generic message', () {
       final result = translateException(
         PostgrestException(message: 'something odd', code: 'XX000'),

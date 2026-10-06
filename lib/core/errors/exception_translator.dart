@@ -47,6 +47,11 @@ String friendlyDatabaseMessage(PostgrestException error) {
     // RLS hides it.
     case 'PGRST116':
       return 'That no longer exists. It may have been deleted.';
+    // raise_exception: our own database functions refusing something
+    // ("A client named … already exists."). Those messages are written for
+    // the user, so show them as they are.
+    case 'P0001':
+      return error.message;
     default:
       return 'Something went wrong. Please try again.';
   }

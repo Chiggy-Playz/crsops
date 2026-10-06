@@ -24,6 +24,7 @@ class AppSection {
     this.settingsEntries = const [],
     this.settingsRoutes = const [],
     this.roleGuards = const {},
+    this.clientPanels = const [],
   });
 
   final String label;
@@ -52,6 +53,11 @@ class AppSection {
   /// Exact location → check, for pages stricter than [canAccess].
   final Map<String, SessionCheck> roleGuards;
 
+  /// Blocks this section adds to a client's page (challans adds that
+  /// client's challans), so the core clients page can show them without
+  /// importing the module.
+  final List<ClientPanel> clientPanels;
+
   bool owns(String location) =>
       location == pathPrefix || location.startsWith('$pathPrefix/');
 }
@@ -74,4 +80,17 @@ class SettingsEntry {
   /// rather than a callback, so the hub can highlight the open page and open
   /// it the right way for the layout (pane vs pushed page).
   final String location;
+}
+
+/// A block on a client's detail page, contributed by another section.
+class ClientPanel {
+  const ClientPanel({
+    required this.title,
+    required this.canSee,
+    required this.builder,
+  });
+
+  final String title;
+  final SessionCheck canSee;
+  final Widget Function(BuildContext context, String clientId) builder;
 }
