@@ -103,8 +103,7 @@ class ChallanTile extends StatelessWidget {
       title: Text(
         titleText,
         style: challan.isCancelled ? muted : null,
-        // Items run long, so they get a second line before being cut off.
-        maxLines: showClient ? 1 : 2,
+        maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
