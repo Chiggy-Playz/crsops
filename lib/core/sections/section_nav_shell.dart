@@ -48,6 +48,19 @@ class SectionNavShell extends ConsumerWidget {
     ];
     final selected = visibleBranches.indexOf(navigationShell.currentIndex);
 
+    // Android's predictive back decides before the app hears about it
+    // whether back closes something in the app or leaves it, going by what
+    // the navigators last reported. Each section keeps its own pages, but a
+    // switch only makes the outer navigator report ("nothing to go back
+    // to"), so back on a form left open in a section would exit the app.
+    // Report what the router can really go back from, after the switch.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!context.mounted) return;
+      NavigationNotification(
+        canHandlePop: GoRouter.of(context).canPop(),
+      ).dispatch(context);
+    });
+
     return AdaptiveNavScaffold(
       destinations: [
         for (final i in visibleBranches)
