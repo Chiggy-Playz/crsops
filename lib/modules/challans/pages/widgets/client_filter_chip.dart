@@ -301,30 +301,36 @@ class _ClientFilterPanelState extends State<_ClientFilterPanel> {
           ),
         ),
         Expanded(
-          child: ListView(
-            // Its own scrolling: inside the menu, which has a scrollbar of
-            // its own on the shared controller.
-            primary: false,
-            padding: const EdgeInsets.only(bottom: 8),
-            children: [
-              if (picked.isNotEmpty) ...[
-                const SectionHeader('Picked', topPadding: 8),
-                for (final c in picked) ..._rows(c),
+          // A Material of its own: a picked row's highlight is painted by the
+          // nearest one, and the menu's would let it show above the list,
+          // over the search field, when the row is partly scrolled off.
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListView(
+              // Its own scrolling: inside the menu, which has a scrollbar of
+              // its own on the shared controller.
+              primary: false,
+              padding: const EdgeInsets.only(bottom: 8),
+              children: [
+                if (picked.isNotEmpty) ...[
+                  const SectionHeader('Picked', topPadding: 8),
+                  for (final c in picked) ..._rows(c),
+                ],
+                if (active.isNotEmpty) ...[
+                  if (picked.isNotEmpty) const SectionHeader('All clients'),
+                  for (final c in active) ..._rows(c),
+                ],
+                if (archived.isNotEmpty) ...[
+                  const SectionHeader('Archived'),
+                  for (final c in archived) ..._rows(c),
+                ],
+                if (matching.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text('No clients match'),
+                  ),
               ],
-              if (active.isNotEmpty) ...[
-                if (picked.isNotEmpty) const SectionHeader('All clients'),
-                for (final c in active) ..._rows(c),
-              ],
-              if (archived.isNotEmpty) ...[
-                const SectionHeader('Archived'),
-                for (final c in archived) ..._rows(c),
-              ],
-              if (matching.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('No clients match'),
-                ),
-            ],
+            ),
           ),
         ),
       ],
