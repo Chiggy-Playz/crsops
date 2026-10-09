@@ -304,6 +304,7 @@ class _Results extends StatelessWidget {
             showDirection: mixed,
             showClient: false,
             showAddress: group.spansAddresses,
+            showYear: true,
             selected: challan.id == selectedId,
             onTap: () {
               final location = ChallanDetailRoute(challan.id).location;

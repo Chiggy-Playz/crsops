@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/widgets/inset_list_tile.dart';
 import '../../../../core/utils/date_time_format.dart';
+import '../../financial_year.dart';
 import '../../models/challan.dart';
 
 /// A challan in a list: its number, who it's for, the date and what's on it,
@@ -17,6 +18,7 @@ class ChallanTile extends StatelessWidget {
     this.showDirection = false,
     this.showClient = true,
     this.showAddress = false,
+    this.showYear = false,
   });
 
   final Challan challan;
@@ -33,6 +35,10 @@ class ChallanTile extends StatelessWidget {
   /// With [showClient] false: add which of the client's addresses it went to
   /// (for a client whose challans span several).
   final bool showAddress;
+
+  /// The financial year ("25-26") under the number, for lists that span
+  /// years, where the same number turns up in each (a search).
+  final bool showYear;
 
   @override
   Widget build(BuildContext context) {
@@ -72,12 +78,26 @@ class ChallanTile extends StatelessWidget {
     return InsetListTile(
       leading: SizedBox(
         width: 48,
-        child: Text(
-          '${challan.number}',
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleMedium?.copyWith(
-            decoration: challan.isCancelled ? TextDecoration.lineThrough : null,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${challan.number}',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                decoration: challan.isCancelled
+                    ? TextDecoration.lineThrough
+                    : null,
+              ),
+            ),
+            if (showYear)
+              Text(
+                shortFinancialYearLabel(challan.financialYear),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+          ],
         ),
       ),
       title: Text(
