@@ -47,11 +47,13 @@ class ChallanSearchFilters with ChallanSearchFiltersMappable {
 /// with challans to several of its addresses, one address's.
 class ClientChallans {
   const ClientChallans({
+    required this.clientId,
     required this.clientName,
     required this.challans,
     this.addressLabel,
   });
 
+  final String clientId;
   final String clientName;
 
   /// Set when the client's results are split by address.
@@ -86,7 +88,11 @@ List<ClientChallans> groupByClient(List<Challan> challans) {
     }
     if (byAddress.length == 1) {
       groups.add(
-        ClientChallans(clientName: names[id]!, challans: clientChallans),
+        ClientChallans(
+          clientId: id,
+          clientName: names[id]!,
+          challans: clientChallans,
+        ),
       );
       continue;
     }
@@ -97,6 +103,7 @@ List<ClientChallans> groupByClient(List<Challan> challans) {
     for (final addressId in addressIds) {
       groups.add(
         ClientChallans(
+          clientId: id,
           clientName: names[id]!,
           addressLabel: labels[addressId],
           challans: byAddress[addressId]!,

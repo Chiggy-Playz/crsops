@@ -426,7 +426,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(app.challans.searches.last.text, 'printer');
-    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+    expect(find.text('HP PRINTER'), findsOneWidget);
 
     await tester.tap(find.text('Any direction'));
     await tester.pumpAndSettle();
@@ -463,14 +463,14 @@ void main() {
     await tester.enterText(box, 'printer');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
-    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+    expect(find.text('HP PRINTER'), findsOneWidget);
 
     // Opening a result: the challan on the right, the results still on the left.
-    await tester.tap(find.text('Offshoot Agency').last);
+    await tester.tap(find.text('HP PRINTER').last);
     await tester.pumpAndSettle();
     expect(app.router.state.matchedLocation, '/challans/o11');
-    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
-    expect(find.text('Outward challan'), findsNothing);
+    // Its row on the left, and its item on the right.
+    expect(find.text('HP PRINTER'), findsNWidgets(2));
     expect(
       tester.widget<TextField>(box).controller?.text,
       'printer',
@@ -481,13 +481,13 @@ void main() {
     await tester.tap(find.byTooltip('Close').last);
     await tester.pumpAndSettle();
     expect(app.router.state.matchedLocation, '/challans');
-    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+    expect(find.text('HP PRINTER'), findsOneWidget);
 
     // Back leaves the search and shows the list again.
     await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(find.text('New outward challan'), findsOneWidget);
-    expect(find.text('Offshoot Agency · 1'), findsNothing);
+    expect(find.text('HP PRINTER'), findsNothing);
   });
 
   testWidgets('the client filter can pick single addresses', (tester) async {

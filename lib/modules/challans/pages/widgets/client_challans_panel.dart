@@ -57,6 +57,8 @@ class _ClientChallansPanelState extends ConsumerState<ClientChallansPanel> {
               ChallanTile(
                 challan: challan,
                 showDirection: true,
+                showClient: false,
+                showAddress: true,
                 onTap: () => ChallanDetailRoute(challan.id).go(context),
               ),
             if (shown.length < challans.length)

@@ -11,7 +11,6 @@ import '../../../core/utils/share_file.dart';
 import '../../../core/widgets/guarded_save.dart';
 import '../../../core/widgets/menu_chip.dart';
 import '../../../core/widgets/overflow_menu.dart';
-import '../../../core/widgets/section_header.dart';
 import '../challan_search.dart';
 import '../export/challan_exports.dart';
 import '../models/challan.dart';
@@ -269,15 +268,6 @@ class _Message extends StatelessWidget {
   );
 }
 
-/// "CLIENT · 3", or "CLIENT · Sector 5 · 3" when the client's results are
-/// split by address.
-String _groupHeading(ClientChallans group) {
-  final count = group.challans.length;
-  final label = group.addressLabel;
-  if (label == null) return '${group.clientName} · $count';
-  return '${group.clientName} · $label · $count';
-}
-
 /// The results grouped by client (and by address, for a client with
 /// challans to several), newest first within each.
 class _Results extends StatelessWidget {
@@ -300,6 +290,51 @@ class _Results extends StatelessWidget {
   Widget build(BuildContext context) {
     if (challans.isEmpty) return const _Message('No challans match');
 
+    final groups = groupByClient(challans);
+    final perClient = <String, int>{};
+    for (final group in groups) {
+      perClient[group.clientId] =
+          (perClient[group.clientId] ?? 0) + group.challans.length;
+    }
+
+    // Each client once, as a heading; its addresses, when the results span
+    // several, as quieter sub-headings. The rows then only say what differs.
+    String? previousClientId;
+    final rows = <Widget>[];
+    for (final group in groups) {
+      if (group.clientId != previousClientId) {
+        previousClientId = group.clientId;
+        rows.add(
+          _ClientHeading(
+            name: group.clientName,
+            count: perClient[group.clientId]!,
+          ),
+        );
+      }
+      final label = group.addressLabel;
+      if (label != null) {
+        rows.add(_AddressHeading(label: label, count: group.challans.length));
+      }
+      for (final challan in group.challans) {
+        rows.add(
+          ChallanTile(
+            challan: challan,
+            showDirection: true,
+            showClient: false,
+            selected: challan.id == selectedId,
+            onTap: () {
+              final location = ChallanDetailRoute(challan.id).location;
+              if (inListPane) {
+                context.go(location);
+              } else {
+                context.push(location);
+              }
+            },
+          ),
+        );
+      }
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -307,24 +342,83 @@ class _Results extends StatelessWidget {
           const _Message(
             'Showing the newest 1000. Narrow the search to see older ones.',
           ),
-        for (final group in groupByClient(challans)) ...[
-          SectionHeader(_groupHeading(group)),
-          for (final challan in group.challans)
-            ChallanTile(
-              challan: challan,
-              showDirection: true,
-              selected: challan.id == selectedId,
-              onTap: () {
-                final location = ChallanDetailRoute(challan.id).location;
-                if (inListPane) {
-                  context.go(location);
-                } else {
-                  context.push(location);
-                }
-              },
-            ),
-        ],
+        ...rows,
       ],
+    );
+  }
+}
+
+/// A client's name, on one line, with how many of its challans matched.
+class _ClientHeading extends StatelessWidget {
+  const _ClientHeading({required this.name, required this.count});
+
+  final String name;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+      child: Semantics(
+        header: true,
+        child: Row(
+          spacing: 8,
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            Text(
+              '$count',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One address of the client above, when its results span several.
+class _AddressHeading extends StatelessWidget {
+  const _AddressHeading({required this.label, required this.count});
+
+  final String label;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Row(
+        spacing: 6,
+        children: [
+          Icon(Icons.place_outlined, size: 16, color: muted),
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(color: muted),
+            ),
+          ),
+          Text(
+            '$count',
+            style: theme.textTheme.labelMedium?.copyWith(color: muted),
+          ),
+        ],
+      ),
     );
   }
 }
