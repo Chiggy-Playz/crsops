@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../utils/status_metadata.dart';
 
@@ -8,15 +9,21 @@ import '../utils/status_metadata.dart';
 /// "+ Add 'whatever was typed'", so creating a new value is a visible choice
 /// rather than a silent side effect of a typo.
 ///
-/// [options] are stored values (ids/slugs), shown via [displayLabel].
-/// [onChanged] reports the current value on every change: the stored option
-/// when the text matches one, otherwise the typed text (a new value).
+/// [options] are stored values, shown via [labelFor]: by default
+/// [displayLabel], for ids/slugs like "paid_leave"; [plainText] for values
+/// that are already what people typed (names, units). [onChanged] reports the
+/// current value on every change: the stored option when the text matches
+/// one, otherwise the typed text (a new value).
 class CreatableDropdownField extends StatefulWidget {
   const CreatableDropdownField({
     super.key,
     required this.options,
-    required this.label,
-    required this.onChanged,
+    this.label,
+    this.onChanged,
+    this.controller,
+    this.labelFor = displayLabel,
+    this.dense = false,
+    this.onEnter,
     this.initialValue,
     this.fieldKey,
     this.helperText,
@@ -24,9 +31,25 @@ class CreatableDropdownField extends StatefulWidget {
     this.autofocus = false,
   });
 
+  /// For [labelFor]: show values exactly as stored.
+  static String plainText(String value) => value;
+
   final List<String> options;
-  final String label;
-  final ValueChanged<String> onChanged;
+
+  /// Null in a table cell, where the column heading names the field.
+  final String? label;
+  final ValueChanged<String>? onChanged;
+
+  /// The text, when the form keeps its own controller (then [initialValue]
+  /// is ignored, and the controller is the form's to dispose).
+  final TextEditingController? controller;
+  final String Function(String value) labelFor;
+
+  /// Compact, for a row of a table.
+  final bool dense;
+
+  /// Enter pressed in the field (after the menu's own handling of it).
+  final VoidCallback? onEnter;
   final String? initialValue;
   final Key? fieldKey;
   final String? helperText;
@@ -40,10 +63,28 @@ class CreatableDropdownField extends StatefulWidget {
 }
 
 class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
-  late final _controller = TextEditingController(
-    text: widget.initialValue == null ? '' : displayLabel(widget.initialValue!),
-  );
-  final _focusNode = FocusNode();
+  late final TextEditingController _controller =
+      widget.controller ??
+      TextEditingController(
+        text: widget.initialValue == null
+            ? ''
+            : widget.labelFor(widget.initialValue!),
+      );
+  late final _focusNode = FocusNode(onKeyEvent: _onKeyEvent);
+
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    final onEnter = widget.onEnter;
+    final isEnter =
+        event.logicalKey == LogicalKeyboardKey.enter ||
+        event.logicalKey == LogicalKeyboardKey.numpadEnter;
+    if (onEnter != null && event is KeyDownEvent && isEnter) {
+      // After the menu has taken the highlighted entry.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) onEnter();
+      });
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
   void initState() {
@@ -58,7 +99,8 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller.removeListener(_onTextChanged);
+    if (widget.controller == null) _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }
@@ -69,7 +111,7 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
   String? get _matchingOption {
     final query = _text.toLowerCase();
     for (final option in widget.options) {
-      if (displayLabel(option).toLowerCase() == query) return option;
+      if (widget.labelFor(option).toLowerCase() == query) return option;
     }
     return null;
   }
@@ -77,7 +119,7 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
   String get _value => _matchingOption ?? _text;
 
   void _onTextChanged() {
-    widget.onChanged(_value);
+    widget.onChanged?.call(_value);
     setState(() {}); // re-filter the entries
   }
 
@@ -87,8 +129,9 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
     final query = _text.toLowerCase();
     final matches = [
       for (final option in widget.options)
-        if (query.isEmpty || displayLabel(option).toLowerCase().contains(query))
-          DropdownMenuEntry(value: option, label: displayLabel(option)),
+        if (query.isEmpty ||
+            widget.labelFor(option).toLowerCase().contains(query))
+          DropdownMenuEntry(value: option, label: widget.labelFor(option)),
     ];
     if (_text.isNotEmpty && _matchingOption == null) {
       matches.add(
@@ -106,7 +149,12 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
 
   @override
   Widget build(BuildContext context) {
+    final label = widget.label;
+    final theme = Theme.of(context);
     return DropdownMenuFormField<String>(
+      inputDecorationTheme: widget.dense
+          ? theme.inputDecorationTheme.copyWith(isDense: true)
+          : null,
       key: widget.fieldKey,
       controller: _controller,
       focusNode: _focusNode,
@@ -115,7 +163,7 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
       enableSearch: true,
       expandedInsets: EdgeInsets.zero,
       menuHeight: 320,
-      label: Text(widget.label),
+      label: label == null ? null : Text(label),
       helperText: widget.helperText,
       validator: widget.validator == null
           ? null

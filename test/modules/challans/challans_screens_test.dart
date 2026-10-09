@@ -197,7 +197,10 @@ void main() {
     await tester.tap(find.text('Main · Delhi'));
     await tester.pumpAndSettle();
 
-    await tester.enterText(_field('Delivered by'), 'Ramesh');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Delivered by'),
+      'Ramesh',
+    );
     await tester.enterText(_field('Description'), 'Mouse');
     await tester.tap(find.text('Add item'));
     await tester.pumpAndSettle();
@@ -229,7 +232,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Main · Delhi'));
     await tester.pumpAndSettle();
-    await tester.enterText(_field('Delivered by'), 'Ramesh');
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Delivered by'),
+      'Ramesh',
+    );
     await tester.enterText(_field('Description'), 'First');
     await tester.tap(find.text('Add item'));
     await tester.pumpAndSettle();

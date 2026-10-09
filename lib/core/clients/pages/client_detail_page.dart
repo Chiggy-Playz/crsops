@@ -10,6 +10,7 @@ import '../../widgets/guarded_save.dart';
 import '../../widgets/inset_list_tile.dart';
 import '../../widgets/overflow_menu.dart';
 import '../../widgets/section_card.dart';
+import '../../widgets/status_pill.dart';
 import '../models/client.dart';
 import '../models/client_address.dart';
 import '../providers/client_providers.dart';
@@ -222,29 +223,11 @@ class _Header extends StatelessWidget {
                 ),
               ),
               if (client.isArchived)
-                Container(
-                  padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    spacing: 6,
-                    children: [
-                      Icon(
-                        Icons.archive_outlined,
-                        size: 18,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      Text(
-                        'Archived',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
+                StatusPill(
+                  label: 'Archived',
+                  icon: Icons.archive_outlined,
+                  background: scheme.surfaceContainerHighest,
+                  foreground: scheme.onSurfaceVariant,
                 ),
             ],
           ),

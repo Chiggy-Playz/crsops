@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../../core/widgets/overflow_menu.dart';
 import '../../models/challan_item.dart';
-import 'suggestion_field.dart';
+import '../../../../core/widgets/creatable_dropdown_field.dart';
 
 /// The text controllers behind one item in the challan form.
 class ItemFormValues {
@@ -355,12 +355,13 @@ class _ItemRow extends StatelessWidget {
       decoration: _decoration('Qty'),
       validator: _validateQuantity,
     );
-    final unit = SuggestionField(
+    final unit = CreatableDropdownField(
       controller: values.unit,
-      suggestions: units,
+      options: units,
+      labelFor: CreatableDropdownField.plainText,
       label: asTable ? null : 'Unit',
-      textInputAction: isLast ? TextInputAction.done : TextInputAction.next,
-      onFieldSubmitted: isLast ? onSubmittedLast : null,
+      dense: asTable,
+      onEnter: isLast ? onSubmittedLast : null,
     );
     final number = SizedBox(
       width: asTable ? _numberWidth : 24,

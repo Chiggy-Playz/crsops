@@ -16,7 +16,7 @@ import '../repositories/challan_repository.dart';
 import '../routes.dart';
 import 'widgets/client_address_picker.dart';
 import 'widgets/items_editor.dart';
-import 'widgets/suggestion_field.dart';
+import '../../../core/widgets/creatable_dropdown_field.dart';
 
 /// New challan, or editing one: the right pane on wide windows, a page on
 /// phones. The number is given by the database on save; direction and date
@@ -256,9 +256,10 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
             ),
           ),
         FieldPair(
-          first: SuggestionField(
+          first: CreatableDropdownField(
             controller: _handledBy,
-            suggestions: names,
+            options: names,
+            labelFor: CreatableDropdownField.plainText,
             label: _direction.handledByLabel,
             validator: (value) =>
                 (value ?? '').trim().isEmpty ? 'Enter a name' : null,

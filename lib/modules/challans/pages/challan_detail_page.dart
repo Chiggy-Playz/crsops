@@ -8,6 +8,7 @@ import '../../../core/utils/date_time_format.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/overflow_menu.dart';
 import '../../../core/widgets/section_card.dart';
+import '../../../core/widgets/status_pill.dart';
 import '../financial_year.dart';
 import '../models/challan.dart';
 import '../providers/challan_providers.dart';
@@ -157,7 +158,7 @@ class _Header extends StatelessWidget {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-              ?_StatusBadge.of(context, challan),
+              ?_statusPill(context, challan),
             ],
           ),
           if (challan.isCancelled && cancelReason != null)
@@ -169,70 +170,33 @@ class _Header extends StatelessWidget {
 }
 
 /// Where the challan stands, at a glance: cancelled, or for an outward
-/// challan whether the signed copy is back.
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.label,
-    required this.icon,
-    required this.background,
-    required this.foreground,
-  });
-
-  final String label;
-  final IconData icon;
-  final Color background;
-  final Color foreground;
-
-  static Widget? of(BuildContext context, Challan challan) {
-    final scheme = Theme.of(context).colorScheme;
-    final receivedOn = challan.receivedOn;
-    if (challan.isCancelled) {
-      return _StatusBadge(
-        label: 'Cancelled',
-        icon: Icons.block,
-        background: scheme.errorContainer,
-        foreground: scheme.onErrorContainer,
-      );
-    }
-    if (!challan.isOutward) return null;
-    if (receivedOn != null) {
-      return _StatusBadge(
-        label: 'Received ${formatDisplayDate(receivedOn)}',
-        icon: Icons.task_alt,
-        background: scheme.primaryContainer,
-        foreground: scheme.onPrimaryContainer,
-      );
-    }
-    return _StatusBadge(
-      label: 'Not received yet',
-      icon: Icons.pending_actions,
-      background: scheme.tertiaryContainer,
-      foreground: scheme.onTertiaryContainer,
+/// challan whether the signed copy is back. Null for a live inward challan.
+StatusPill? _statusPill(BuildContext context, Challan challan) {
+  final scheme = Theme.of(context).colorScheme;
+  final receivedOn = challan.receivedOn;
+  if (challan.isCancelled) {
+    return StatusPill(
+      label: 'Cancelled',
+      icon: Icons.block,
+      background: scheme.errorContainer,
+      foreground: scheme.onErrorContainer,
     );
   }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 4, 12, 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 6,
-        children: [
-          Icon(icon, size: 18, color: foreground),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelLarge
-                ?.copyWith(color: foreground),
-          ),
-        ],
-      ),
+  if (!challan.isOutward) return null;
+  if (receivedOn != null) {
+    return StatusPill(
+      label: 'Received ${formatDisplayDate(receivedOn)}',
+      icon: Icons.task_alt,
+      background: scheme.primaryContainer,
+      foreground: scheme.onPrimaryContainer,
     );
   }
+  return StatusPill(
+    label: 'Not received yet',
+    icon: Icons.pending_actions,
+    background: scheme.tertiaryContainer,
+    foreground: scheme.onTertiaryContainer,
+  );
 }
 
 /// The challan linked to this one by a cancellation, as a row that opens it.
