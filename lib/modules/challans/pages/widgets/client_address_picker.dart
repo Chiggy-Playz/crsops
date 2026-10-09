@@ -184,6 +184,15 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
   /// before the form passes the new [widget.value] down.
   late AddressChoice? _picked = widget.value;
 
+  /// Whether the list is showing. Flutter's autocomplete doesn't say, so
+  /// it's tracked: it opens on focus and typing, and closes on Esc, a pick or
+  /// focus leaving.
+  bool _listOpen = false;
+
+  /// Whether the field already had focus when a click landed on it: such a
+  /// click toggles the list, as a dropdown's does.
+  bool _focusedAtPointerDown = false;
+
   @override
   void didUpdateWidget(_TypeAheadField oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -207,6 +216,7 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
   /// In: select the name, so typing searches afresh. Out without picking:
   /// put the picked client's name back.
   void _onFocusChange() {
+    _listOpen = _focusNode.hasFocus;
     if (_focusNode.hasFocus) {
       _controller.selection = TextSelection(
         baseOffset: 0,
@@ -214,6 +224,20 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
       );
     } else {
       _controller.text = _picked?.clientName ?? '';
+    }
+  }
+
+  /// A click on the already-focused field: close the list if it's open,
+  /// open it again if it isn't.
+  void _onFieldTap() {
+    if (!_focusedAtPointerDown) return;
+    final fieldContext = _focusNode.context;
+    if (fieldContext == null) return;
+    if (_listOpen) {
+      Actions.maybeInvoke(fieldContext, const DismissIntent());
+    } else {
+      _listOpen = true;
+      Actions.maybeInvoke(fieldContext, const AutocompleteFirstOptionIntent());
     }
   }
 
@@ -230,6 +254,7 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
     final choice = option.choice;
     if (choice == null) return;
     _picked = choice;
+    _listOpen = false;
     widget.onPicked(choice);
     // On to the next field, which also closes the list.
     _focusNode.nextFocus();
@@ -243,6 +268,7 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
   /// Typing changes the matches; the highlight goes back to the first, as
   /// Flutter's autocomplete would otherwise keep its old position.
   void _highlightFirstMatch() {
+    _listOpen = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final fieldContext = _focusNode.context;
       if (fieldContext == null) return;
@@ -265,25 +291,44 @@ class _TypeAheadFieldState extends ConsumerState<_TypeAheadField> {
         displayStringForOption: (option) =>
             option.choice?.clientName ?? _controller.text,
         onSelected: _onSelected,
+        // The Builder's context sits inside the autocomplete's own actions,
+        // so Esc (DismissIntent) still reaches it after being noted here.
         fieldViewBuilder: (context, controller, focusNode, onSubmitted) =>
-            TextField(
-              controller: controller,
-              focusNode: focusNode,
-              textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
-                labelText: 'Client',
-                hintText: 'Type to search clients',
-                errorText: widget.errorText,
-                helper: _pickedDetails(context, widget.value),
-                suffixIcon: const Icon(Icons.arrow_drop_down),
+            Builder(
+              builder: (autocompleteContext) => Actions(
+                actions: {
+                  DismissIntent: CallbackAction<DismissIntent>(
+                    onInvoke: (intent) {
+                      _listOpen = false;
+                      return Actions.invoke(autocompleteContext, intent);
+                    },
+                  ),
+                },
+                child: Listener(
+                  onPointerDown: (_) =>
+                      _focusedAtPointerDown = _focusNode.hasFocus,
+                  child: TextField(
+                    controller: controller,
+                    focusNode: focusNode,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'Client',
+                      hintText: 'Type to search clients',
+                      errorText: widget.errorText,
+                      helper: _pickedDetails(context, widget.value),
+                      suffixIcon: const Icon(Icons.arrow_drop_down),
+                    ),
+                    onTap: _onFieldTap,
+                    onChanged: (_) => _highlightFirstMatch(),
+                    onSubmitted: (_) => onSubmitted(),
+                    // Enter picks the highlighted address, and the pick moves on
+                    // to the next field; the keyboard's own Enter handling would
+                    // drop focus first.
+                    textInputAction: TextInputAction.next,
+                    onEditingComplete: () {},
+                  ),
+                ),
               ),
-              onChanged: (_) => _highlightFirstMatch(),
-              onSubmitted: (_) => onSubmitted(),
-              // Enter picks the highlighted address, and the pick moves on
-              // to the next field; the keyboard's own Enter handling would
-              // drop focus first.
-              textInputAction: TextInputAction.next,
-              onEditingComplete: () {},
             ),
         optionsViewBuilder: (context, onSelected, options) => Align(
           alignment: Alignment.topLeft,

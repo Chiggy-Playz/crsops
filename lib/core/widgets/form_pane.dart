@@ -167,7 +167,6 @@ class _FormPaneState extends State<FormPane> {
       bindings: {
         const SingleActivator(LogicalKeyboardKey.enter, control: true): _save,
         const SingleActivator(LogicalKeyboardKey.enter, meta: true): _save,
-        const SingleActivator(LogicalKeyboardKey.escape): _close,
       },
       child: Scaffold(
         appBar: AppBar(
@@ -180,33 +179,52 @@ class _FormPaneState extends State<FormPane> {
             ),
           ],
         ),
-        body: Form(
-          key: widget.formKey,
-          onChanged: widget.onChanged,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 32),
-            children: [
-              MaxWidthBox(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (description != null) ...[
-                      Text(
-                        description,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    for (final (i, child) in widget.children.indexed) ...[
-                      if (i > 0) const SizedBox(height: 16),
-                      child,
-                    ],
-                  ],
-                ),
+        // Esc is the app's standard "dismiss", handled innermost first: an
+        // open dropdown or menu closes itself, and only an Esc with nothing
+        // open reaches here and closes the form. Inside the Scaffold, whose
+        // own (drawer) dismiss would otherwise stop it. The focus scope
+        // keeps focus within the form when nothing in it is focused, or a
+        // click on empty space unfocuses a field, so Esc still gets here.
+        body: Actions(
+          actions: {
+            DismissIntent: CallbackAction<DismissIntent>(
+              onInvoke: (_) {
+                _close();
+                return null;
+              },
+            ),
+          },
+          child: FocusScope(
+            autofocus: true,
+            child: Form(
+              key: widget.formKey,
+              onChanged: widget.onChanged,
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(sidePadding, 8, sidePadding, 32),
+                children: [
+                  MaxWidthBox(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (description != null) ...[
+                          Text(
+                            description,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        for (final (i, child) in widget.children.indexed) ...[
+                          if (i > 0) const SizedBox(height: 16),
+                          child,
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

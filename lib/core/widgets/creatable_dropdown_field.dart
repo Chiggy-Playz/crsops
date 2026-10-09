@@ -71,8 +71,19 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
             : widget.labelFor(widget.initialValue!),
       );
   late final _focusNode = FocusNode(onKeyEvent: _onKeyEvent);
+  final _menuController = MenuController();
 
   KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    // Esc with the menu closed is for whatever holds this field (a form
+    // closing): the dropdown's own dismiss is off then, but would still stop
+    // it on the way up.
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape &&
+        !_menuController.isOpen) {
+      Actions.maybeInvoke(context, const DismissIntent());
+      return KeyEventResult.handled;
+    }
+
     final onEnter = widget.onEnter;
     final isEnter =
         event.logicalKey == LogicalKeyboardKey.enter ||
@@ -158,6 +169,7 @@ class _CreatableDropdownFieldState extends State<CreatableDropdownField> {
       key: widget.fieldKey,
       controller: _controller,
       focusNode: _focusNode,
+      menuController: _menuController,
       dropdownMenuEntries: _entries,
       requestFocusOnTap: true,
       enableSearch: true,
