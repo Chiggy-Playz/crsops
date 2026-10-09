@@ -46,8 +46,7 @@ class ClientFilterChip extends StatefulWidget {
 }
 
 class _ClientFilterChipState extends State<ClientFilterChip> {
-  final _overlay = OverlayPortalController();
-  final _link = LayerLink();
+  final _menu = MenuController();
 
   /// "All clients", "VEGA", "OFFSHOOT · Sector 5", "VEGA + 2 more".
   String get _label {
@@ -69,7 +68,11 @@ class _ClientFilterChipState extends State<ClientFilterChip> {
 
   Future<void> _open() async {
     if (context.windowSize != WindowSize.compact) {
-      _overlay.toggle();
+      if (_menu.isOpen) {
+        _menu.close();
+      } else {
+        _menu.open();
+      }
       return;
     }
     await showModalBottomSheet<void>(
@@ -90,67 +93,40 @@ class _ClientFilterChipState extends State<ClientFilterChip> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final height = math.min(400.0, MediaQuery.sizeOf(context).height * 0.6);
 
-    final chip = InputChip(
-      avatar: const Icon(Icons.business_outlined, size: 18),
-      label: Text(_label),
-      selected: !widget.value.isEmpty,
-      showCheckmark: false,
-      onPressed: _open,
-      onDeleted: widget.value.isEmpty
-          ? null
-          : () => widget.onChanged(const ClientFilter()),
-    );
-
-    return CompositedTransformTarget(
-      link: _link,
-      child: OverlayPortal(
-        controller: _overlay,
-        overlayChildBuilder: (overlayContext) {
-          final screen = MediaQuery.sizeOf(overlayContext);
-          return CompositedTransformFollower(
-            link: _link,
-            targetAnchor: Alignment.bottomLeft,
-            offset: const Offset(0, 4),
-            child: Align(
-              alignment: Alignment.topLeft,
-              // The chip and the list count as one: clicking the chip again
-              // closes it rather than closing and reopening.
-              child: TapRegion(
-                groupId: _link,
-                onTapOutside: (_) => _overlay.hide(),
-                child: Actions(
-                  actions: {
-                    DismissIntent: CallbackAction<DismissIntent>(
-                      onInvoke: (_) {
-                        _overlay.hide();
-                        return null;
-                      },
-                    ),
-                  },
-                  child: Material(
-                    elevation: 3,
-                    color: scheme.surfaceContainer,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: SizedBox(
-                      width: 420,
-                      height: math.min(480, screen.height * 0.6),
-                      child: _ClientFilterPanel(
-                        clients: widget.clients,
-                        initialValue: widget.value,
-                        onChanged: widget.onChanged,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-        child: TapRegion(groupId: _link, child: chip),
+    // Flutter's menu does the placing under the chip, the closing on a click
+    // outside or Esc, and keeps it on screen.
+    return MenuAnchor(
+      controller: _menu,
+      alignmentOffset: const Offset(0, 4),
+      style: MenuStyle(
+        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+        backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainer),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+      menuChildren: [
+        SizedBox(
+          width: 360,
+          height: height,
+          child: _ClientFilterPanel(
+            clients: widget.clients,
+            initialValue: widget.value,
+            onChanged: widget.onChanged,
+          ),
+        ),
+      ],
+      builder: (context, controller, _) => InputChip(
+        avatar: const Icon(Icons.business_outlined, size: 18),
+        label: Text(_label),
+        selected: !widget.value.isEmpty,
+        showCheckmark: false,
+        onPressed: _open,
+        onDeleted: widget.value.isEmpty
+            ? null
+            : () => widget.onChanged(const ClientFilter()),
       ),
     );
   }
@@ -297,6 +273,9 @@ class _ClientFilterPanelState extends State<_ClientFilterPanel> {
         ),
         Expanded(
           child: ListView(
+            // Its own scrolling: inside the menu, which has a scrollbar of
+            // its own on the shared controller.
+            primary: false,
             padding: const EdgeInsets.only(bottom: 8),
             children: [
               if (picked.isNotEmpty) ...[
