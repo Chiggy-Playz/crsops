@@ -31,7 +31,7 @@ class ChallanTile extends StatelessWidget {
   final bool showClient;
 
   /// With [showClient] false: add which of the client's addresses it went to
-  /// (a client page with several; a search groups by address instead).
+  /// (for a client whose challans span several).
   final bool showAddress;
 
   @override
@@ -40,19 +40,19 @@ class ChallanTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final muted = TextStyle(color: scheme.onSurfaceVariant);
 
-    final datePart = formatDisplayDate(challan.challanDate);
-    final directionPart = showDirection ? '${challan.direction.label} · ' : '';
-
-    final String titleText;
-    final String subtitleText;
-    if (showClient) {
-      titleText = challan.clientName;
-      subtitleText = '$directionPart$datePart · ${challan.itemsSummary}';
-    } else {
-      titleText = challan.itemsSummary;
-      final addressPart = showAddress ? ' · ${challan.addressLabel}' : '';
-      subtitleText = '$directionPart$datePart$addressPart';
-    }
+    // Each part only when it says something: the direction where outward
+    // and inward mix, the count when there's more than one item.
+    final parts = <String>[
+      if (showDirection) challan.direction.label,
+      formatDisplayDate(challan.challanDate),
+      if (!showClient && showAddress) challan.addressLabel,
+      if (challan.itemCount > 1) '${challan.itemCount} items',
+      if (showClient && challan.firstItem != null) challan.firstItem!,
+    ];
+    final subtitleText = parts.join(' · ');
+    final titleText = showClient
+        ? challan.clientName
+        : (challan.firstItem ?? '');
 
     final Widget? trailing;
     if (challan.isCancelled) {

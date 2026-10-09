@@ -175,30 +175,34 @@ void main() {
       expect(groups[1].challans.map((c) => c.number), [9, 7]);
     });
 
-    test('a client with challans to several addresses is split by address', () {
-      final groups = groupByClient([
-        fakeChallan(
-          id: 'a',
-          number: 9,
-          addressId: 's8',
-          addressLabel: 'Sector 8',
-        ),
-        fakeChallan(
-          id: 'b',
-          number: 8,
-          addressId: 's5',
-          addressLabel: 'Sector 5',
-        ),
-        fakeChallan(
-          id: 'c',
-          number: 7,
-          addressId: 's8',
-          addressLabel: 'Sector 8',
-        ),
-      ]);
-      expect(groups.map((g) => g.addressLabel), ['Sector 5', 'Sector 8']);
-      expect(groups[1].challans.map((c) => c.number), [9, 7]);
-    });
+    test(
+      'a client with challans to several addresses says so, newest first',
+      () {
+        final groups = groupByClient([
+          fakeChallan(
+            id: 'a',
+            number: 9,
+            addressId: 's8',
+            addressLabel: 'Sector 8',
+          ),
+          fakeChallan(
+            id: 'b',
+            number: 8,
+            addressId: 's5',
+            addressLabel: 'Sector 5',
+          ),
+          fakeChallan(
+            id: 'c',
+            number: 7,
+            addressId: 's8',
+            addressLabel: 'Sector 8',
+          ),
+        ]);
+        expect(groups.length, 1);
+        expect(groups.single.spansAddresses, isTrue);
+        expect(groups.single.challans.map((c) => c.number), [9, 8, 7]);
+      },
+    );
 
     test('filters with only whitespace count as empty', () {
       expect(const ChallanSearchFilters(text: '  ').isEmpty, isTrue);

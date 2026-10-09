@@ -44,6 +44,10 @@ class _ClientChallansPanelState extends ConsumerState<ClientChallansPanel> {
         final shown = _showAll
             ? challans
             : challans.take(_shownAtFirst).toList();
+        // Each row says its direction and address only where they differ.
+        final mixed = challans.map((c) => c.direction).toSet().length > 1;
+        final severalAddresses =
+            challans.map((c) => c.addressId).toSet().length > 1;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -56,9 +60,9 @@ class _ClientChallansPanelState extends ConsumerState<ClientChallansPanel> {
             for (final challan in shown)
               ChallanTile(
                 challan: challan,
-                showDirection: true,
+                showDirection: mixed,
                 showClient: false,
-                showAddress: true,
+                showAddress: severalAddresses,
                 onTap: () => ChallanDetailRoute(challan.id).go(context),
               ),
             if (shown.length < challans.length)
