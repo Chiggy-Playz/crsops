@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/layout/window_size.dart';
 import '../providers/challan_providers.dart';
 import 'challan_list_page.dart';
 import 'challan_search_page.dart';
@@ -28,11 +29,20 @@ class ChallansSplitLayout extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final searching = ref.watch(challanSearchOpenProvider) || onSearchRoute;
 
+    // The search has chips and longer rows, so it gets more room as the
+    // window allows (40%, between 400 and 520); the list stays 400.
+    final double paneWidth;
+    if (searching) {
+      paneWidth = (context.contentWidth * 0.4).clamp(400, 520);
+    } else {
+      paneWidth = 400;
+    }
+
     return TwoPaneLayout(
       pane: searching
           ? ChallanSearchPage(inListPane: true, selectedId: selectedId)
           : ChallanListPage(selectedId: selectedId),
-      paneWidth: 400,
+      paneWidth: paneWidth,
       child: child,
     );
   }
