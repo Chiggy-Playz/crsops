@@ -4,9 +4,9 @@ import '../../../../core/clients/models/client.dart';
 import '../../../../core/clients/models/client_address.dart';
 import '../../../../core/clients/pages/client_list_page.dart';
 import '../../../../core/widgets/form_dialog.dart';
+import '../../../../core/widgets/initials_avatar.dart';
 import '../../../../core/widgets/inset_list_tile.dart';
 import '../../../../core/widgets/section_header.dart';
-import 'client_address_picker.dart';
 
 /// What the search's client filter picked: whole clients (every address
 /// they have) and single addresses of clients with several sites. Both
@@ -147,7 +147,8 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _CheckRow(
+            _PickRow(
+              leading: const Icon(Icons.groups_outlined),
               title: const Text('All clients'),
               value: count == 0,
               onChanged: () => setState(() {
@@ -173,24 +174,12 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
   }
 
   /// The client's row, and for a client with several addresses one indented
-  /// row per address. Same look as the new challan's client list: inset
-  /// rows, each address with what prints under it.
+  /// row per address. Picked rows show a check and the list's highlight
+  /// instead of checkboxes.
   List<Widget> _rows(Client client, {required bool archived}) {
     final theme = Theme.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
     final hasSites = client.addresses.length > 1;
-
-    final TextStyle? nameStyle;
-    if (archived) {
-      nameStyle = TextStyle(color: muted);
-    } else if (hasSites) {
-      // A heading over its addresses, as in the new challan's list.
-      nameStyle = theme.textTheme.titleSmall?.copyWith(
-        color: theme.colorScheme.primary,
-      );
-    } else {
-      nameStyle = null;
-    }
 
     final String? clientSubtitle;
     if (hasSites) {
@@ -198,33 +187,33 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
     } else if (client.addresses.isEmpty) {
       clientSubtitle = null;
     } else {
-      clientSubtitle = AddressChoice.of(
-        client,
-        client.addresses.single,
-      ).printedSummary;
+      clientSubtitle = client.addresses.single.stateName;
     }
 
-    final clientValue = _clientValue(client);
     return [
-      _CheckRow(
-        title: Text(client.name, style: nameStyle),
+      _PickRow(
+        leading: InitialsAvatar(name: client.name, dimmed: archived),
+        title: Text(
+          client.name,
+          style: archived ? TextStyle(color: muted) : null,
+        ),
         subtitle: clientSubtitle,
-        value: clientValue,
-        tristate: hasSites,
+        value: _clientValue(client),
         onChanged: () => _toggleClient(client),
       ),
       if (hasSites)
         for (final address in client.addresses)
           Padding(
             padding: const EdgeInsets.only(left: 24),
-            child: _CheckRow(
+            child: _PickRow(
+              leading: const Icon(Icons.place_outlined),
               title: Text(
                 address.isArchived
                     ? '${address.label} (archived)'
-                    : '${address.label} · ${address.stateName}',
+                    : address.label,
                 style: address.isArchived ? TextStyle(color: muted) : null,
               ),
-              subtitle: AddressChoice.of(client, address).printedSummary,
+              subtitle: _whereIs(address),
               value:
                   _clientIds.contains(client.id) ||
                   _addressIds.contains(address.addressId),
@@ -233,42 +222,79 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
           ),
     ];
   }
+
+  /// "Haryana · Plot 96, Udyog Vihar": enough to tell sites apart.
+  static String _whereIs(ClientAddress address) {
+    final firstLine = address.address.split('\n').first.trim();
+    if (firstLine.isEmpty) return address.stateName;
+    return '${address.stateName} · $firstLine';
+  }
 }
 
-/// A list row with a checkbox in front: the app's inset row, highlighted
-/// like a selected list row while it's ticked.
-class _CheckRow extends StatelessWidget {
-  const _CheckRow({
+/// A row that can be picked: picked, its icon becomes a check in a filled
+/// circle and the row takes the list's highlight; partly picked (some of a
+/// client's addresses), a dash.
+class _PickRow extends StatelessWidget {
+  const _PickRow({
+    required this.leading,
     required this.title,
     required this.value,
     required this.onChanged,
     this.subtitle,
-    this.tristate = false,
   });
 
+  /// Shown while not picked: initials, or an icon.
+  final Widget leading;
   final Widget title;
   final String? subtitle;
 
-  /// Null for a client with only some of its addresses ticked.
+  /// Null when partly picked.
   final bool? value;
-  final bool tristate;
   final VoidCallback onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final subtitle = this.subtitle;
-    return InsetListTile(
-      leading: Checkbox(
-        value: value,
-        tristate: tristate,
-        onChanged: (_) => onChanged(),
+    final picked = value;
+
+    final Widget marker;
+    if (picked == true) {
+      marker = CircleAvatar(
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+        child: const Icon(Icons.check),
+      );
+    } else if (picked == null) {
+      marker = CircleAvatar(
+        backgroundColor: scheme.primaryContainer,
+        foregroundColor: scheme.onPrimaryContainer,
+        child: const Icon(Icons.remove),
+      );
+    } else {
+      marker = SizedBox(width: 40, child: Center(child: leading));
+    }
+
+    final String state;
+    if (picked == true) {
+      state = 'selected';
+    } else if (picked == null) {
+      state = 'partly selected';
+    } else {
+      state = 'not selected';
+    }
+
+    return Semantics(
+      value: state,
+      child: InsetListTile(
+        leading: marker,
+        title: title,
+        subtitle: subtitle == null
+            ? null
+            : Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+        selected: picked == true,
+        onTap: onChanged,
       ),
-      title: title,
-      subtitle: subtitle == null
-          ? null
-          : Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
-      selected: value == true,
-      onTap: onChanged,
     );
   }
 }

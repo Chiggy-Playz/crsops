@@ -452,7 +452,7 @@ void main() {
     // One site of a client with two.
     await tester.tap(find.text('All clients'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(InsetListTile, 'Okhla · Delhi'));
+    await tester.tap(find.widgetWithText(InsetListTile, 'Okhla').last);
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, isEmpty);
@@ -465,7 +465,7 @@ void main() {
     // Both sites ticked is the whole client.
     await tester.tap(find.text('Vega Corporate · Okhla'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(InsetListTile, 'Main · Delhi'));
+    await tester.tap(find.widgetWithText(InsetListTile, 'Main').last);
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, ['client-1']);
