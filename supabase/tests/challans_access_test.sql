@@ -44,6 +44,7 @@ language plpgsql
 as $$
 declare
   test_address_id uuid;
+  second_address_id uuid;
   clients uuid[];
   outward_id uuid;
 begin
@@ -85,6 +86,21 @@ begin
     'from date');
   return next is((select count(*)::int from challans.search_challans(null, clients, null, tests.today() - 1, null)), 0,
     'to date');
+
+  -- A second site of the same client, with its own challan.
+  second_address_id := core.save_client_address(null, clients[1], 'Site 2', 'ZZ TEST CLIENT',
+    'Plot 9, Udyog Vihar', '06', null);
+  perform tests.outward(second_address_id);
+  return next is((select count(*)::int
+                  from challans.search_challans(null, null, null, null, null, array[second_address_id])), 1,
+    'by one address of a client');
+  return next is((select count(*)::int from challans.search_challans(null, clients, null, null, null)), 3,
+    'by client: every address');
+  return next is((select count(*)::int
+                  from challans.search_challans(null, null, null, null, null, array[test_address_id, second_address_id])), 3,
+    'by several addresses');
+  return next is((select count(*)::int from challans.search_challans('udyog', clients, null, null, null)), 1,
+    'by the address text');
 end;
 $$;
 

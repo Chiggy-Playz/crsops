@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/clients/models/client.dart';
+import '../../../../core/clients/models/client_address.dart';
 import '../../../../core/clients/pages/client_list_page.dart';
 import '../../../../core/widgets/form_dialog.dart';
 import '../../../../core/widgets/section_header.dart';
 
+/// What the search's client filter picked: whole clients (every address
+/// they have) and single addresses of clients with several sites. Both
+/// empty means every client.
+class ClientFilter {
+  const ClientFilter({this.clientIds = const {}, this.addressIds = const {}});
+
+  final Set<String> clientIds;
+  final Set<String> addressIds;
+
+  bool get isEmpty => clientIds.isEmpty && addressIds.isEmpty;
+
+  /// How many clients and addresses are ticked.
+  int get count => clientIds.length + addressIds.length;
+}
+
 /// Multi-select client picker for the search filter, built like the Reports
 /// employee picker: search, active clients, then a dimmed Archived group
-/// (old challans belong to them too). Full-screen on phones, a dialog on
-/// wide windows.
+/// (old challans belong to them too). A client with several addresses can
+/// be ticked whole or just some of its addresses. Full-screen on phones, a
+/// dialog on wide windows.
 ///
-/// Resolves to the chosen ids (empty = every client), or null if dismissed.
-Future<Set<String>?> showClientMultiPicker(
+/// Resolves to the choice, or null if dismissed.
+Future<ClientFilter?> showClientMultiPicker(
   BuildContext context, {
   required List<Client> clients,
-  required Set<String> initialSelection,
-}) => showFormDialog<Set<String>>(
+  required ClientFilter initialSelection,
+}) => showFormDialog<ClientFilter>(
   context: context,
   builder: (_) =>
       _ClientMultiPicker(clients: clients, initialSelection: initialSelection),
@@ -28,7 +45,7 @@ class _ClientMultiPicker extends StatefulWidget {
   });
 
   final List<Client> clients;
-  final Set<String> initialSelection;
+  final ClientFilter initialSelection;
 
   @override
   State<_ClientMultiPicker> createState() => _ClientMultiPickerState();
@@ -36,14 +53,57 @@ class _ClientMultiPicker extends StatefulWidget {
 
 class _ClientMultiPickerState extends State<_ClientMultiPicker> {
   final _formKey = GlobalKey<FormState>();
-  late final Set<String> _selection = Set.of(widget.initialSelection);
+  late final Set<String> _clientIds = Set.of(widget.initialSelection.clientIds);
+  late final Set<String> _addressIds = Set.of(
+    widget.initialSelection.addressIds,
+  );
   String _query = '';
 
-  void _toggle(String id, bool selected) => setState(() {
-    if (selected) {
-      _selection.add(id);
+  /// A client's box: ticked whole (true), some addresses (null), or none.
+  bool? _clientValue(Client client) {
+    if (_clientIds.contains(client.id)) return true;
+    final someAddresses = client.addresses.any(
+      (a) => _addressIds.contains(a.addressId),
+    );
+    if (someAddresses) return null;
+    return false;
+  }
+
+  /// All of it, or (when it was all) none of it.
+  void _toggleClient(Client client) => setState(() {
+    final wasWhole = _clientIds.contains(client.id);
+    for (final address in client.addresses) {
+      _addressIds.remove(address.addressId);
+    }
+    if (wasWhole) {
+      _clientIds.remove(client.id);
     } else {
-      _selection.remove(id);
+      _clientIds.add(client.id);
+    }
+  });
+
+  /// One address. Unticking one of a wholly ticked client keeps the rest;
+  /// ticking the last missing one makes the client whole again.
+  void _toggleAddress(Client client, ClientAddress address) => setState(() {
+    if (_clientIds.remove(client.id)) {
+      for (final other in client.addresses) {
+        if (other.addressId != address.addressId) {
+          _addressIds.add(other.addressId);
+        }
+      }
+      return;
+    }
+    if (!_addressIds.remove(address.addressId)) {
+      _addressIds.add(address.addressId);
+    }
+    final allTicked = client.addresses.every(
+      (a) => _addressIds.contains(a.addressId),
+    );
+    if (allTicked) {
+      for (final a in client.addresses) {
+        _addressIds.remove(a.addressId);
+      }
+      _clientIds.add(client.id);
     }
   });
 
@@ -55,11 +115,12 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
     final active = matching.where((c) => !c.isArchived).toList();
     final archived = matching.where((c) => c.isArchived).toList();
 
+    final count = _clientIds.length + _addressIds.length;
     final String description;
-    if (_selection.isEmpty) {
+    if (count == 0) {
       description = 'Searching every client';
     } else {
-      description = '${_selection.length} selected';
+      description = '$count selected';
     }
 
     return FormDialog(
@@ -68,7 +129,8 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
       formKey: _formKey,
       saving: false,
       saveLabel: 'Apply',
-      onSave: () => Navigator.of(context).pop(_selection),
+      onSave: () => Navigator.of(context)
+          .pop(ClientFilter(clientIds: _clientIds, addressIds: _addressIds)),
       children: [
         TextField(
           autofocus: !FormDialog.isCompact(context),
@@ -85,14 +147,17 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
           children: [
             CheckboxListTile(
               title: const Text('All clients'),
-              value: _selection.isEmpty,
-              onChanged: (_) => setState(_selection.clear),
+              value: count == 0,
+              onChanged: (_) => setState(() {
+                _clientIds.clear();
+                _addressIds.clear();
+              }),
             ),
             const Divider(height: 1),
-            for (final c in active) _row(c, archived: false),
+            for (final c in active) ..._rows(c, archived: false),
             if (archived.isNotEmpty) ...[
               const SectionHeader('Archived', topPadding: 16),
-              for (final c in archived) _row(c, archived: true),
+              for (final c in archived) ..._rows(c, archived: true),
             ],
             if (matching.isEmpty)
               const Padding(
@@ -105,14 +170,39 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
     );
   }
 
-  Widget _row(Client client, {required bool archived}) {
-    final dimmedText = archived
-        ? TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)
-        : null;
-    return CheckboxListTile(
-      title: Text(client.name, style: dimmedText),
-      value: _selection.contains(client.id),
-      onChanged: (checked) => _toggle(client.id, checked ?? false),
-    );
+  /// The client's row, and for a client with several addresses one indented
+  /// row per address.
+  List<Widget> _rows(Client client, {required bool archived}) {
+    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final dimmedText = archived ? TextStyle(color: muted) : null;
+    final hasSites = client.addresses.length > 1;
+
+    return [
+      CheckboxListTile(
+        title: Text(client.name, style: dimmedText),
+        subtitle: hasSites
+            ? Text('${client.addresses.length} addresses')
+            : null,
+        tristate: hasSites,
+        value: _clientValue(client),
+        onChanged: (_) => _toggleClient(client),
+      ),
+      if (hasSites)
+        for (final address in client.addresses)
+          CheckboxListTile(
+            contentPadding: const EdgeInsets.only(left: 40, right: 16),
+            title: Text(
+              address.isArchived
+                  ? '${address.label} (archived)'
+                  : address.label,
+              style: address.isArchived ? TextStyle(color: muted) : dimmedText,
+            ),
+            subtitle: Text(address.stateName),
+            value:
+                _clientIds.contains(client.id) ||
+                _addressIds.contains(address.addressId),
+            onChanged: (_) => _toggleAddress(client, address),
+          ),
+    ];
   }
 }

@@ -17,6 +17,8 @@ Challan fakeChallan({
   int latestAddressVersion = 1,
   String firstItem = 'DELL LAPTOP',
   DateTime? receivedOn,
+  String? addressId,
+  String addressLabel = 'Main',
 }) {
   final now = DateTime.now();
   final challanDate = date ?? DateTime(now.year, now.month, now.day);
@@ -35,8 +37,8 @@ Challan fakeChallan({
     updatedAt: challanDate,
     clientId: clientId,
     clientName: clientName,
-    addressId: '$clientId-a1',
-    addressLabel: 'Main',
+    addressId: addressId ?? '$clientId-a1',
+    addressLabel: addressLabel,
     addressVersion: addressVersion,
     latestAddressVersion: latestAddressVersion,
     nameOnChallan: clientName.toUpperCase(),

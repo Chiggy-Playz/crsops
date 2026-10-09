@@ -46,7 +46,20 @@ List<Client> _clients() => [
     id: 'client-1',
     name: 'Vega Corporate',
     createdAt: DateTime(2026),
-    addresses: [_address('client-1', 'Main', '07')],
+    addresses: [
+      _address('client-1', 'Main', '07'),
+      ClientAddress(
+        addressId: 'client-1-a2',
+        clientId: 'client-1',
+        label: 'Okhla',
+        versionId: 'client-1-v2',
+        version: 1,
+        nameOnChallan: 'VEGA',
+        address: 'Okhla Phase 2',
+        stateCode: '07',
+        stateName: FakeClientRepository.stateName('07'),
+      ),
+    ],
   ),
   Client(
     id: 'client-2',
@@ -428,6 +441,34 @@ void main() {
 
     // Results can be exported.
     expect(find.byTooltip('Export'), findsOneWidget);
+  });
+
+  testWidgets('the client filter can pick single addresses', (tester) async {
+    final app = await _pumpApp(tester, _wide);
+    await tester.tap(find.byTooltip('Search challans'));
+    await tester.pumpAndSettle();
+
+    // One site of a client with two.
+    await tester.tap(find.text('All clients'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Okhla'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(app.challans.searches.last.clientIds, isEmpty);
+    expect(app.challans.searches.last.addressIds, ['client-1-a2']);
+    expect(
+      find.widgetWithText(InputChip, 'Vega Corporate · Okhla'),
+      findsOneWidget,
+    );
+
+    // Both sites ticked is the whole client.
+    await tester.tap(find.text('Vega Corporate · Okhla'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(CheckboxListTile, 'Main'));
+    await tester.tap(find.text('Apply'));
+    await tester.pumpAndSettle();
+    expect(app.challans.searches.last.clientIds, ['client-1']);
+    expect(app.challans.searches.last.addressIds, isEmpty);
   });
 
   testWidgets('a new client copies its name into "Name on challan"', (

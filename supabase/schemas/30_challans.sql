@@ -810,11 +810,15 @@ grant execute on function challans.set_digitally_signed(uuid, boolean) to authen
 
 -- Challans matching all the filters given; a null filter is ignored.
 --   p_text        the number exactly, or part of the printed name, address
---                 label, client name, delivered/received by, vehicle, bill
---                 number, notes, or any item's description, second line or serial
---   p_client_ids  only these clients
+--                 label or address, client name, delivered/received by,
+--                 vehicle, bill number, notes, or any item's description,
+--                 second line or serial
+--   p_client_ids  these clients, every address
 --   p_from, p_to  challan date range, inclusive
 --   p_direction   'outward' or 'inward'
+--   p_address_ids and these addresses (one site of a client with several);
+--                 with it and p_client_ids null, every client. Last and
+--                 optional, so callers that predate it still work.
 -- Newest first, at most 1000. security invoker: the tables' own row-level
 -- security decides what the caller sees.
 create function challans.search_challans(
@@ -822,7 +826,8 @@ create function challans.search_challans(
   p_client_ids uuid[],
   p_from date,
   p_to date,
-  p_direction text
+  p_direction text,
+  p_address_ids uuid[] default null
 )
 returns setof challans.challan_overview
 language sql
@@ -840,7 +845,11 @@ as $$
   select o.*
   from challans.challan_overview o, query q
   where (p_direction is null or o.direction = p_direction)
-    and (p_client_ids is null or o.client_id = any(p_client_ids))
+    and (
+      (p_client_ids is null and p_address_ids is null)
+      or o.client_id = any(p_client_ids)
+      or o.address_id = any(p_address_ids)
+    )
     and (p_from is null or o.challan_date >= p_from)
     and (p_to is null or o.challan_date <= p_to)
     and (
@@ -849,6 +858,7 @@ as $$
       or o.client_name ilike q.pattern
       or o.name_on_challan ilike q.pattern
       or o.address_label ilike q.pattern
+      or o.address ilike q.pattern
       or o.handled_by_name ilike q.pattern
       or o.vehicle_number ilike q.pattern
       or o.bill_number ilike q.pattern
@@ -865,5 +875,5 @@ as $$
   limit 1000;
 $$;
 
-revoke execute on function challans.search_challans(text, uuid[], date, date, text) from public, anon;
-grant execute on function challans.search_challans(text, uuid[], date, date, text) to authenticated;
+revoke execute on function challans.search_challans(text, uuid[], date, date, text, uuid[]) from public, anon;
+grant execute on function challans.search_challans(text, uuid[], date, date, text, uuid[]) to authenticated;

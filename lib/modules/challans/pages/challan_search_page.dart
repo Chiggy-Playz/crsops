@@ -33,7 +33,7 @@ class ChallanSearchPage extends ConsumerStatefulWidget {
 
 class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
   String _text = '';
-  Set<String> _clientIds = {};
+  ClientFilter _clientFilter = const ClientFilter();
   DateTimeRange? _dates;
   ChallanDirection? _direction;
 
@@ -41,7 +41,8 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
   ChallanSearchFilters? get _filters {
     final filters = ChallanSearchFilters(
       text: _text,
-      clientIds: _clientIds.toList()..sort(),
+      clientIds: _clientFilter.clientIds.toList()..sort(),
+      addressIds: _clientFilter.addressIds.toList()..sort(),
       from: _dates?.start,
       to: _dates?.end,
       direction: _direction,
@@ -53,9 +54,9 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
     final picked = await showClientMultiPicker(
       context,
       clients: clients,
-      initialSelection: _clientIds,
+      initialSelection: _clientFilter,
     );
-    if (picked != null) setState(() => _clientIds = picked);
+    if (picked != null) setState(() => _clientFilter = picked);
   }
 
   Future<void> _pickDates() async {
@@ -68,14 +69,22 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
     if (picked != null) setState(() => _dates = picked);
   }
 
+  /// "All clients", the one client or address picked, or how many.
   String _clientsLabel(List<Client> clients) {
-    if (_clientIds.isEmpty) return 'All clients';
-    if (_clientIds.length == 1) {
+    final filter = _clientFilter;
+    if (filter.isEmpty) return 'All clients';
+    if (filter.count == 1) {
       for (final c in clients) {
-        if (c.id == _clientIds.first) return c.name;
+        if (filter.clientIds.contains(c.id)) return c.name;
+        for (final a in c.addresses) {
+          if (filter.addressIds.contains(a.addressId)) {
+            return '${c.name} · ${a.label}';
+          }
+        }
       }
     }
-    return '${_clientIds.length} clients';
+    if (filter.addressIds.isEmpty) return '${filter.count} clients';
+    return '${filter.count} selected';
   }
 
   Future<void> _export(List<Challan> results, {required bool detailed}) async {
@@ -140,7 +149,8 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: SearchBar(
               autoFocus: true,
-              hintText: 'Number, name, item, serial, vehicle, bill no.',
+              hintText:
+                  'Number, name, address, item, serial, vehicle, bill no.',
               leading: const Icon(Icons.search),
               onSubmitted: (value) => setState(() => _text = value.trim()),
             ),
@@ -155,9 +165,11 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
                   avatar: const Icon(Icons.business_outlined, size: 18),
                   label: Text(_clientsLabel(clients)),
                   onPressed: () => _pickClients(clients),
-                  onDeleted: _clientIds.isEmpty
+                  onDeleted: _clientFilter.isEmpty
                       ? null
-                      : () => setState(() => _clientIds = {}),
+                      : () => setState(
+                          () => _clientFilter = const ClientFilter(),
+                        ),
                 ),
                 InputChip(
                   avatar: const Icon(Icons.date_range, size: 18),
@@ -222,7 +234,17 @@ class _Message extends StatelessWidget {
   );
 }
 
-/// The results grouped by client, newest first within each.
+/// "CLIENT · 3", or "CLIENT · Sector 5 · 3" when the client's results are
+/// split by address.
+String _groupHeading(ClientChallans group) {
+  final count = group.challans.length;
+  final label = group.addressLabel;
+  if (label == null) return '${group.clientName} · $count';
+  return '${group.clientName} · $label · $count';
+}
+
+/// The results grouped by client (and by address, for a client with
+/// challans to several), newest first within each.
 class _Results extends StatelessWidget {
   const _Results({required this.challans});
 
@@ -243,7 +265,7 @@ class _Results extends StatelessWidget {
             'Showing the newest 1000. Narrow the search to see older ones.',
           ),
         for (final group in groupByClient(challans)) ...[
-          SectionHeader('${group.clientName} · ${group.challans.length}'),
+          SectionHeader(_groupHeading(group)),
           for (final challan in group.challans)
             ChallanTile(
               challan: challan,

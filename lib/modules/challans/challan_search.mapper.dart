@@ -37,6 +37,13 @@ class ChallanSearchFiltersMapper extends ClassMapperBase<ChallanSearchFilters> {
     opt: true,
     def: const [],
   );
+  static List<String> _$addressIds(ChallanSearchFilters v) => v.addressIds;
+  static const Field<ChallanSearchFilters, List<String>> _f$addressIds = Field(
+    'addressIds',
+    _$addressIds,
+    opt: true,
+    def: const [],
+  );
   static DateTime? _$from(ChallanSearchFilters v) => v.from;
   static const Field<ChallanSearchFilters, DateTime> _f$from = Field(
     'from',
@@ -57,6 +64,7 @@ class ChallanSearchFiltersMapper extends ClassMapperBase<ChallanSearchFilters> {
   final MappableFields<ChallanSearchFilters> fields = const {
     #text: _f$text,
     #clientIds: _f$clientIds,
+    #addressIds: _f$addressIds,
     #from: _f$from,
     #to: _f$to,
     #direction: _f$direction,
@@ -66,6 +74,7 @@ class ChallanSearchFiltersMapper extends ClassMapperBase<ChallanSearchFilters> {
     return ChallanSearchFilters(
       text: data.dec(_f$text),
       clientIds: data.dec(_f$clientIds),
+      addressIds: data.dec(_f$addressIds),
       from: data.dec(_f$from),
       to: data.dec(_f$to),
       direction: data.dec(_f$direction),
@@ -143,9 +152,11 @@ abstract class ChallanSearchFiltersCopyWith<
 >
     implements ClassCopyWith<$R, $In, $Out> {
   ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get clientIds;
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get addressIds;
   $R call({
     String? text,
     List<String>? clientIds,
+    List<String>? addressIds,
     DateTime? from,
     DateTime? to,
     ChallanDirection? direction,
@@ -171,9 +182,17 @@ class _ChallanSearchFiltersCopyWithImpl<$R, $Out>
         (v) => call(clientIds: v),
       );
   @override
+  ListCopyWith<$R, String, ObjectCopyWith<$R, String, String>> get addressIds =>
+      ListCopyWith(
+        $value.addressIds,
+        (v, t) => ObjectCopyWith(v, $identity, t),
+        (v) => call(addressIds: v),
+      );
+  @override
   $R call({
     String? text,
     List<String>? clientIds,
+    List<String>? addressIds,
     Object? from = $none,
     Object? to = $none,
     Object? direction = $none,
@@ -181,6 +200,7 @@ class _ChallanSearchFiltersCopyWithImpl<$R, $Out>
     FieldCopyWithData({
       if (text != null) #text: text,
       if (clientIds != null) #clientIds: clientIds,
+      if (addressIds != null) #addressIds: addressIds,
       if (from != $none) #from: from,
       if (to != $none) #to: to,
       if (direction != $none) #direction: direction,
@@ -190,6 +210,7 @@ class _ChallanSearchFiltersCopyWithImpl<$R, $Out>
   ChallanSearchFilters $make(CopyWithData data) => ChallanSearchFilters(
     text: data.get(#text, or: $value.text),
     clientIds: data.get(#clientIds, or: $value.clientIds),
+    addressIds: data.get(#addressIds, or: $value.addressIds),
     from: data.get(#from, or: $value.from),
     to: data.get(#to, or: $value.to),
     direction: data.get(#direction, or: $value.direction),

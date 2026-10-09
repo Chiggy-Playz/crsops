@@ -56,9 +56,8 @@ class SectionNavShell extends ConsumerWidget {
     // Report what the router can really go back from, after the switch.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!context.mounted) return;
-      NavigationNotification(
-        canHandlePop: GoRouter.of(context).canPop(),
-      ).dispatch(context);
+      NavigationNotification(canHandlePop: GoRouter.of(context).canPop())
+          .dispatch(context);
     });
 
     return AdaptiveNavScaffold(

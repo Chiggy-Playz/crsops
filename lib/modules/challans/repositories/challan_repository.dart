@@ -172,6 +172,7 @@ class SupabaseChallanRepository implements ChallanRepository {
       final rows = await _rpc('search_challans', {
         'p_text': text.isEmpty ? null : text,
         'p_client_ids': filters.clientIds.isEmpty ? null : filters.clientIds,
+        'p_address_ids': filters.addressIds.isEmpty ? null : filters.addressIds,
         'p_from': from == null ? null : dateOnly(from),
         'p_to': to == null ? null : dateOnly(to),
         'p_direction': filters.direction?.name,
