@@ -19,7 +19,7 @@ import '../models/challan_direction.dart';
 import '../providers/challan_providers.dart';
 import '../routes.dart';
 import 'widgets/challan_tile.dart';
-import 'widgets/client_multi_picker.dart';
+import 'widgets/client_filter_chip.dart';
 
 /// Search every financial year by text, clients, dates and direction, with
 /// the results grouped by client and exportable as spreadsheets. Opening a
@@ -50,15 +50,6 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
     return filters.isEmpty ? null : filters;
   }
 
-  Future<void> _pickClients(List<Client> clients) async {
-    final picked = await showClientMultiPicker(
-      context,
-      clients: clients,
-      initialSelection: _clientFilter,
-    );
-    if (picked != null) setState(() => _clientFilter = picked);
-  }
-
   Future<void> _pickDates() async {
     final picked = await showDateRangePicker(
       context: context,
@@ -67,24 +58,6 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
       lastDate: DateUtils.dateOnly(DateTime.now()),
     );
     if (picked != null) setState(() => _dates = picked);
-  }
-
-  /// "All clients", the one client or address picked, or how many.
-  String _clientsLabel(List<Client> clients) {
-    final filter = _clientFilter;
-    if (filter.isEmpty) return 'All clients';
-    if (filter.count == 1) {
-      for (final c in clients) {
-        if (filter.clientIds.contains(c.id)) return c.name;
-        for (final a in c.addresses) {
-          if (filter.addressIds.contains(a.addressId)) {
-            return '${c.name} · ${a.label}';
-          }
-        }
-      }
-    }
-    if (filter.addressIds.isEmpty) return '${filter.count} clients';
-    return '${filter.count} selected';
   }
 
   Future<void> _export(List<Challan> results, {required bool detailed}) async {
@@ -161,15 +134,10 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                InputChip(
-                  avatar: const Icon(Icons.business_outlined, size: 18),
-                  label: Text(_clientsLabel(clients)),
-                  onPressed: () => _pickClients(clients),
-                  onDeleted: _clientFilter.isEmpty
-                      ? null
-                      : () => setState(
-                          () => _clientFilter = const ClientFilter(),
-                        ),
+                ClientFilterChip(
+                  clients: clients,
+                  value: _clientFilter,
+                  onChanged: (filter) => setState(() => _clientFilter = filter),
                 ),
                 InputChip(
                   avatar: const Icon(Icons.date_range, size: 18),

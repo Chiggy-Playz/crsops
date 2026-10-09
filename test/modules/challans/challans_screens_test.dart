@@ -16,6 +16,7 @@ import 'package:crs_ops/modules/challans/financial_year.dart';
 import 'package:crs_ops/modules/challans/models/challan_direction.dart';
 import 'package:crs_ops/modules/challans/providers/challan_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -431,13 +432,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.direction, ChallanDirection.inward);
 
-    // Filtering by client goes through the picker's Apply.
+    // The client list drops down from its chip; a pick applies at once, and
+    // Esc closes the list.
     await tester.tap(find.text('All clients'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InsetListTile, 'Vega Corporate').last);
-    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, ['client-1']);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.text('Search clients'), findsNothing);
     expect(find.widgetWithText(InputChip, 'Vega Corporate'), findsOneWidget);
 
     // Results can be exported.
@@ -449,11 +453,12 @@ void main() {
     await tester.tap(find.byTooltip('Search challans'));
     await tester.pumpAndSettle();
 
-    // One site of a client with two.
+    // One site of a client with two: its addresses unfold on request.
     await tester.tap(find.text('All clients'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Show addresses'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(InsetListTile, 'Okhla').last);
-    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, isEmpty);
     expect(app.challans.searches.last.addressIds, ['client-1-a2']);
@@ -462,11 +467,8 @@ void main() {
       findsOneWidget,
     );
 
-    // Both sites ticked is the whole client.
-    await tester.tap(find.text('Vega Corporate · Okhla'));
-    await tester.pumpAndSettle();
+    // Both sites picked is the whole client.
     await tester.tap(find.widgetWithText(InsetListTile, 'Main').last);
-    await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, ['client-1']);
     expect(app.challans.searches.last.addressIds, isEmpty);
