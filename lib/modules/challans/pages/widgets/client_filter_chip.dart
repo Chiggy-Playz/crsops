@@ -48,10 +48,32 @@ class ClientFilterChip extends StatefulWidget {
 class _ClientFilterChipState extends State<ClientFilterChip> {
   final _menu = MenuController();
 
-  /// "All clients", "VEGA", "OFFSHOOT · Sector 5", "VEGA + 2 more".
+  /// Short, like the other chips: "All clients", the one client or site
+  /// picked ("VEGA", "OFFSHOOT · Sector 5", cut short on screen), or a count
+  /// ("3 clients", "2 clients, 1 site").
   String get _label {
     final filter = widget.value;
     if (filter.isEmpty) return 'All clients';
+    if (filter.count == 1) {
+      for (final client in widget.clients) {
+        if (filter.clientIds.contains(client.id)) return client.name;
+        for (final address in client.addresses) {
+          if (filter.addressIds.contains(address.addressId)) {
+            return '${client.name} · ${address.label}';
+          }
+        }
+      }
+    }
+    final clients = _plural(filter.clientIds.length, 'client', 'clients');
+    final sites = _plural(filter.addressIds.length, 'site', 'sites');
+    if (filter.addressIds.isEmpty) return clients;
+    if (filter.clientIds.isEmpty) return sites;
+    return '$clients, $sites';
+  }
+
+  /// Everything picked, one per line, for the chip's tooltip.
+  String get _fullNames {
+    final filter = widget.value;
     final names = <String>[];
     for (final client in widget.clients) {
       if (filter.clientIds.contains(client.id)) names.add(client.name);
@@ -61,9 +83,12 @@ class _ClientFilterChipState extends State<ClientFilterChip> {
         }
       }
     }
-    if (names.isEmpty) return '${filter.count} selected';
-    if (names.length == 1) return names.single;
-    return '${names.first} + ${names.length - 1} more';
+    return names.join('\n');
+  }
+
+  static String _plural(int count, String one, String many) {
+    if (count == 1) return '1 $one';
+    return '$count $many';
   }
 
   Future<void> _open() async {
@@ -120,7 +145,11 @@ class _ClientFilterChipState extends State<ClientFilterChip> {
       ],
       builder: (context, controller, _) => InputChip(
         avatar: const Icon(Icons.business_outlined, size: 18),
-        label: Text(_label),
+        label: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 200),
+          child: Text(_label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+        tooltip: widget.value.isEmpty ? null : _fullNames,
         selected: !widget.value.isEmpty,
         showCheckmark: false,
         onPressed: _open,
@@ -335,6 +364,8 @@ class _ClientFilterPanelState extends State<_ClientFilterPanel> {
         leading: InitialsAvatar(name: client.name, dimmed: client.isArchived),
         title: Text(
           client.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: client.isArchived ? TextStyle(color: muted) : null,
         ),
         subtitle: subtitle,
