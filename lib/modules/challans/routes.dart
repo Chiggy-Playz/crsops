@@ -42,6 +42,8 @@ class ChallansShellRoute extends ShellRouteData {
   Widget builder(BuildContext context, GoRouterState state, Widget navigator) =>
       ChallansSplitLayout(
         selectedId: state.pathParameters['id'],
+        onSearchRoute:
+            state.matchedLocation == const ChallanSearchRoute().location,
         child: navigator,
       );
 }
@@ -85,13 +87,24 @@ class ChallanNewRoute extends GoRouteData with $ChallanNewRoute {
       confirmLeavingForm(context, state);
 }
 
-/// Right pane on wide windows, its own page on narrow ones.
+/// Its own page on narrow windows. On wide ones the search is the left pane
+/// (see ChallansSplitLayout), and the right pane waits for a pick.
 class ChallanSearchRoute extends GoRouteData with $ChallanSearchRoute {
   const ChallanSearchRoute();
 
   @override
-  Widget build(BuildContext context, GoRouterState state) =>
-      const ChallanSearchPage();
+  Widget build(BuildContext context, GoRouterState state) {
+    if (context.isTwoPane) {
+      return const Scaffold(
+        body: EmptyState(
+          icon: Icons.manage_search,
+          title: 'Select a challan',
+          message: 'Pick a result from the search to see it.',
+        ),
+      );
+    }
+    return const ChallanSearchPage();
+  }
 }
 
 class ChallanDetailRoute extends GoRouteData with $ChallanDetailRoute {

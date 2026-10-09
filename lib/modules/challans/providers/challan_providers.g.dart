@@ -577,6 +577,135 @@ final class ItemUnitsProvider
 
 String _$itemUnitsHash() => r'e2a754d01f2dd4b9652fe08d128811e88203656e';
 
+/// What the search is looking for. Lives here, not in the search page, so
+/// it survives opening a result (the page can be gone by then on a phone) and
+/// the left pane switching back and forth.
+
+@ProviderFor(ChallanSearchQuery)
+final challanSearchQueryProvider = ChallanSearchQueryProvider._();
+
+/// What the search is looking for. Lives here, not in the search page, so
+/// it survives opening a result (the page can be gone by then on a phone) and
+/// the left pane switching back and forth.
+final class ChallanSearchQueryProvider
+    extends $NotifierProvider<ChallanSearchQuery, ChallanSearchFilters> {
+  /// What the search is looking for. Lives here, not in the search page, so
+  /// it survives opening a result (the page can be gone by then on a phone) and
+  /// the left pane switching back and forth.
+  ChallanSearchQueryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'challanSearchQueryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$challanSearchQueryHash();
+
+  @$internal
+  @override
+  ChallanSearchQuery create() => ChallanSearchQuery();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ChallanSearchFilters value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ChallanSearchFilters>(value),
+    );
+  }
+}
+
+String _$challanSearchQueryHash() =>
+    r'5c6072c558547742f661038ad53cc42eca5ea01d';
+
+/// What the search is looking for. Lives here, not in the search page, so
+/// it survives opening a result (the page can be gone by then on a phone) and
+/// the left pane switching back and forth.
+
+abstract class _$ChallanSearchQuery extends $Notifier<ChallanSearchFilters> {
+  ChallanSearchFilters build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<ChallanSearchFilters, ChallanSearchFilters>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ChallanSearchFilters, ChallanSearchFilters>,
+              ChallanSearchFilters,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// On wide windows: whether the challans' left pane shows the search instead
+/// of the list, so a result opens on the right with the results beside it.
+
+@ProviderFor(ChallanSearchOpen)
+final challanSearchOpenProvider = ChallanSearchOpenProvider._();
+
+/// On wide windows: whether the challans' left pane shows the search instead
+/// of the list, so a result opens on the right with the results beside it.
+final class ChallanSearchOpenProvider
+    extends $NotifierProvider<ChallanSearchOpen, bool> {
+  /// On wide windows: whether the challans' left pane shows the search instead
+  /// of the list, so a result opens on the right with the results beside it.
+  ChallanSearchOpenProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'challanSearchOpenProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$challanSearchOpenHash();
+
+  @$internal
+  @override
+  ChallanSearchOpen create() => ChallanSearchOpen();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$challanSearchOpenHash() => r'b024587bcb8e19f627cf96d13ccfa5eb0b4232b7';
+
+/// On wide windows: whether the challans' left pane shows the search instead
+/// of the list, so a result opens on the right with the results beside it.
+
+abstract class _$ChallanSearchOpen extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
 /// Results for the search page; refreshed after any challan change.
 
 @ProviderFor(challanSearch)

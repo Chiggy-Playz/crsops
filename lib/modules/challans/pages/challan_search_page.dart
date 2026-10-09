@@ -22,42 +22,68 @@ import 'widgets/challan_tile.dart';
 import 'widgets/client_filter_chip.dart';
 
 /// Search every financial year by text, clients, dates and direction, with
-/// the results grouped by client and exportable as spreadsheets. Opening a
-/// result stacks it on top, so back returns here with the search intact.
+/// the results grouped by client and exportable as spreadsheets.
+///
+/// Wide windows ([inListPane]): the left pane, with the results staying put
+/// while a result is open on the right ([selectedId] is highlighted). Phones:
+/// a page of its own; a result opens on top, and back returns here.
+/// What's being searched for lives in [challanSearchQueryProvider], so it
+/// survives either.
 class ChallanSearchPage extends ConsumerStatefulWidget {
-  const ChallanSearchPage({super.key});
+  const ChallanSearchPage({
+    super.key,
+    this.inListPane = false,
+    this.selectedId,
+  });
+
+  final bool inListPane;
+  final String? selectedId;
 
   @override
   ConsumerState<ChallanSearchPage> createState() => _ChallanSearchPageState();
 }
 
 class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
-  String _text = '';
-  ClientFilter _clientFilter = const ClientFilter();
-  DateTimeRange? _dates;
-  ChallanDirection? _direction;
+  late final _textController = TextEditingController(
+    text: ref.read(challanSearchQueryProvider).text,
+  );
 
-  /// The filters searched for; null until there's something to search by.
-  ChallanSearchFilters? get _filters {
-    final filters = ChallanSearchFilters(
-      text: _text,
-      clientIds: _clientFilter.clientIds.toList()..sort(),
-      addressIds: _clientFilter.addressIds.toList()..sort(),
-      from: _dates?.start,
-      to: _dates?.end,
-      direction: _direction,
-    );
-    return filters.isEmpty ? null : filters;
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
   }
 
-  Future<void> _pickDates() async {
+  ChallanSearchQuery get _query =>
+      ref.read(challanSearchQueryProvider.notifier);
+
+  Future<void> _pickDates(ChallanSearchFilters query) async {
+    final from = query.from;
+    final to = query.to;
     final picked = await showDateRangePicker(
       context: context,
-      initialDateRange: _dates,
+      initialDateRange: from == null || to == null
+          ? null
+          : DateTimeRange(start: from, end: to),
       firstDate: DateTime(2018),
       lastDate: DateUtils.dateOnly(DateTime.now()),
     );
-    if (picked != null) setState(() => _dates = picked);
+    if (picked == null) return;
+    _query.set(
+      ref
+          .read(challanSearchQueryProvider)
+          .copyWith(from: picked.start, to: picked.end),
+    );
+  }
+
+  /// Back to the list (wide), clearing the search for next time.
+  void _close() {
+    _query.clear();
+    ref.read(challanSearchOpenProvider.notifier).set(open: false);
+    if (GoRouterState.of(context).matchedLocation ==
+        const ChallanSearchRoute().location) {
+      context.go(const ChallansRoute().location);
+    }
   }
 
   Future<void> _export(List<Challan> results, {required bool detailed}) async {
@@ -84,48 +110,67 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
   @override
   Widget build(BuildContext context) {
     final clients = ref.watch(clientListProvider).value ?? const <Client>[];
-    final filters = _filters;
-    final resultsAsync = filters == null
+    final query = ref.watch(challanSearchQueryProvider);
+    final resultsAsync = query.isEmpty
         ? null
-        : ref.watch(challanSearchProvider(filters));
+        : ref.watch(challanSearchProvider(query));
     final results = resultsAsync?.value ?? const <Challan>[];
-    final dates = _dates;
+    final from = query.from;
+    final to = query.to;
 
-    return Scaffold(
-      appBar: PaneAppBar(
+    final exportMenu = results.isEmpty
+        ? null
+        : OverflowMenu(
+            icon: Icons.file_download_outlined,
+            tooltip: 'Export',
+            items: [
+              OverflowMenuItem(
+                icon: Icons.table_rows_outlined,
+                label: 'Detailed spreadsheet',
+                onPressed: () => _export(results, detailed: true),
+              ),
+              OverflowMenuItem(
+                icon: Icons.format_list_numbered,
+                label: 'Index spreadsheet',
+                onPressed: () => _export(results, detailed: false),
+              ),
+            ],
+          );
+
+    final PreferredSizeWidget appBar;
+    if (widget.inListPane) {
+      appBar = AppBar(
+        leading: BackButton(onPressed: _close),
+        title: const Text('Search'),
+        actions: [?exportMenu],
+      );
+    } else {
+      appBar = PaneAppBar(
         title: 'Search challans',
         parentLocation: const ChallansRoute().location,
-        actions: [
-          if (results.isNotEmpty)
-            OverflowMenu(
-              icon: Icons.file_download_outlined,
-              tooltip: 'Export',
-              items: [
-                OverflowMenuItem(
-                  icon: Icons.table_rows_outlined,
-                  label: 'Detailed spreadsheet',
-                  onPressed: () => _export(results, detailed: true),
-                ),
-                OverflowMenuItem(
-                  icon: Icons.format_list_numbered,
-                  label: 'Index spreadsheet',
-                  onPressed: () => _export(results, detailed: false),
-                ),
-              ],
-            ),
-        ],
-      ),
+        actions: [?exportMenu],
+      );
+    }
+
+    return Scaffold(
+      appBar: appBar,
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: SearchBar(
-              autoFocus: true,
-              hintText:
-                  'Number, name, address, item, serial, vehicle, bill no.',
+              controller: _textController,
+              autoFocus: query.isEmpty,
+              hintText: widget.inListPane
+                  ? 'Number, name, address, item, …'
+                  : 'Number, name, address, item, serial, vehicle, bill no.',
               leading: const Icon(Icons.search),
-              onSubmitted: (value) => setState(() => _text = value.trim()),
+              onSubmitted: (value) => _query.set(
+                ref
+                    .read(challanSearchQueryProvider)
+                    .copyWith(text: value.trim()),
+              ),
             ),
           ),
           Padding(
@@ -136,32 +181,50 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
               children: [
                 ClientFilterChip(
                   clients: clients,
-                  value: _clientFilter,
-                  onChanged: (filter) => setState(() => _clientFilter = filter),
+                  value: ClientFilter(
+                    clientIds: query.clientIds.toSet(),
+                    addressIds: query.addressIds.toSet(),
+                  ),
+                  onChanged: (filter) => _query.set(
+                    ref
+                        .read(challanSearchQueryProvider)
+                        .copyWith(
+                          clientIds: filter.clientIds.toList()..sort(),
+                          addressIds: filter.addressIds.toList()..sort(),
+                        ),
+                  ),
                 ),
                 InputChip(
                   avatar: const Icon(Icons.date_range, size: 18),
                   label: Text(
-                    dates == null
+                    from == null || to == null
                         ? 'Any date'
-                        : '${formatDisplayDate(dates.start)} – '
-                              '${formatDisplayDate(dates.end)}',
+                        : '${formatDisplayDate(from)} – '
+                              '${formatDisplayDate(to)}',
                   ),
-                  onPressed: _pickDates,
-                  onDeleted: dates == null
+                  onPressed: () => _pickDates(query),
+                  onDeleted: from == null
                       ? null
-                      : () => setState(() => _dates = null),
+                      : () => _query.set(
+                          ref
+                              .read(challanSearchQueryProvider)
+                              .copyWith(from: null, to: null),
+                        ),
                 ),
                 MenuChip<ChallanDirection?>(
                   icon: Icons.swap_vert,
-                  label: _direction?.label ?? 'Outward and inward',
-                  selected: _direction,
+                  label: query.direction?.label ?? 'Outward and inward',
+                  selected: query.direction,
                   options: [
                     const MenuChipOption(null, 'Outward and inward'),
                     for (final option in ChallanDirection.values)
                       MenuChipOption(option, option.label),
                   ],
-                  onSelected: (picked) => setState(() => _direction = picked),
+                  onSelected: (picked) => _query.set(
+                    ref
+                        .read(challanSearchQueryProvider)
+                        .copyWith(direction: picked),
+                  ),
                 ),
               ],
             ),
@@ -178,7 +241,11 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
                 child: Center(child: CircularProgressIndicator()),
               ),
               error: (error, _) => _Message('$error'),
-              data: (challans) => _Results(challans: challans),
+              data: (challans) => _Results(
+                challans: challans,
+                selectedId: widget.selectedId,
+                inListPane: widget.inListPane,
+              ),
             ),
         ],
       ),
@@ -214,9 +281,17 @@ String _groupHeading(ClientChallans group) {
 /// The results grouped by client (and by address, for a client with
 /// challans to several), newest first within each.
 class _Results extends StatelessWidget {
-  const _Results({required this.challans});
+  const _Results({
+    required this.challans,
+    required this.selectedId,
+    required this.inListPane,
+  });
 
   final List<Challan> challans;
+  final String? selectedId;
+
+  /// A result opens in the right pane (wide), or on top of this page.
+  final bool inListPane;
 
   /// The search returns at most this many (see search_challans).
   static const _limit = 1000;
@@ -238,8 +313,15 @@ class _Results extends StatelessWidget {
             ChallanTile(
               challan: challan,
               showDirection: true,
-              onTap: () =>
-                  context.push(ChallanDetailRoute(challan.id).location),
+              selected: challan.id == selectedId,
+              onTap: () {
+                final location = ChallanDetailRoute(challan.id).location;
+                if (inListPane) {
+                  context.go(location);
+                } else {
+                  context.push(location);
+                }
+              },
             ),
         ],
       ],

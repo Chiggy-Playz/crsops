@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/layout/two_pane_layout.dart';
@@ -22,6 +23,19 @@ class ChallanListPage extends ConsumerWidget {
 
   final String? selectedId;
 
+  /// Wide: the search replaces this list in the left pane, so a result opens
+  /// beside its results. Narrow: the search is a page of its own.
+  static void _openSearch(BuildContext context, WidgetRef ref) {
+    // A new search starts empty; it keeps what was typed while a result is
+    // open, since that only changes the page above it.
+    ref.read(challanSearchQueryProvider.notifier).clear();
+    if (context.isTwoPane) {
+      ref.read(challanSearchOpenProvider.notifier).set(open: true);
+    } else {
+      context.push(const ChallanSearchRoute().location);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final direction = ref.watch(selectedDirectionProvider);
@@ -38,6 +52,7 @@ class ChallanListPage extends ConsumerWidget {
         direction: direction,
         newLabel: newLabel,
         selectedId: selectedId,
+        onSearch: () => _openSearch(context, ref),
       );
     } else {
       list = const Center(child: CircularProgressIndicator());
@@ -50,8 +65,7 @@ class ChallanListPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.search),
             tooltip: 'Search challans',
-            onPressed: () =>
-                openInPane(context, const ChallanSearchRoute().location),
+            onPressed: () => _openSearch(context, ref),
           ),
         ],
         bottom: PreferredSize(
@@ -97,12 +111,14 @@ class _ChallanList extends StatelessWidget {
     required this.direction,
     required this.newLabel,
     required this.selectedId,
+    required this.onSearch,
   });
 
   final List<Challan> challans;
   final ChallanDirection direction;
   final String newLabel;
   final String? selectedId;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +161,7 @@ class _ChallanList extends StatelessWidget {
         leading: const Icon(Icons.manage_search),
         title: const Text('Older challans'),
         subtitle: const Text('Search by date, client or item'),
-        onTap: () => openInPane(context, const ChallanSearchRoute().location),
+        onTap: onSearch,
       ),
     );
 

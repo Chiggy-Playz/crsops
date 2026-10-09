@@ -88,6 +88,29 @@ Future<List<String>> itemUnits(Ref ref) {
   return ref.watch(challanRepositoryProvider).fetchUnits();
 }
 
+/// What the search is looking for. Lives here, not in the search page, so
+/// it survives opening a result (the page can be gone by then on a phone) and
+/// the left pane switching back and forth.
+@Riverpod(keepAlive: true)
+class ChallanSearchQuery extends _$ChallanSearchQuery {
+  @override
+  ChallanSearchFilters build() => const ChallanSearchFilters();
+
+  void set(ChallanSearchFilters filters) => state = filters;
+
+  void clear() => state = const ChallanSearchFilters();
+}
+
+/// On wide windows: whether the challans' left pane shows the search instead
+/// of the list, so a result opens on the right with the results beside it.
+@Riverpod(keepAlive: true)
+class ChallanSearchOpen extends _$ChallanSearchOpen {
+  @override
+  bool build() => false;
+
+  void set({required bool open}) => state = open;
+}
+
 /// Results for the search page; refreshed after any challan change.
 @riverpod
 Future<List<Challan>> challanSearch(Ref ref, ChallanSearchFilters filters) {

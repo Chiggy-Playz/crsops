@@ -413,7 +413,9 @@ void main() {
 
     await tester.tap(find.byTooltip('Search challans'));
     await tester.pumpAndSettle();
-    expect(app.router.state.matchedLocation, '/challans/search');
+    // Wide: the search takes over the left pane; the page doesn't change.
+    expect(app.router.state.matchedLocation, '/challans');
+    expect(find.text('Search'), findsWidgets);
 
     final searchBox = find.descendant(
       of: find.byType(SearchBar).last,
@@ -446,6 +448,46 @@ void main() {
 
     // Results can be exported.
     expect(find.byTooltip('Export'), findsOneWidget);
+  });
+
+  testWidgets('a search result opens beside its results, which stay', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+    await tester.tap(find.byTooltip('Search challans'));
+    await tester.pumpAndSettle();
+    final box = find.descendant(
+      of: find.byType(SearchBar).last,
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(box, 'printer');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+
+    // Opening a result: the challan on the right, the results still on the left.
+    await tester.tap(find.text('Offshoot Agency').last);
+    await tester.pumpAndSettle();
+    expect(app.router.state.matchedLocation, '/challans/o11');
+    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+    expect(find.text('Outward challan'), findsNothing);
+    expect(
+      tester.widget<TextField>(box).controller?.text,
+      'printer',
+      reason: 'the search text is still in the box',
+    );
+
+    // Closing it leaves the search as it was.
+    await tester.tap(find.byTooltip('Close').last);
+    await tester.pumpAndSettle();
+    expect(app.router.state.matchedLocation, '/challans');
+    expect(find.text('Offshoot Agency · 1'), findsOneWidget);
+
+    // Back leaves the search and shows the list again.
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('New outward challan'), findsOneWidget);
+    expect(find.text('Offshoot Agency · 1'), findsNothing);
   });
 
   testWidgets('the client filter can pick single addresses', (tester) async {
