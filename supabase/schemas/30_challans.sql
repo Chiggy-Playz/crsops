@@ -190,14 +190,41 @@ left join lateral (
 left join challans.challans reversed on reversed.id = c.reverses_challan_id
 left join challans.challans returned on returned.reverses_challan_id = c.id;
 
--- Names typed before into "Delivered by" / "Received by", most used first,
--- for the form's suggestions.
+-- Names for "Delivered by" / "Received by" suggestions: those typed before,
+-- most used first, then the active employees not typed yet. A function with
+-- its own rights because employees are admin-only to read: it checks the
+-- module itself and hands back nothing but names.
+create function challans.handler_suggestions()
+returns table (name text, uses int)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform core.require_module_access('challans');
+
+  return query
+  with typed as (
+    select c.handled_by_name as typed_name, count(*)::int as typed_uses
+    from challans.challans c
+    group by c.handled_by_name
+  ),
+  staff as (
+    select e.name as typed_name, 0 as typed_uses
+    from core.employees e
+    where core.employee_status_as_of(e.id, challans.today()) = 'active'
+      and not exists (select 1 from typed t where lower(t.typed_name) = lower(e.name))
+  )
+  select names.typed_name, names.typed_uses
+  from (select * from typed union all select * from staff) names
+  order by names.typed_uses desc, names.typed_name;
+end;
+$$;
+
 create view challans.handled_by_names
 with (security_invoker = true) as
-select handled_by_name as name, count(*)::int as uses
-from challans.challans
-group by handled_by_name
-order by count(*) desc, handled_by_name;
+select * from challans.handler_suggestions();
 
 -- Units typed before ("SET", "NOS"), most used first.
 create view challans.item_units
@@ -803,6 +830,7 @@ grant execute on function challans.cancel_challan(uuid, text, boolean) to authen
 grant execute on function challans.set_received(uuid, date) to authenticated;
 grant execute on function challans.set_bill_number(uuid, text) to authenticated;
 grant execute on function challans.set_digitally_signed(uuid, boolean) to authenticated;
+grant execute on function challans.handler_suggestions() to authenticated;
 
 -- ── Search ─────────────────────────────────────────────────────────────────
 -- Across every financial year, on the server (the list only loads one year at

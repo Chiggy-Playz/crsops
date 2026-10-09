@@ -202,3 +202,47 @@ begin
   return next lives_ok($sql$ select tests.new_address() $sql$, 'an admin can use challans without a module grant');
 end;
 $$;
+
+-- Suggestions for "Delivered by" include active employees, even to a user who
+-- can't read employees; nobody without the module sees any.
+create function tests.test_handler_suggestions()
+returns setof text
+language plpgsql
+as $$
+declare
+  active_id uuid;
+  gone_id uuid;
+begin
+  insert into core.employees (name, color) values ('ZZ Active Staff', 0) returning id into active_id;
+  insert into core.employees (name, color) values ('ZZ Gone Staff', 0) returning id into gone_id;
+  insert into core.employee_events (employee_id, event_type, event_date) values
+    (active_id, 'joined', '2020-01-01'),
+    (gone_id, 'joined', '2020-01-01'),
+    (gone_id, 'left', '2021-01-01');
+
+  perform tests.act_as_challans_user();
+  return next ok(
+    not exists (select 1 from core.employees where id = active_id),
+    'this user can''t read employees directly');
+  return next ok(
+    exists (select 1 from challans.handled_by_names where name = 'ZZ Active Staff'),
+    'an active employee is suggested');
+  return next ok(
+    not exists (select 1 from challans.handled_by_names where name = 'ZZ Gone Staff'),
+    'an employee who left is not');
+
+  perform tests.outward(tests.new_address(), null, '[{"description":"A","quantity":1}]');
+  perform tests.act_as_owner();
+  update challans.challans set handled_by_name = 'zz active staff' where handled_by_name = 'ramesh';
+  perform tests.act_as_challans_user();
+  return next is(
+    (select count(*)::int from challans.handled_by_names where lower(name) = 'zz active staff'),
+    1, 'a name typed before is not offered twice');
+
+  perform tests.act_as_owner();
+  perform tests.act_as(tests.create_user(null, '{}'));
+  return next throws_ok(
+    'select * from challans.handled_by_names', '42501', 'Not allowed',
+    'without challans access there are no suggestions');
+end;
+$$;
