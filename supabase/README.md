@@ -2,6 +2,13 @@
 
 One-time manual steps. Not an app feature — see Phase 1 plan Tasks 1 and 9.
 
+> **Production is live.** Employees and attendance are in real use since
+> 2026-10-08 (challans and clients not yet). Nothing changes data on the hosted
+> project without the owner's explicit OK: no ad-hoc `supabase db query --linked`
+> writes, no `supabase/tests/run.sh --linked`, no re-running the legacy import
+> or `undo.sql`. Test locally (`supabase start`). Schema changes go out as
+> reviewed migrations with `supabase db push`.
+
 ## Project setup
 
 - Hosted project ref: `ocalljagckzyvngprlxo` ("CRS Ops", org `victorious-apricot-fly`,

@@ -7,13 +7,18 @@ Postgres's standard test framework.
 ```sh
 supabase/tests/run.sh                    # everything, on the local database
 supabase/tests/run.sh clients            # just clients_test.sql
-supabase/tests/run.sh --linked           # on the hosted project (prod)
 ```
 
-By default it runs against the local stack (`supabase start`) through `psql`;
-apply new migrations there first (`supabase migration up --local`). With
-`--linked` it runs on the hosted project through `supabase db query --linked`.
-Either way it all happens inside one transaction that is always rolled back,
+Tests run against the local stack (`supabase start`) through `psql`; apply new
+migrations there first (`supabase migration up --local`).
+
+**Production is live: don't test on it.** `run.sh --linked` would run on the
+hosted project through `supabase db query --linked`. It rolls back, but while it
+runs it writes test users, employees and attendance into the live tables. It
+only goes ahead after someone types "production" at a terminal, and it should
+only be used with the owner's say-so.
+
+It all happens inside one transaction that is always rolled back,
 so nothing is left behind: not the test data, not the throwaway users, not the
 `tests` schema. `run.sh` refuses test files that end the transaction
 themselves (`commit`, `rollback`, …).

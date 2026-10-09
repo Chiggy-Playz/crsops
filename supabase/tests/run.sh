@@ -4,7 +4,8 @@
 #
 #   supabase/tests/run.sh                    every *_test.sql, local database
 #   supabase/tests/run.sh clients            only clients_test.sql
-#   supabase/tests/run.sh --linked [names]   against the linked project (prod)
+#   supabase/tests/run.sh --linked [names]   against the linked project (prod):
+#                                            asks a person at a terminal first
 #
 # Local means the stack `supabase start` runs; set LOCAL_DB_URL to use
 # another database.
@@ -16,6 +17,23 @@ linked=false
 if [ "${1:-}" = --linked ]; then
   linked=true
   shift
+fi
+
+# Production is live (employees and attendance since 2026-10-08). A run rolls
+# back, but while it runs it writes test users, employees and attendance into
+# the live tables, so it needs a person at a terminal to say yes each time;
+# nothing scripted (or an AI assistant) can answer this.
+if $linked; then
+  if [ ! -t 0 ]; then
+    echo "Refusing: --linked runs on PRODUCTION and has to be confirmed at a terminal." >&2
+    exit 1
+  fi
+  printf 'This runs the tests on PRODUCTION (live data). Type "production" to go on: '
+  read -r answer
+  if [ "$answer" != production ]; then
+    echo "Not run." >&2
+    exit 1
+  fi
 fi
 local_db_url=${LOCAL_DB_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}
 
