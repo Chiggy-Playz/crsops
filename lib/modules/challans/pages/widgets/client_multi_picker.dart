@@ -4,7 +4,9 @@ import '../../../../core/clients/models/client.dart';
 import '../../../../core/clients/models/client_address.dart';
 import '../../../../core/clients/pages/client_list_page.dart';
 import '../../../../core/widgets/form_dialog.dart';
+import '../../../../core/widgets/inset_list_tile.dart';
 import '../../../../core/widgets/section_header.dart';
+import 'client_address_picker.dart';
 
 /// What the search's client filter picked: whole clients (every address
 /// they have) and single addresses of clients with several sites. Both
@@ -145,15 +147,15 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            CheckboxListTile(
+            _CheckRow(
               title: const Text('All clients'),
               value: count == 0,
-              onChanged: (_) => setState(() {
+              onChanged: () => setState(() {
                 _clientIds.clear();
                 _addressIds.clear();
               }),
             ),
-            const Divider(height: 1),
+            const Divider(),
             for (final c in active) ..._rows(c, archived: false),
             if (archived.isNotEmpty) ...[
               const SectionHeader('Archived', topPadding: 16),
@@ -171,38 +173,102 @@ class _ClientMultiPickerState extends State<_ClientMultiPicker> {
   }
 
   /// The client's row, and for a client with several addresses one indented
-  /// row per address.
+  /// row per address. Same look as the new challan's client list: inset
+  /// rows, each address with what prints under it.
   List<Widget> _rows(Client client, {required bool archived}) {
-    final muted = Theme.of(context).colorScheme.onSurfaceVariant;
-    final dimmedText = archived ? TextStyle(color: muted) : null;
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
     final hasSites = client.addresses.length > 1;
 
+    final TextStyle? nameStyle;
+    if (archived) {
+      nameStyle = TextStyle(color: muted);
+    } else if (hasSites) {
+      // A heading over its addresses, as in the new challan's list.
+      nameStyle = theme.textTheme.titleSmall?.copyWith(
+        color: theme.colorScheme.primary,
+      );
+    } else {
+      nameStyle = null;
+    }
+
+    final String? clientSubtitle;
+    if (hasSites) {
+      clientSubtitle = '${client.addresses.length} addresses';
+    } else if (client.addresses.isEmpty) {
+      clientSubtitle = null;
+    } else {
+      clientSubtitle = AddressChoice.of(
+        client,
+        client.addresses.single,
+      ).printedSummary;
+    }
+
+    final clientValue = _clientValue(client);
     return [
-      CheckboxListTile(
-        title: Text(client.name, style: dimmedText),
-        subtitle: hasSites
-            ? Text('${client.addresses.length} addresses')
-            : null,
+      _CheckRow(
+        title: Text(client.name, style: nameStyle),
+        subtitle: clientSubtitle,
+        value: clientValue,
         tristate: hasSites,
-        value: _clientValue(client),
-        onChanged: (_) => _toggleClient(client),
+        onChanged: () => _toggleClient(client),
       ),
       if (hasSites)
         for (final address in client.addresses)
-          CheckboxListTile(
-            contentPadding: const EdgeInsets.only(left: 40, right: 16),
-            title: Text(
-              address.isArchived
-                  ? '${address.label} (archived)'
-                  : address.label,
-              style: address.isArchived ? TextStyle(color: muted) : dimmedText,
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: _CheckRow(
+              title: Text(
+                address.isArchived
+                    ? '${address.label} (archived)'
+                    : '${address.label} · ${address.stateName}',
+                style: address.isArchived ? TextStyle(color: muted) : null,
+              ),
+              subtitle: AddressChoice.of(client, address).printedSummary,
+              value:
+                  _clientIds.contains(client.id) ||
+                  _addressIds.contains(address.addressId),
+              onChanged: () => _toggleAddress(client, address),
             ),
-            subtitle: Text(address.stateName),
-            value:
-                _clientIds.contains(client.id) ||
-                _addressIds.contains(address.addressId),
-            onChanged: (_) => _toggleAddress(client, address),
           ),
     ];
+  }
+}
+
+/// A list row with a checkbox in front: the app's inset row, highlighted
+/// like a selected list row while it's ticked.
+class _CheckRow extends StatelessWidget {
+  const _CheckRow({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+    this.subtitle,
+    this.tristate = false,
+  });
+
+  final Widget title;
+  final String? subtitle;
+
+  /// Null for a client with only some of its addresses ticked.
+  final bool? value;
+  final bool tristate;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final subtitle = this.subtitle;
+    return InsetListTile(
+      leading: Checkbox(
+        value: value,
+        tristate: tristate,
+        onChanged: (_) => onChanged(),
+      ),
+      title: title,
+      subtitle: subtitle == null
+          ? null
+          : Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
+      selected: value == true,
+      onTap: onChanged,
+    );
   }
 }

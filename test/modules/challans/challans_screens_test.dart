@@ -10,6 +10,7 @@ import 'package:crs_ops/core/clients/providers/client_providers.dart';
 import 'package:crs_ops/core/data/shared_preferences_provider.dart';
 import 'package:crs_ops/core/sections/app_sections_provider.dart';
 import 'package:crs_ops/core/theme/app_theme.dart';
+import 'package:crs_ops/core/widgets/inset_list_tile.dart';
 import 'package:crs_ops/modules/challans/challans_section.dart';
 import 'package:crs_ops/modules/challans/financial_year.dart';
 import 'package:crs_ops/modules/challans/models/challan_direction.dart';
@@ -433,7 +434,7 @@ void main() {
     // Filtering by client goes through the picker's Apply.
     await tester.tap(find.text('All clients'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Vega Corporate'));
+    await tester.tap(find.widgetWithText(InsetListTile, 'Vega Corporate').last);
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, ['client-1']);
@@ -451,7 +452,7 @@ void main() {
     // One site of a client with two.
     await tester.tap(find.text('All clients'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Okhla'));
+    await tester.tap(find.widgetWithText(InsetListTile, 'Okhla · Delhi'));
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, isEmpty);
@@ -464,7 +465,7 @@ void main() {
     // Both sites ticked is the whole client.
     await tester.tap(find.text('Vega Corporate · Okhla'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Main'));
+    await tester.tap(find.widgetWithText(InsetListTile, 'Main · Delhi'));
     await tester.tap(find.text('Apply'));
     await tester.pumpAndSettle();
     expect(app.challans.searches.last.clientIds, ['client-1']);
