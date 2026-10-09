@@ -428,7 +428,7 @@ void main() {
     expect(app.challans.searches.last.text, 'printer');
     expect(find.text('Offshoot Agency · 1'), findsOneWidget);
 
-    await tester.tap(find.text('Outward and inward'));
+    await tester.tap(find.text('Any direction'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Inward').last);
     await tester.pumpAndSettle();

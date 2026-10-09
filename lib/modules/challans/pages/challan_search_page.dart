@@ -213,7 +213,7 @@ class _ChallanSearchPageState extends ConsumerState<ChallanSearchPage> {
                 ),
                 MenuChip<ChallanDirection?>(
                   icon: Icons.swap_vert,
-                  label: query.direction?.label ?? 'Outward and inward',
+                  label: query.direction?.label ?? 'Any direction',
                   selected: query.direction,
                   options: [
                     const MenuChipOption(null, 'Outward and inward'),
