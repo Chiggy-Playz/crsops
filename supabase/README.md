@@ -70,5 +70,12 @@ Imports the old `crs_attendance` Firestore export into `core`/`attendance`. See
 
 - [x] Ran the legacy data import (date: 2026-10-05, export file: `~/Downloads/backup.json`)
   — 16 employees, 27 events, 1950 attendance_days, verified against source counts and the
-  11-inactive/5-active split. This is a test-cutover run, not necessarily the final one —
-  re-run `undo.sql` + regenerate against a fresher export before going live for real.
+  11-inactive/5-active split. This was a test-cutover run.
+- [x] **Final cutover import — attendance module is LIVE (date: 2026-10-08, export file:
+  `~/Downloads/backup-2026-10-08.json`)** — 16 employees, 27 events, 1988 attendance_days,
+  self-verified by the import before commit. A full `pg_dump` taken just before the wipe is
+  at `~/backups/crs-prod-2026-10-08.dump`. **Do not re-run `undo.sql` or this import against
+  prod any more:** it would delete everything marked in the new app since cutover.
+  Notes for next time: `npx node-firestore-import-export` fails with "Page size must be
+  nonnegative" on current Firestore; export with a small Python `firebase-admin` script
+  instead (write UTC ISO timestamps ending in `Z`, as this tool expects).
