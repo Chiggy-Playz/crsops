@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show MissingPluginException;
+import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -35,6 +37,42 @@ Future<void> shareGeneratedFile({
       downloadFallbackEnabled: true,
     ),
   );
+}
+
+/// Like [shareGeneratedFile], but on phones the file opens in the device's
+/// viewer (a PDF reader), which has its own share and print. The web and
+/// Linux behave as in [shareGeneratedFile].
+Future<void> openGeneratedFile({
+  required Uint8List bytes,
+  required String fileName,
+  required String mimeType,
+}) async {
+  if (kIsWeb || Platform.isLinux) {
+    await shareGeneratedFile(
+      bytes: bytes,
+      fileName: fileName,
+      mimeType: mimeType,
+    );
+    return;
+  }
+  final directory = await getTemporaryDirectory();
+  final file = File('${directory.path}/$fileName');
+  await file.writeAsBytes(bytes, flush: true);
+  var opened = false;
+  try {
+    final result = await OpenFilex.open(file.path, type: mimeType);
+    opened = result.type == ResultType.done;
+  } on MissingPluginException {
+    // Not built into this install yet; sharing below still works.
+  }
+  if (!opened) {
+    // No viewer installed, or it refused: sharing still gets the file out.
+    await shareGeneratedFile(
+      bytes: bytes,
+      fileName: fileName,
+      mimeType: mimeType,
+    );
+  }
 }
 
 /// Writes [bytes] into Downloads as [fileName], adding " (2)", " (3)", …

@@ -11,8 +11,8 @@ import '../../pdf/challan_pdf.dart';
 import '../../providers/challan_providers.dart';
 
 /// The PDF button on a challan's page: pick how many copies and the PDF is
-/// made straight away, no preview. The web downloads it; phones open the
-/// share sheet (WhatsApp, print, save).
+/// made straight away, no preview. The web downloads it; phones open it in
+/// the PDF viewer (which can share or print).
 class ChallanPdfButton extends ConsumerStatefulWidget {
   const ChallanPdfButton({super.key, required this.challan});
 
@@ -35,7 +35,7 @@ class _ChallanPdfButtonState extends ConsumerState<ChallanPdfButton> {
         copies: copies,
         assets: assets,
       );
-      await shareGeneratedFile(
+      await openGeneratedFile(
         bytes: bytes,
         fileName: challanPdfFileName(widget.challan),
         mimeType: 'application/pdf',
@@ -65,7 +65,7 @@ class _ChallanPdfButtonState extends ConsumerState<ChallanPdfButton> {
     if (kIsWeb) {
       tooltip = 'Download PDF';
     } else {
-      tooltip = 'Share PDF';
+      tooltip = 'Open PDF';
     }
 
     return OverflowMenu(
