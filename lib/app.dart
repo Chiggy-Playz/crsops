@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_router.dart';
 import 'core/connectivity/connectivity_provider.dart';
+import 'core/router/back_state.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_provider.dart';
 import 'core/updates/update_listener.dart';
@@ -22,6 +23,7 @@ class App extends ConsumerWidget {
     // connectivity blip discarded dialogs, form input, and scroll state.
     return MaterialApp.router(
       routerConfig: router,
+      onNavigationNotification: reportBackState(router.canPop),
       scaffoldMessengerKey: rootScaffoldMessengerKey,
       theme: buildAppTheme(brightness: Brightness.light),
       darkTheme: buildAppTheme(brightness: Brightness.dark),
