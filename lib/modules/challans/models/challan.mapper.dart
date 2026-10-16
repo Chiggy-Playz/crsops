@@ -51,6 +51,13 @@ class ChallanMapper extends ClassMapperBase<Challan> {
     _$handledByName,
     key: r'handled_by_name',
   );
+  static String? _$handledByEmployeeId(Challan v) => v.handledByEmployeeId;
+  static const Field<Challan, String> _f$handledByEmployeeId = Field(
+    'handledByEmployeeId',
+    _$handledByEmployeeId,
+    key: r'handled_by_employee_id',
+    opt: true,
+  );
   static String? _$vehicleNumber(Challan v) => v.vehicleNumber;
   static const Field<Challan, String> _f$vehicleNumber = Field(
     'vehicleNumber',
@@ -256,6 +263,7 @@ class ChallanMapper extends ClassMapperBase<Challan> {
     #number: _f$number,
     #challanDate: _f$challanDate,
     #handledByName: _f$handledByName,
+    #handledByEmployeeId: _f$handledByEmployeeId,
     #vehicleNumber: _f$vehicleNumber,
     #declaredValue: _f$declaredValue,
     #notes: _f$notes,
@@ -297,6 +305,7 @@ class ChallanMapper extends ClassMapperBase<Challan> {
       number: data.dec(_f$number),
       challanDate: data.dec(_f$challanDate),
       handledByName: data.dec(_f$handledByName),
+      handledByEmployeeId: data.dec(_f$handledByEmployeeId),
       vehicleNumber: data.dec(_f$vehicleNumber),
       declaredValue: data.dec(_f$declaredValue),
       notes: data.dec(_f$notes),
@@ -401,6 +410,7 @@ abstract class ChallanCopyWith<$R, $In extends Challan, $Out>
     int? number,
     DateTime? challanDate,
     String? handledByName,
+    String? handledByEmployeeId,
     String? vehicleNumber,
     int? declaredValue,
     String? notes,
@@ -463,6 +473,7 @@ class _ChallanCopyWithImpl<$R, $Out>
     int? number,
     DateTime? challanDate,
     String? handledByName,
+    Object? handledByEmployeeId = $none,
     Object? vehicleNumber = $none,
     Object? declaredValue = $none,
     Object? notes = $none,
@@ -502,6 +513,8 @@ class _ChallanCopyWithImpl<$R, $Out>
       if (number != null) #number: number,
       if (challanDate != null) #challanDate: challanDate,
       if (handledByName != null) #handledByName: handledByName,
+      if (handledByEmployeeId != $none)
+        #handledByEmployeeId: handledByEmployeeId,
       if (vehicleNumber != $none) #vehicleNumber: vehicleNumber,
       if (declaredValue != $none) #declaredValue: declaredValue,
       if (notes != $none) #notes: notes,
@@ -547,6 +560,10 @@ class _ChallanCopyWithImpl<$R, $Out>
     number: data.get(#number, or: $value.number),
     challanDate: data.get(#challanDate, or: $value.challanDate),
     handledByName: data.get(#handledByName, or: $value.handledByName),
+    handledByEmployeeId: data.get(
+      #handledByEmployeeId,
+      or: $value.handledByEmployeeId,
+    ),
     vehicleNumber: data.get(#vehicleNumber, or: $value.vehicleNumber),
     declaredValue: data.get(#declaredValue, or: $value.declaredValue),
     notes: data.get(#notes, or: $value.notes),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/clients/providers/client_providers.dart';
 import '../../../core/clients/routes.dart';
 import '../../../core/layout/two_pane_layout.dart';
+import '../../../core/layout/window_size.dart';
 import '../../../core/utils/date_time_format.dart';
 import '../../../core/utils/money_format.dart';
 import '../../../core/widgets/overflow_menu.dart';
@@ -23,6 +24,18 @@ class ChallanDetailPage extends ConsumerWidget {
   const ChallanDetailPage({super.key, required this.challanId});
 
   final String challanId;
+
+  /// Wide: the form replaces this challan in the right pane (a push would
+  /// stack it on top, and leaving then has to close both). Narrow: a page on
+  /// top, so back returns here.
+  void _openEdit(BuildContext context, Challan challan) {
+    final route = ChallanEditRoute(challan.id, $extra: challan);
+    if (context.isTwoPane) {
+      route.go(context);
+    } else {
+      route.push(context);
+    }
+  }
 
   Future<void> _cancel(
     BuildContext context,
@@ -65,10 +78,7 @@ class ChallanDetailPage extends ConsumerWidget {
             tooltip: 'Edit challan',
             onPressed: challan == null || challan.isCancelled
                 ? null
-                : () => ChallanEditRoute(
-                    challan.id,
-                    $extra: challan,
-                  ).push(context),
+                : () => _openEdit(context, challan),
           ),
           if (challan != null)
             OverflowMenu(

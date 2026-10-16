@@ -190,12 +190,35 @@ left join lateral (
 left join challans.challans reversed on reversed.id = c.reverses_challan_id
 left join challans.challans returned on returned.reverses_challan_id = c.id;
 
--- Names for "Delivered by" / "Received by" suggestions: those typed before,
--- most used first, then the active employees not typed yet. A function with
--- its own rights because employees are admin-only to read: it checks the
--- module itself and hands back nothing but names.
-create function challans.handler_suggestions()
-returns table (name text, uses int)
+-- People who deliver or receive but aren't employees ("Porter", a courier).
+-- Added from the challan form, renamed and removed in Settings. Challans keep
+-- their own copy of the name, so none of that changes an issued challan.
+create table challans.custom_handlers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (btrim(name) <> ''),
+  created_by uuid references auth.users(id),
+  created_at timestamptz not null default now()
+);
+create unique index custom_handlers_name_key on challans.custom_handlers (lower(name));
+
+-- Who may rename and remove custom handlers. Every such check goes through
+-- here, so opening it to another role later is a change to this one body
+-- (and the matching line in the app's settings section).
+create function challans.can_manage_handlers()
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select core.is_superadmin();
+$$;
+
+-- The "Delivered by" / "Received by" choices: active employees, then custom
+-- handlers, each with its id. A function with its own rights because
+-- employees are admin-only to read: it checks the module itself and hands
+-- back nothing but names.
+create function challans.handler_options()
+returns table (kind text, id uuid, name text)
 language plpgsql
 stable
 security definer
@@ -205,26 +228,101 @@ begin
   perform core.require_module_access('challans');
 
   return query
-  with typed as (
-    select c.handled_by_name as typed_name, count(*)::int as typed_uses
-    from challans.challans c
-    group by c.handled_by_name
-  ),
-  staff as (
-    select e.name as typed_name, 0 as typed_uses
+  select options.kind, options.id, options.name
+  from (
+    select 'employee' as kind, e.id, e.name, 0 as sort_group
     from core.employees e
     where core.employee_status_as_of(e.id, challans.today()) = 'active'
-      and not exists (select 1 from typed t where lower(t.typed_name) = lower(e.name))
-  )
-  select names.typed_name, names.typed_uses
-  from (select * from typed union all select * from staff) names
-  order by names.typed_uses desc, names.typed_name;
+    union all
+    select 'custom', h.id, h.name, 1
+    from challans.custom_handlers h
+  ) options
+  order by options.sort_group, lower(options.name);
 end;
 $$;
 
-create view challans.handled_by_names
+create view challans.handler_choices
 with (security_invoker = true) as
-select * from challans.handler_suggestions();
+select * from challans.handler_options();
+
+-- Saves a new custom handler, or returns the one already saved under that
+-- name. An employee's name can't be added: they're picked from the list.
+create function challans.add_custom_handler(p_name text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  clean_name text := core.clean_text(p_name);
+  existing_id uuid;
+begin
+  perform core.require_module_access('challans');
+
+  if clean_name is null then
+    raise exception 'Enter a name.';
+  end if;
+  if exists (select 1 from core.employees e where lower(e.name) = lower(clean_name)) then
+    raise exception '% is an employee: pick them from the list.', clean_name;
+  end if;
+
+  select h.id into existing_id
+  from challans.custom_handlers h where lower(h.name) = lower(clean_name);
+  if existing_id is not null then
+    return existing_id;
+  end if;
+
+  insert into challans.custom_handlers (name, created_by)
+  values (clean_name, auth.uid())
+  returning id into existing_id;
+  return existing_id;
+end;
+$$;
+
+create function challans.rename_custom_handler(p_id uuid, p_name text)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  clean_name text := core.clean_text(p_name);
+begin
+  if not challans.can_manage_handlers() then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+  if clean_name is null then
+    raise exception 'Enter a name.';
+  end if;
+  if exists (select 1 from core.employees e where lower(e.name) = lower(clean_name)) then
+    raise exception '% is an employee.', clean_name;
+  end if;
+  if exists (select 1 from challans.custom_handlers h
+             where lower(h.name) = lower(clean_name) and h.id <> p_id) then
+    raise exception '% is already in the list.', clean_name;
+  end if;
+
+  update challans.custom_handlers set name = clean_name where id = p_id;
+  if not found then
+    raise exception 'That handler no longer exists.';
+  end if;
+end;
+$$;
+
+create function challans.delete_custom_handler(p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if not challans.can_manage_handlers() then
+    raise exception 'Not allowed' using errcode = '42501';
+  end if;
+
+  delete from challans.custom_handlers where id = p_id;
+end;
+$$;
 
 -- Units typed before ("SET", "NOS"), most used first.
 create view challans.item_units
@@ -265,6 +363,10 @@ create policy challans_select on challans.challans
 
 alter table challans.challan_items enable row level security;
 create policy challan_items_select on challans.challan_items
+  for select using (core.has_module_access('challans'));
+
+alter table challans.custom_handlers enable row level security;
+create policy custom_handlers_select on challans.custom_handlers
   for select using (core.has_module_access('challans'));
 
 alter table challans.challan_events enable row level security;
@@ -388,6 +490,32 @@ as $$
   where lower(e.name) = lower(p_name);
 $$;
 
+-- The name to print and the employee to link, from what the form sent: a
+-- picked employee wins and supplies their own name; otherwise the typed
+-- name, linked when it is exactly one employee's.
+create function challans.resolve_handler(p_name text, p_employee_id uuid)
+returns table (handler_name text, handler_employee_id uuid)
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  employee_name text;
+  typed_name text := core.clean_text(p_name);
+begin
+  if p_employee_id is null then
+    return query select typed_name, challans.employee_named(typed_name);
+    return;
+  end if;
+
+  select e.name into employee_name from core.employees e where e.id = p_employee_id;
+  if employee_name is null then
+    raise exception 'That employee no longer exists.';
+  end if;
+  return query select employee_name, p_employee_id;
+end;
+$$;
+
 -- Takes the lock on a number series (direction + financial year) and returns
 -- its next number. The lock is held until the caller's transaction ends, so
 -- the caller must insert the challan in that same transaction.
@@ -462,7 +590,8 @@ create function challans.create_challan(
   p_vehicle_number text,
   p_declared_value integer,
   p_notes text,
-  p_items jsonb
+  p_items jsonb,
+  p_handled_by_employee_id uuid default null
 )
 returns uuid
 language plpgsql
@@ -470,7 +599,8 @@ security definer
 set search_path = ''
 as $$
 declare
-  clean_handled_by text := core.clean_text(p_handled_by_name);
+  clean_handled_by text;
+  handler_employee_id uuid;
   series_year smallint := challans.financial_year_of(p_challan_date);
   latest_date date;
   next_number int;
@@ -488,6 +618,9 @@ begin
   if p_challan_date > challans.today() then
     raise exception 'The challan date can''t be in the future.';
   end if;
+  select r.handler_name, r.handler_employee_id
+  into clean_handled_by, handler_employee_id
+  from challans.resolve_handler(p_handled_by_name, p_handled_by_employee_id) r;
   if clean_handled_by is null then
     if p_direction = 'outward' then
       raise exception 'Enter who is delivering it.';
@@ -521,7 +654,7 @@ begin
   )
   values (
     p_direction, p_challan_date, next_number, version_id,
-    clean_handled_by, challans.employee_named(clean_handled_by),
+    clean_handled_by, handler_employee_id,
     upper(core.clean_text(p_vehicle_number)), p_declared_value,
     core.clean_text(p_notes), auth.uid()
   )
@@ -547,7 +680,8 @@ create function challans.update_challan(
   p_vehicle_number text,
   p_declared_value integer,
   p_notes text,
-  p_items jsonb
+  p_items jsonb,
+  p_handled_by_employee_id uuid default null
 )
 returns void
 language plpgsql
@@ -558,7 +692,8 @@ declare
   existing challans.challans;
   old_address_id uuid;
   new_version_id uuid;
-  clean_handled_by text := core.clean_text(p_handled_by_name);
+  clean_handled_by text;
+  handler_employee_id uuid;
   clean_vehicle text := upper(core.clean_text(p_vehicle_number));
   clean_notes text := core.clean_text(p_notes);
   old_items jsonb;
@@ -568,6 +703,17 @@ begin
   perform core.require_module_access('challans');
   existing := challans.challan_for_update(p_challan_id);
 
+  -- The same employee as before keeps the name the challan was made with,
+  -- even if they've since been renamed.
+  if p_handled_by_employee_id is not null
+     and p_handled_by_employee_id is not distinct from existing.handled_by_employee_id then
+    clean_handled_by := existing.handled_by_name;
+    handler_employee_id := existing.handled_by_employee_id;
+  else
+    select r.handler_name, r.handler_employee_id
+    into clean_handled_by, handler_employee_id
+    from challans.resolve_handler(p_handled_by_name, p_handled_by_employee_id) r;
+  end if;
   if clean_handled_by is null then
     if existing.direction = 'outward' then
       raise exception 'Enter who is delivering it.';
@@ -633,7 +779,7 @@ begin
   update challans.challans
   set client_address_version_id = new_version_id,
       handled_by_name = clean_handled_by,
-      handled_by_employee_id = challans.employee_named(clean_handled_by),
+      handled_by_employee_id = handler_employee_id,
       vehicle_number = clean_vehicle,
       declared_value = p_declared_value,
       notes = clean_notes,
@@ -824,13 +970,16 @@ $$;
 -- ones are callable, and only by signed-in users; the rest are internal.
 revoke execute on all functions in schema challans from public, anon, authenticated;
 
-grant execute on function challans.create_challan(text, date, uuid, text, text, integer, text, jsonb) to authenticated;
-grant execute on function challans.update_challan(uuid, uuid, boolean, text, text, integer, text, jsonb) to authenticated;
+grant execute on function challans.create_challan(text, date, uuid, text, text, integer, text, jsonb, uuid) to authenticated;
+grant execute on function challans.update_challan(uuid, uuid, boolean, text, text, integer, text, jsonb, uuid) to authenticated;
 grant execute on function challans.cancel_challan(uuid, text, boolean) to authenticated;
 grant execute on function challans.set_received(uuid, date) to authenticated;
 grant execute on function challans.set_bill_number(uuid, text) to authenticated;
 grant execute on function challans.set_digitally_signed(uuid, boolean) to authenticated;
-grant execute on function challans.handler_suggestions() to authenticated;
+grant execute on function challans.handler_options() to authenticated;
+grant execute on function challans.add_custom_handler(text) to authenticated;
+grant execute on function challans.rename_custom_handler(uuid, text) to authenticated;
+grant execute on function challans.delete_custom_handler(uuid) to authenticated;
 
 -- ── Search ─────────────────────────────────────────────────────────────────
 -- Across every financial year, on the server (the list only loads one year at

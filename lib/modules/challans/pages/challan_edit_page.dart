@@ -88,6 +88,10 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
   /// Anything entered since the form opened, so leaving asks first.
   bool _changed = false;
 
+  /// Saved: a second Save would make another challan, and nothing is left to
+  /// lose by leaving.
+  bool _saved = false;
+
   bool get _isEditing => _existing != null;
 
   @override
@@ -146,16 +150,46 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
     return trimmed.isEmpty ? null : trimmed;
   }
 
+  /// What to send for "Delivered by" / "Received by": the name as listed,
+  /// the employee if one was picked, and whether it's a new name for the
+  /// custom list.
+  ({String name, String? employeeId, bool isNew}) _resolveHandler() {
+    final typed = _handledBy.text.trim();
+    final choices = ref.read(handlerChoicesProvider).value ?? const [];
+    for (final choice in choices) {
+      if (choice.name.toLowerCase() == typed.toLowerCase()) {
+        return (
+          name: choice.name,
+          employeeId: choice.isEmployee ? choice.id : null,
+          isNew: false,
+        );
+      }
+    }
+    // Untouched on an existing challan: keep it as it was (an employee who
+    // has since left, or a name from before the list existed).
+    final existing = _existing;
+    if (existing != null && typed == existing.handledByName) {
+      return (
+        name: typed,
+        employeeId: existing.handledByEmployeeId,
+        isNew: false,
+      );
+    }
+    return (name: typed, employeeId: null, isNew: true);
+  }
+
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _saving) return;
+    if (!_formKey.currentState!.validate() || _saving || _saved) return;
     final repo = ref.read(challanRepositoryProvider);
+    final handler = _resolveHandler();
     final declaredText = _declaredValue.text.trim();
     final draft = ChallanDraft(
       direction: _direction,
       challanDate: _date,
       addressId: _address!.addressId,
       useLatestAddress: _useLatestAddress,
-      handledByName: _handledBy.text.trim(),
+      handledByName: handler.name,
+      handledByEmployeeId: handler.employeeId,
       vehicleNumber: _nullIfBlank(_vehicle.text),
       declaredValue: declaredText.isEmpty ? null : int.parse(declaredText),
       notes: _nullIfBlank(_notes.text),
@@ -167,6 +201,7 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
       context,
       setSaving: (v) => setState(() => _saving = v),
       action: () async {
+        if (handler.isNew) await repo.addCustomHandler(handler.name);
         if (_isEditing) {
           await repo.update(widget.existing!.id, draft);
         } else {
@@ -179,6 +214,7 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
         ref.read(clientsRevisionProvider.notifier).bump();
         // Saved: nothing to ask about on the way out.
         _changed = false;
+        _saved = true;
         final createdId = newId;
         if (createdId == null) {
           Navigator.of(context).pop();
@@ -191,7 +227,8 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final names = ref.watch(handledByNamesProvider).value ?? const <String>[];
+    final handlerChoices =
+        ref.watch(handlerChoicesProvider).value ?? const <HandlerChoice>[];
     final units = ref.watch(itemUnitsProvider).value ?? const <String>[];
     final existing = _existing;
 
@@ -232,7 +269,7 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
       saving: _saving,
       onSave: _save,
       onChanged: () => _changed = true,
-      hasUnsavedChanges: () => _changed,
+      hasUnsavedChanges: () => _changed && !_saved,
       closeLocation: existing == null
           ? const ChallansRoute().location
           : ChallanDetailRoute(existing.id).location,
@@ -258,7 +295,7 @@ class _ChallanEditPageState extends ConsumerState<ChallanEditPage> {
         FieldPair(
           first: CreatableDropdownField(
             controller: _handledBy,
-            options: names,
+            options: [for (final choice in handlerChoices) choice.name],
             labelFor: CreatableDropdownField.plainText,
             label: _direction.handledByLabel,
             validator: (value) =>

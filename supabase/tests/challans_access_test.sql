@@ -22,9 +22,6 @@ begin
     $sql$ values (2, 5, 'A', 1, 2, 'Delhi') $sql$,
     'the overview totals items and knows a newer address exists');
   return next ok(
-    exists (select 1 from challans.handled_by_names where name = 'ramesh'),
-    'names typed before are suggested');
-  return next ok(
     exists (select 1 from challans.item_units where unit = 'ZZUNIT'),
     'units typed before are suggested');
   return next ok(
@@ -203,9 +200,9 @@ begin
 end;
 $$;
 
--- Suggestions for "Delivered by" include active employees, even to a user who
--- can't read employees; nobody without the module sees any.
-create function tests.test_handler_suggestions()
+-- The "Delivered by" choices: active employees (even to a user who can't read
+-- employees) and custom handlers; nobody without the module sees any.
+create function tests.test_handler_choices()
 returns setof text
 language plpgsql
 as $$
@@ -225,24 +222,144 @@ begin
     not exists (select 1 from core.employees where id = active_id),
     'this user can''t read employees directly');
   return next ok(
-    exists (select 1 from challans.handled_by_names where name = 'ZZ Active Staff'),
-    'an active employee is suggested');
+    exists (select 1 from challans.handler_choices
+            where kind = 'employee' and id = active_id and name = 'ZZ Active Staff'),
+    'an active employee is offered, with their id');
   return next ok(
-    not exists (select 1 from challans.handled_by_names where name = 'ZZ Gone Staff'),
+    not exists (select 1 from challans.handler_choices where name = 'ZZ Gone Staff'),
     'an employee who left is not');
 
-  perform tests.outward(tests.new_address(), null, '[{"description":"A","quantity":1}]');
-  perform tests.act_as_owner();
-  update challans.challans set handled_by_name = 'zz active staff' where handled_by_name = 'ramesh';
-  perform tests.act_as_challans_user();
+  perform challans.add_custom_handler('  zz porter ');
+  return next ok(
+    exists (select 1 from challans.handler_choices where kind = 'custom' and name = 'zz porter'),
+    'a custom handler is offered once added');
   return next is(
-    (select count(*)::int from challans.handled_by_names where lower(name) = 'zz active staff'),
-    1, 'a name typed before is not offered twice');
+    challans.add_custom_handler('ZZ PORTER'), challans.add_custom_handler('zz porter'),
+    'adding the same name again, in any case, returns the same one');
+  return next throws_ok(
+    $sql$ select challans.add_custom_handler('zz active staff') $sql$, 'P0001', null,
+    'an employee can''t be added as a custom handler');
+  return next throws_ok(
+    $sql$ select challans.add_custom_handler('  ') $sql$, 'P0001', 'Enter a name.',
+    'a blank name is refused');
 
   perform tests.act_as_owner();
   perform tests.act_as(tests.create_user(null, '{}'));
   return next throws_ok(
-    'select * from challans.handled_by_names', '42501', 'Not allowed',
-    'without challans access there are no suggestions');
+    'select * from challans.handler_choices', '42501', 'Not allowed',
+    'without challans access there are no choices');
+  return next throws_ok(
+    $sql$ select challans.add_custom_handler('zz nobody') $sql$, '42501', 'Not allowed',
+    'and none can be added');
+end;
+$$;
+
+-- Only a superadmin renames or removes custom handlers, and issued challans
+-- keep the name they were made with.
+create function tests.test_manage_handlers()
+returns setof text
+language plpgsql
+as $$
+declare
+  handler_id uuid;
+  challan_id uuid;
+begin
+  insert into core.employees (name, color) values ('ZZ Active Staff', 0);
+
+  perform tests.act_as_challans_user();
+  handler_id := challans.add_custom_handler('zz porteer');
+  challan_id := challans.create_challan('outward', tests.today(), tests.new_address(),
+    'zz porteer', null, null, null, tests.one_item());
+
+  return next throws_ok(
+    format($sql$ select challans.rename_custom_handler(%L, 'zz porter') $sql$, handler_id),
+    '42501', 'Not allowed', 'a challans user can''t rename a custom handler');
+  return next throws_ok(
+    format($sql$ select challans.delete_custom_handler(%L) $sql$, handler_id),
+    '42501', 'Not allowed', 'or delete one');
+
+  perform tests.act_as_owner();
+  perform tests.act_as(tests.create_user('superadmin', '{}'));
+  perform challans.rename_custom_handler(handler_id, ' zz porter ');
+  return next ok(
+    exists (select 1 from challans.handler_choices where id = handler_id and name = 'zz porter'),
+    'a superadmin renames it');
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'zz porteer', 'an issued challan keeps the old name');
+  return next throws_ok(
+    format($sql$ select challans.rename_custom_handler(%L, 'ZZ Active Staff') $sql$, handler_id),
+    'P0001', null, 'it can''t take an employee''s name');
+
+  perform challans.delete_custom_handler(handler_id);
+  return next ok(
+    not exists (select 1 from challans.handler_choices where id = handler_id),
+    'and deletes it');
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'zz porteer', 'the challan still has the name');
+end;
+$$;
+
+-- Picking an employee stores their id and their name; a typed name that is
+-- exactly one employee's links too; an unknown name stays plain text.
+create function tests.test_handler_employee_link()
+returns setof text
+language plpgsql
+as $$
+declare
+  staff_id uuid;
+  address_id uuid;
+  challan_id uuid;
+begin
+  insert into core.employees (name, color) values ('ZZ Linked Staff', 0) returning id into staff_id;
+  insert into core.employee_events (employee_id, event_type, event_date)
+  values (staff_id, 'joined', '2020-01-01');
+
+  perform tests.act_as_challans_user();
+  address_id := tests.new_address();
+
+  challan_id := challans.create_challan('outward', tests.today(), address_id,
+    null, null, null, null, tests.one_item(), staff_id);
+  return next results_eq(
+    format($sql$ select handled_by_name, handled_by_employee_id from challans.challans where id = %L $sql$, challan_id),
+    format($sql$ values ('ZZ Linked Staff', %L::uuid) $sql$, staff_id),
+    'a picked employee supplies the name and the link');
+
+  challan_id := challans.create_challan('outward', tests.today(), address_id,
+    'zz linked staff', null, null, null, tests.one_item());
+  return next is(
+    (select handled_by_employee_id from challans.challans where id = challan_id),
+    staff_id, 'a typed name matching one employee links to them');
+
+  challan_id := challans.create_challan('outward', tests.today(), address_id,
+    'Porter', null, null, null, tests.one_item());
+  return next ok(
+    (select handled_by_employee_id is null from challans.challans where id = challan_id),
+    'any other name stays plain text');
+
+  perform tests.act_as_owner();
+  update core.employees set name = 'ZZ Renamed Staff' where id = staff_id;
+  perform tests.act_as_challans_user();
+  challan_id := challans.create_challan('outward', tests.today(), address_id,
+    null, null, null, null, tests.one_item(), staff_id);
+  perform challans.update_challan(challan_id, address_id, false,
+    null, null, 5, null, tests.one_item(), staff_id);
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'ZZ Renamed Staff', 'a new challan uses the current name');
+
+  perform tests.act_as_owner();
+  update core.employees set name = 'ZZ Linked Staff' where id = staff_id;
+  perform tests.act_as_challans_user();
+  perform challans.update_challan(challan_id, address_id, false,
+    null, null, 6, null, tests.one_item(), staff_id);
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'ZZ Renamed Staff', 'editing keeps the name the challan was made with');
+
+  return next throws_ok(
+    format($sql$ select challans.create_challan('outward', tests.today(), %L, null, null, null, null, tests.one_item(), gen_random_uuid()) $sql$, address_id),
+    'P0001', 'That employee no longer exists.', 'an unknown employee id is refused');
 end;
 $$;

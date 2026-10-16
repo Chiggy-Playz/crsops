@@ -77,9 +77,9 @@ Future<List<ChallanEvent>> challanHistory(Ref ref, String challanId) {
 }
 
 @riverpod
-Future<List<String>> handledByNames(Ref ref) {
+Future<List<HandlerChoice>> handlerChoices(Ref ref) {
   ref.watch(challansRevisionProvider);
-  return ref.watch(challanRepositoryProvider).fetchHandledByNames();
+  return ref.watch(challanRepositoryProvider).fetchHandlerChoices();
 }
 
 @riverpod

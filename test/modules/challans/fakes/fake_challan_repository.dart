@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:crs_ops/modules/challans/challan_search.dart';
 import 'package:crs_ops/modules/challans/models/challan.dart';
 import 'package:crs_ops/modules/challans/models/challan_direction.dart';
@@ -60,6 +62,9 @@ class FakeChallanRepository implements ChallanRepository {
   final List<Challan> _challans;
 
   final List<ChallanDraft> created = [];
+
+  /// When set, [create] waits for it, like a slow connection.
+  Completer<void>? createGate;
   final Map<String, ChallanDraft> updated = {};
   final List<({String id, String? reason, bool createReturn})> cancelled = [];
   final Map<String, bool> signed = {};
@@ -110,14 +115,38 @@ class FakeChallanRepository implements ChallanRepository {
     for (final c in challans) _challans.firstWhere((s) => s.id == c.id),
   ];
 
+  final handlerChoices = [
+    const HandlerChoice(id: 'emp-1', name: 'RAMESH', isEmployee: true),
+    const HandlerChoice(id: 'custom-1', name: 'PORTER', isEmployee: false),
+  ];
+  final addedHandlers = <String>[];
+  final renamedHandlers = <String, String>{};
+  final deletedHandlers = <String>[];
+
   @override
-  Future<List<String>> fetchHandledByNames() async => ['RAMESH', 'SURESH'];
+  Future<List<HandlerChoice>> fetchHandlerChoices() async => handlerChoices;
+
+  @override
+  Future<void> addCustomHandler(String name) async {
+    addedHandlers.add(name);
+    handlerChoices.add(
+      HandlerChoice(id: 'custom-$name', name: name, isEmployee: false),
+    );
+  }
+
+  @override
+  Future<void> renameCustomHandler(String id, String name) async =>
+      renamedHandlers[id] = name;
+
+  @override
+  Future<void> deleteCustomHandler(String id) async => deletedHandlers.add(id);
 
   @override
   Future<List<String>> fetchUnits() async => ['SET', 'NOS'];
 
   @override
   Future<String> create(ChallanDraft draft) async {
+    await createGate?.future;
     created.add(draft);
     final id = 'new-${created.length}';
     _challans.add(

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 // Challans and clients screens, driven through the real router with fake
 // repositories, at a phone size and a wide window.
 import 'package:crs_ops/app_router.dart';
@@ -231,10 +233,75 @@ void main() {
     final draft = app.challans.created.single;
     expect(draft.direction, ChallanDirection.outward);
     expect(draft.addressId, 'client-1-a1');
-    expect(draft.handledByName, 'Ramesh');
+    // Typed like an employee in the list: sent as that employee.
+    expect(draft.handledByName, 'RAMESH');
+    expect(draft.handledByEmployeeId, 'emp-1');
+    expect(app.challans.addedHandlers, isEmpty);
     expect(draft.items.map((i) => i.description), ['Mouse', 'Keyboard']);
     expect(draft.items.map((i) => i.quantity), [1, 3]);
     // Opens the new challan.
+    expect(app.router.state.matchedLocation, '/challans/new-1');
+  });
+
+  testWidgets('a name that is not in the list is saved for next time', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Main · Delhi'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Delivered by'),
+      'Courier',
+    );
+    await tester.pumpAndSettle();
+    // Picked from the menu, as a person would.
+    await tester.tap(find.text("Add 'Courier'"));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Description'), 'Mouse');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(app.challans.addedHandlers, ['Courier']);
+    expect(app.challans.created.single.handledByName, 'Courier');
+    expect(app.challans.created.single.handledByEmployeeId, isNull);
+    // Saved: it opens the new challan, with no "Discard changes?" in the way.
+    expect(find.text('Discard changes?'), findsNothing);
+    expect(app.router.state.matchedLocation, '/challans/new-1');
+  });
+
+  testWidgets('saving does not ask about another form left open beneath', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+
+    // A form, started and left as it is...
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Description'), 'Abandoned');
+    await tester.pumpAndSettle();
+
+    // ...then "New" again from the list beside it.
+    await tester.tap(find.text('New outward challan').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Main · Delhi'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Delivered by'),
+      'Ramesh',
+    );
+    await tester.enterText(_field('Description'), 'Mouse');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard changes?'), findsNothing);
+    expect(app.challans.created, hasLength(1));
     expect(app.router.state.matchedLocation, '/challans/new-1');
   });
 
@@ -530,5 +597,118 @@ void main() {
       _field('Name on challan'),
     );
     expect(nameOnChallan.controller!.text, 'Acme');
+  });
+
+  testWidgets('a challan is made once, after the slow save finishes', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+    final gate = Completer<void>();
+    app.challans.createGate = gate;
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Main · Delhi'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Delivered by'),
+      'Ramesh',
+    );
+    await tester.enterText(_field('Description'), 'Mouse');
+    await tester.tap(find.text('Save'));
+    await tester.pump();
+    // While it saves, the button is a spinner: nothing to press twice.
+    expect(find.text('Save'), findsNothing);
+    expect(app.challans.created, isEmpty);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(app.challans.created, hasLength(1));
+  });
+
+  testWidgets('New pressed twice leaves one form, not two on top', (
+    tester,
+  ) async {
+    await _pumpApp(tester, _wide);
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New outward challan').first);
+    await tester.pumpAndSettle();
+
+    expect(_field('Description'), findsOneWidget);
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+    // Nothing is left underneath.
+    expect(_field('Description'), findsNothing);
+  });
+
+  testWidgets('Edit replaces the challan, so Close returns to it', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+
+    app.router.go('/challans/o12');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Close'));
+    await tester.pumpAndSettle();
+
+    expect(app.router.state.matchedLocation, '/challans/o12');
+    expect(app.challans.created, isEmpty);
+    expect(app.challans.updated, isEmpty);
+  });
+
+  testWidgets('saving an edit updates the challan and creates none', (
+    tester,
+  ) async {
+    final app = await _pumpApp(tester, _wide);
+
+    app.router.go('/challans/o12');
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Edit challan'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Description').first, 'Changed');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(app.challans.updated.keys, ['o12']);
+    expect(app.challans.created, isEmpty);
+    expect(find.text('Discard changes?'), findsNothing);
+  });
+
+  testWidgets('discarding a form creates nothing', (tester) async {
+    final app = await _pumpApp(tester, _wide);
+
+    await tester.tap(find.text('New outward challan'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Main · Delhi'));
+    await tester.pumpAndSettle();
+    await tester.enterText(_field('Description'), 'Mouse');
+    await tester.tap(find.text('12'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+
+    expect(app.challans.created, isEmpty);
+  });
+
+  testWidgets('New client pressed twice leaves one form', (tester) async {
+    final app = await _pumpApp(tester, _wide);
+
+    app.router.go('/clients');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New client'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('New client').first);
+    await tester.pumpAndSettle();
+
+    expect(_field('Client name'), findsOneWidget);
   });
 }

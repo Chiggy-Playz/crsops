@@ -9,6 +9,20 @@ import '../models/challan_direction.dart';
 import '../models/challan_event.dart';
 import '../models/challan_item.dart';
 
+/// One entry of the "Delivered by" / "Received by" list: an active employee
+/// or a saved custom handler ("Porter").
+class HandlerChoice {
+  const HandlerChoice({
+    required this.id,
+    required this.name,
+    required this.isEmployee,
+  });
+
+  final String id;
+  final String name;
+  final bool isEmployee;
+}
+
 /// What the challan form saves. Direction and date are only used when
 /// creating; they never change afterwards.
 class ChallanDraft {
@@ -17,6 +31,7 @@ class ChallanDraft {
     required this.challanDate,
     required this.addressId,
     required this.handledByName,
+    this.handledByEmployeeId,
     this.vehicleNumber,
     this.declaredValue,
     this.notes,
@@ -32,6 +47,9 @@ class ChallanDraft {
   /// the challan was made with.
   final bool useLatestAddress;
   final String handledByName;
+
+  /// The employee picked, if any; the name is then theirs.
+  final String? handledByEmployeeId;
   final String? vehicleNumber;
   final int? declaredValue;
   final String? notes;
@@ -69,8 +87,14 @@ abstract class ChallanRepository {
   /// [challans] with their items filled in (for the detailed export).
   Future<List<Challan>> withItems(List<Challan> challans);
 
-  /// Names typed before into "Delivered by" / "Received by", most used first.
-  Future<List<String>> fetchHandledByNames();
+  /// The "Delivered by" / "Received by" list: active employees, then custom
+  /// handlers.
+  Future<List<HandlerChoice>> fetchHandlerChoices();
+
+  /// Saves a custom handler (or finds the one with that name).
+  Future<void> addCustomHandler(String name);
+  Future<void> renameCustomHandler(String id, String name);
+  Future<void> deleteCustomHandler(String id);
 
   /// Units typed before, most used first.
   Future<List<String>> fetchUnits();
@@ -219,10 +243,44 @@ class SupabaseChallanRepository implements ChallanRepository {
   }
 
   @override
-  Future<List<String>> fetchHandledByNames() async {
+  Future<List<HandlerChoice>> fetchHandlerChoices() async {
     try {
-      final rows = await _from('handled_by_names').select('name');
-      return [for (final row in rows) row['name'] as String];
+      final rows = await _from('handler_choices').select('kind, id, name');
+      return [
+        for (final row in rows)
+          HandlerChoice(
+            id: row['id'] as String,
+            name: row['name'] as String,
+            isEmployee: row['kind'] == 'employee',
+          ),
+      ];
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> addCustomHandler(String name) async {
+    try {
+      await _rpc('add_custom_handler', {'p_name': name});
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> renameCustomHandler(String id, String name) async {
+    try {
+      await _rpc('rename_custom_handler', {'p_id': id, 'p_name': name});
+    } catch (error) {
+      throw translateException(error);
+    }
+  }
+
+  @override
+  Future<void> deleteCustomHandler(String id) async {
+    try {
+      await _rpc('delete_custom_handler', {'p_id': id});
     } catch (error) {
       throw translateException(error);
     }
@@ -246,6 +304,7 @@ class SupabaseChallanRepository implements ChallanRepository {
         'p_challan_date': dateOnly(draft.challanDate),
         'p_address_id': draft.addressId,
         'p_handled_by_name': draft.handledByName,
+        'p_handled_by_employee_id': draft.handledByEmployeeId,
         'p_vehicle_number': draft.vehicleNumber,
         'p_declared_value': draft.declaredValue,
         'p_notes': draft.notes,
@@ -265,6 +324,7 @@ class SupabaseChallanRepository implements ChallanRepository {
         'p_address_id': draft.addressId,
         'p_use_latest_address': draft.useLatestAddress,
         'p_handled_by_name': draft.handledByName,
+        'p_handled_by_employee_id': draft.handledByEmployeeId,
         'p_vehicle_number': draft.vehicleNumber,
         'p_declared_value': draft.declaredValue,
         'p_notes': draft.notes,

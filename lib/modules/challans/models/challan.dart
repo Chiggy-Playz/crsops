@@ -18,6 +18,7 @@ class Challan with ChallanMappable {
     required this.number,
     required this.challanDate,
     required this.handledByName,
+    this.handledByEmployeeId,
     this.vehicleNumber,
     this.declaredValue,
     this.notes,
@@ -65,6 +66,10 @@ class Challan with ChallanMappable {
   /// Who delivered it (outward) or received it (inward).
   @MappableField(key: 'handled_by_name')
   final String handledByName;
+
+  /// Set when it was an employee (picked, or typed exactly).
+  @MappableField(key: 'handled_by_employee_id')
+  final String? handledByEmployeeId;
   @MappableField(key: 'vehicle_number')
   final String? vehicleNumber;
 

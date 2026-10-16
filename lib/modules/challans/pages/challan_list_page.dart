@@ -129,7 +129,9 @@ class _ChallanList extends StatelessWidget {
         ListActionRow(
           icon: Icons.add,
           label: newLabel,
-          onTap: () => ChallanNewRoute(direction: direction).push(context),
+          // Replaces the right pane: a push would stack the new form on top
+          // of one already open, and saving would then ask about both.
+          onTap: () => ChallanNewRoute(direction: direction).go(context),
         ),
       if (challans.isEmpty)
         Padding(

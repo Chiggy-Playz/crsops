@@ -499,44 +499,46 @@ final class ChallanHistoryFamily extends $Family
   String toString() => r'challanHistoryProvider';
 }
 
-@ProviderFor(handledByNames)
-final handledByNamesProvider = HandledByNamesProvider._();
+@ProviderFor(handlerChoices)
+final handlerChoicesProvider = HandlerChoicesProvider._();
 
-final class HandledByNamesProvider
+final class HandlerChoicesProvider
     extends
         $FunctionalProvider<
-          AsyncValue<List<String>>,
-          List<String>,
-          FutureOr<List<String>>
+          AsyncValue<List<HandlerChoice>>,
+          List<HandlerChoice>,
+          FutureOr<List<HandlerChoice>>
         >
-    with $FutureModifier<List<String>>, $FutureProvider<List<String>> {
-  HandledByNamesProvider._()
+    with
+        $FutureModifier<List<HandlerChoice>>,
+        $FutureProvider<List<HandlerChoice>> {
+  HandlerChoicesProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'handledByNamesProvider',
+        name: r'handlerChoicesProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$handledByNamesHash();
+  String debugGetCreateSourceHash() => _$handlerChoicesHash();
 
   @$internal
   @override
-  $FutureProviderElement<List<String>> $createElement(
+  $FutureProviderElement<List<HandlerChoice>> $createElement(
     $ProviderPointer pointer,
   ) => $FutureProviderElement(pointer);
 
   @override
-  FutureOr<List<String>> create(Ref ref) {
-    return handledByNames(ref);
+  FutureOr<List<HandlerChoice>> create(Ref ref) {
+    return handlerChoices(ref);
   }
 }
 
-String _$handledByNamesHash() => r'a6df42af3c7e2882d5c3e36d47d3447d1e315422';
+String _$handlerChoicesHash() => r'e4887e5a0caab56e7a8f2477dcb52415e947329c';
 
 @ProviderFor(itemUnits)
 final itemUnitsProvider = ItemUnitsProvider._();
