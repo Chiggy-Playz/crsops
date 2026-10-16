@@ -703,10 +703,13 @@ begin
   perform core.require_module_access('challans');
   existing := challans.challan_for_update(p_challan_id);
 
-  -- The same employee as before keeps the name the challan was made with,
-  -- even if they've since been renamed.
+  -- Left as it was (same employee, name not changed): keeps the name the
+  -- challan was made with, even if they've since been renamed. Picking them
+  -- again from the list sends their current name, which takes over.
   if p_handled_by_employee_id is not null
-     and p_handled_by_employee_id is not distinct from existing.handled_by_employee_id then
+     and p_handled_by_employee_id is not distinct from existing.handled_by_employee_id
+     and (p_handled_by_name is null
+          or btrim(p_handled_by_name) = existing.handled_by_name) then
     clean_handled_by := existing.handled_by_name;
     handler_employee_id := existing.handled_by_employee_id;
   else

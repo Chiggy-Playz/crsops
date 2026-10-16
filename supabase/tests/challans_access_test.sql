@@ -358,6 +358,18 @@ begin
     (select handled_by_name from challans.challans where id = challan_id),
     'ZZ Renamed Staff', 'editing keeps the name the challan was made with');
 
+  perform challans.update_challan(challan_id, address_id, false,
+    'ZZ Renamed Staff', null, 6, null, tests.one_item(), staff_id);
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'ZZ Renamed Staff', 'sending the old name back (form untouched) keeps it');
+
+  perform challans.update_challan(challan_id, address_id, false,
+    'ZZ Linked Staff', null, 7, null, tests.one_item(), staff_id);
+  return next is(
+    (select handled_by_name from challans.challans where id = challan_id),
+    'ZZ Linked Staff', 'picking the employee again takes their current name');
+
   return next throws_ok(
     format($sql$ select challans.create_challan('outward', tests.today(), %L, null, null, null, null, tests.one_item(), gen_random_uuid()) $sql$, address_id),
     'P0001', 'That employee no longer exists.', 'an unknown employee id is refused');
