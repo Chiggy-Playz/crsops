@@ -29,6 +29,19 @@ Supabase → Authentication → URL Configuration → Redirect URLs
 (e.g. `http://localhost:3000/**`). Desktop sign-in uses
 `http://127.0.0.1:43823/**`.
 
+**Android emulator against a local Supabase stack** (`supabase start`): the
+emulator's own `127.0.0.1` is itself, not your host machine, so `env.json`'s
+URL won't reach it. Use `env.android.json` instead (same shape, `SUPABASE_URL`
+pointed at `http://10.0.2.2:54321` — the emulator's fixed alias for the host's
+`127.0.0.1`):
+
+```bash
+flutter run -d emulator-5554 --dart-define-from-file=env.android.json
+```
+
+A real device can't reach `10.0.2.2` either — it needs the host's actual LAN
+IP, reachable from that device's network.
+
 Local builds show **Development build** in Settings → About.
 
 ### Code generation
