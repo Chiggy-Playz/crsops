@@ -5,33 +5,24 @@ import '../../../../core/utils/status_metadata.dart';
 import '../../models/status_type.dart';
 
 /// A day's status at a glance, in the leading slot of a marking row:
-/// - one status → a circle in that status's colour with its icon
-/// - split day (different halves) → left half / right half in each colour
+/// - a status → a circle in that status's colour with its icon
 /// - unmarked → an empty outlined circle
 ///
 /// Colours go through M3 custom-colour roles, so they're tuned for light and
 /// dark mode rather than drawn straight from the stored hex.
 class StatusBadge extends StatelessWidget {
-  const StatusBadge({
-    super.key,
-    required this.firstHalf,
-    required this.secondHalf,
-    this.radius = 20,
-  });
+  const StatusBadge({super.key, required this.status, this.radius = 20});
 
   /// Null = unmarked. A week-off day with no mark is passed as the week-off
-  /// type for both halves.
-  final StatusType? firstHalf;
-  final StatusType? secondHalf;
+  /// type.
+  final StatusType? status;
   final double radius;
 
   @override
   Widget build(BuildContext context) {
-    final first = firstHalf;
-    final second = secondHalf ?? firstHalf;
-    final size = radius * 2;
-
-    if (first == null) {
+    final type = status;
+    if (type == null) {
+      final size = radius * 2;
       return Semantics(
         label: 'Unmarked',
         child: Container(
@@ -48,56 +39,14 @@ class StatusBadge extends StatelessWidget {
       );
     }
 
-    final firstRoles = context.customColor(colorFor(first.colorHex));
-
-    if (second == null || second.id == first.id) {
-      return Semantics(
-        label: first.label,
-        child: CircleAvatar(
-          radius: radius,
-          backgroundColor: firstRoles.color,
-          foregroundColor: firstRoles.onColor,
-          child: Icon(iconFor(first.iconName), size: radius),
-        ),
-      );
-    }
-
-    final secondRoles = context.customColor(colorFor(second.colorHex));
+    final roles = context.customColor(colorFor(type.colorHex));
     return Semantics(
-      label: '${first.label} / ${second.label}',
-      child: ClipOval(
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Row(
-            children: [
-              Expanded(
-                child: ColoredBox(
-                  color: firstRoles.color,
-                  child: Center(
-                    child: Icon(
-                      iconFor(first.iconName),
-                      size: radius * 0.8,
-                      color: firstRoles.onColor,
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ColoredBox(
-                  color: secondRoles.color,
-                  child: Center(
-                    child: Icon(
-                      iconFor(second.iconName),
-                      size: radius * 0.8,
-                      color: secondRoles.onColor,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      label: type.label,
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: roles.color,
+        foregroundColor: roles.onColor,
+        child: Icon(iconFor(type.iconName), size: radius),
       ),
     );
   }

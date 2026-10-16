@@ -6,8 +6,7 @@ void main() {
     final json = {
       'employee_id': '11111111-1111-1111-1111-111111111111',
       'date': '2024-06-02',
-      'first_half_status': null,
-      'second_half_status': null,
+      'status': null,
       'is_explicit': false,
       'is_week_off': true,
       'time_in': null,

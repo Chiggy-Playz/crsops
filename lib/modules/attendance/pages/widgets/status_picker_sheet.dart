@@ -6,8 +6,7 @@ import '../../../../core/utils/status_metadata.dart';
 import '../../models/status_type.dart';
 
 typedef StatusPick = ({
-  String? firstHalfStatus,
-  String? secondHalfStatus,
+  String? status,
   String? timeIn,
   String? timeOut,
   String? note,
@@ -18,8 +17,7 @@ class StatusPickerSheet extends StatefulWidget {
     super.key,
     required this.employeeName,
     required this.statusTypes,
-    required this.currentFirstHalf,
-    required this.currentSecondHalf,
+    required this.currentStatus,
     required this.currentTimeIn,
     required this.currentTimeOut,
     required this.currentNote,
@@ -28,8 +26,7 @@ class StatusPickerSheet extends StatefulWidget {
 
   final String employeeName;
   final List<StatusType> statusTypes;
-  final String? currentFirstHalf;
-  final String? currentSecondHalf;
+  final String? currentStatus;
   final String? currentTimeIn;
   final String? currentTimeOut;
   final String? currentNote;
@@ -45,13 +42,6 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
   );
   late TimeOfDay? _timeIn = parseStoredTime(widget.currentTimeIn);
   late TimeOfDay? _timeOut = parseStoredTime(widget.currentTimeOut);
-
-  // Split-day selection starts exactly at whatever the day already has —
-  // null (shown as "Not set") for an unmarked day, same as the Time in/out
-  // section below. Saving with a half still null is fine: the repository's
-  // presence default applies, same contract the Time in/out section relies on.
-  late String? _firstHalf = widget.currentFirstHalf;
-  late String? _secondHalf = widget.currentSecondHalf;
 
   /// Set the moment a time is picked or cleared: distinguishes "untouched,
   /// still showing the row's stored value" from "user explicitly cleared it
@@ -73,38 +63,26 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
   String? get _storedTimeOut =>
       _timeOut == null ? null : toStoredTime(_timeOut!);
 
-  /// Quick full-day tap preserves already-entered times rather than
-  /// silently wiping them — times are only changed via the advanced section.
+  /// Tapping a status preserves already-entered times rather than silently
+  /// wiping them — times are only changed via the advanced section.
   /// Untouched fields pass the stored strings through verbatim; touched
   /// fields (picked or cleared) use the sheet's current values.
-  void _pickFullDay(String statusId) => Navigator.of(context).pop((
-    firstHalfStatus: statusId,
-    secondHalfStatus: statusId,
+  void _pickStatus(String statusId) => Navigator.of(context).pop((
+    status: statusId,
     timeIn: _timesTouched ? _storedTimeIn : widget.currentTimeIn,
     timeOut: _timesTouched ? _storedTimeOut : widget.currentTimeOut,
     note: _note,
   ));
 
-  /// This section only edits times — halves pass through whatever the row
-  /// already has (the Split day section above is where halves change).
+  /// This section only edits times — the status passes through whatever the
+  /// row already has.
   void _saveTimes() => Navigator.of(context).pop((
-    firstHalfStatus: widget.currentFirstHalf,
-    secondHalfStatus: widget.currentSecondHalf,
+    status: widget.currentStatus,
     timeIn: _storedTimeIn,
     timeOut: _storedTimeOut,
     note: _note,
   ));
 
-  /// Same pass-through convention as _pickFullDay/_saveTimes: only the
-  /// halves change here, times carry through untouched unless the advanced
-  /// section was also used this same sheet visit.
-  void _saveSplit() => Navigator.of(context).pop((
-    firstHalfStatus: _firstHalf,
-    secondHalfStatus: _secondHalf,
-    timeIn: _timesTouched ? _storedTimeIn : widget.currentTimeIn,
-    timeOut: _timesTouched ? _storedTimeOut : widget.currentTimeOut,
-    note: _note,
-  ));
   Future<void> _pickTime({required bool isIn}) async {
     final picked = await showTimePicker(
       context: context,
@@ -160,63 +138,6 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
     );
   }
 
-  /// A row matching the sheet's own full-day list (leading icon + label),
-  /// whose tap opens an M3 MenuAnchor of the same options instead of a
-  /// boxed form field — keeps this picker visually part of the same list
-  /// rather than looking like a separate form.
-  Widget _halfPicker({
-    required String keyPrefix,
-    required String label,
-    required String? currentId,
-    required ValueChanged<String> onChanged,
-  }) {
-    // Holiday/week off are whole-day concepts — only offer the statuses
-    // that make sense for just one half (present, absent, leave, …).
-    final options = widget.statusTypes.where((type) => type.splittable).toList();
-    // Null when nothing's picked yet, or when the day's current status (e.g.
-    // a full-day Holiday) isn't one of the splittable options at all — in
-    // both cases "Not set" is the honest answer for this half-picker.
-    StatusType? current;
-    for (final type in options) {
-      if (type.id == currentId) current = type;
-    }
-    return MenuAnchor(
-      // Off by default in Flutter; turns on the M3 open/close motion.
-      animated: true,
-      menuChildren: [
-        for (final type in options)
-          MenuItemButton(
-            key: Key('$keyPrefix-option-${type.id}'),
-            leadingIcon: Icon(
-              iconFor(type.iconName),
-              color: context.customColor(colorFor(type.colorHex)).color,
-            ),
-            trailingIcon: type.id == currentId ? const Icon(Icons.check) : null,
-            onPressed: () => onChanged(type.id),
-            child: Text(type.label),
-          ),
-      ],
-      builder: (context, controller, _) => ListTile(
-        key: Key(keyPrefix),
-        leading: current == null
-            ? const Icon(Icons.radio_button_unchecked)
-            : Icon(
-                iconFor(current.iconName),
-                color: context.customColor(colorFor(current.colorHex)).color,
-              ),
-        title: Text(label),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(current?.label ?? 'Not set'),
-            const Icon(Icons.arrow_drop_down),
-          ],
-        ),
-        onTap: () => controller.isOpen ? controller.close() : controller.open(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -258,36 +179,8 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
                     color: context.customColor(colorFor(type.colorHex)).color,
                   ),
                   title: Text(type.label),
-                  onTap: () => _pickFullDay(type.id),
+                  onTap: () => _pickStatus(type.id),
                 ),
-              const Divider(height: 1),
-              ExpansionTile(
-                key: const Key('mark-status-split'),
-                leading: const Icon(Icons.splitscreen_outlined),
-                title: const Text('Split day'),
-                children: [
-                  _halfPicker(
-                    keyPrefix: 'mark-status-first-half',
-                    label: 'First half',
-                    currentId: _firstHalf,
-                    onChanged: (value) => setState(() => _firstHalf = value),
-                  ),
-                  _halfPicker(
-                    keyPrefix: 'mark-status-second-half',
-                    label: 'Second half',
-                    currentId: _secondHalf,
-                    onChanged: (value) => setState(() => _secondHalf = value),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    child: FilledButton(
-                      key: const Key('mark-status-save-split'),
-                      onPressed: _saveSplit,
-                      child: const Text('Save'),
-                    ),
-                  ),
-                ],
-              ),
               const Divider(height: 1),
               ExpansionTile(
                 key: const Key('mark-status-advanced'),
@@ -333,8 +226,7 @@ class _StatusPickerSheetState extends State<StatusPickerSheet> {
                     ),
                   ),
                   onTap: () => Navigator.of(context).pop((
-                    firstHalfStatus: null,
-                    secondHalfStatus: null,
+                    status: null,
                     timeIn: null,
                     timeOut: null,
                     note: null,

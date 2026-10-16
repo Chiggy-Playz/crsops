@@ -53,8 +53,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(picked, isNotNull);
-      expect(picked!.firstHalfStatus, 'present');
-      expect(picked!.secondHalfStatus, 'present');
+      expect(picked!.status, 'present');
     });
   });
 }

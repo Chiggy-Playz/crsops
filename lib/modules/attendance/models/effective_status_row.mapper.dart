@@ -33,18 +33,10 @@ class EffectiveStatusRowMapper extends ClassMapperBase<EffectiveStatusRow> {
     'date',
     _$date,
   );
-  static String? _$firstHalfStatus(EffectiveStatusRow v) => v.firstHalfStatus;
-  static const Field<EffectiveStatusRow, String> _f$firstHalfStatus = Field(
-    'firstHalfStatus',
-    _$firstHalfStatus,
-    key: r'first_half_status',
-    opt: true,
-  );
-  static String? _$secondHalfStatus(EffectiveStatusRow v) => v.secondHalfStatus;
-  static const Field<EffectiveStatusRow, String> _f$secondHalfStatus = Field(
-    'secondHalfStatus',
-    _$secondHalfStatus,
-    key: r'second_half_status',
+  static String? _$status(EffectiveStatusRow v) => v.status;
+  static const Field<EffectiveStatusRow, String> _f$status = Field(
+    'status',
+    _$status,
     opt: true,
   );
   static bool _$isExplicit(EffectiveStatusRow v) => v.isExplicit;
@@ -84,8 +76,7 @@ class EffectiveStatusRowMapper extends ClassMapperBase<EffectiveStatusRow> {
   final MappableFields<EffectiveStatusRow> fields = const {
     #employeeId: _f$employeeId,
     #date: _f$date,
-    #firstHalfStatus: _f$firstHalfStatus,
-    #secondHalfStatus: _f$secondHalfStatus,
+    #status: _f$status,
     #isExplicit: _f$isExplicit,
     #isWeekOff: _f$isWeekOff,
     #timeIn: _f$timeIn,
@@ -97,8 +88,7 @@ class EffectiveStatusRowMapper extends ClassMapperBase<EffectiveStatusRow> {
     return EffectiveStatusRow(
       employeeId: data.dec(_f$employeeId),
       date: data.dec(_f$date),
-      firstHalfStatus: data.dec(_f$firstHalfStatus),
-      secondHalfStatus: data.dec(_f$secondHalfStatus),
+      status: data.dec(_f$status),
       isExplicit: data.dec(_f$isExplicit),
       isWeekOff: data.dec(_f$isWeekOff),
       timeIn: data.dec(_f$timeIn),
@@ -181,8 +171,7 @@ abstract class EffectiveStatusRowCopyWith<
   $R call({
     String? employeeId,
     DateTime? date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     bool? isExplicit,
     bool? isWeekOff,
     String? timeIn,
@@ -206,8 +195,7 @@ class _EffectiveStatusRowCopyWithImpl<$R, $Out>
   $R call({
     String? employeeId,
     DateTime? date,
-    Object? firstHalfStatus = $none,
-    Object? secondHalfStatus = $none,
+    Object? status = $none,
     bool? isExplicit,
     bool? isWeekOff,
     Object? timeIn = $none,
@@ -217,8 +205,7 @@ class _EffectiveStatusRowCopyWithImpl<$R, $Out>
     FieldCopyWithData({
       if (employeeId != null) #employeeId: employeeId,
       if (date != null) #date: date,
-      if (firstHalfStatus != $none) #firstHalfStatus: firstHalfStatus,
-      if (secondHalfStatus != $none) #secondHalfStatus: secondHalfStatus,
+      if (status != $none) #status: status,
       if (isExplicit != null) #isExplicit: isExplicit,
       if (isWeekOff != null) #isWeekOff: isWeekOff,
       if (timeIn != $none) #timeIn: timeIn,
@@ -230,8 +217,7 @@ class _EffectiveStatusRowCopyWithImpl<$R, $Out>
   EffectiveStatusRow $make(CopyWithData data) => EffectiveStatusRow(
     employeeId: data.get(#employeeId, or: $value.employeeId),
     date: data.get(#date, or: $value.date),
-    firstHalfStatus: data.get(#firstHalfStatus, or: $value.firstHalfStatus),
-    secondHalfStatus: data.get(#secondHalfStatus, or: $value.secondHalfStatus),
+    status: data.get(#status, or: $value.status),
     isExplicit: data.get(#isExplicit, or: $value.isExplicit),
     isWeekOff: data.get(#isWeekOff, or: $value.isWeekOff),
     timeIn: data.get(#timeIn, or: $value.timeIn),

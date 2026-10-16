@@ -1,4 +1,4 @@
--- Attendance: each employee's day (two halves, times in and out), the shift
+-- Attendance: each employee's day (one status, times in and out), the shift
 -- rules in force, and the functions the calendar, day page and reports read.
 
 create schema if not exists attendance;
@@ -27,27 +27,21 @@ create table attendance.shift_defaults (
   unique (effective_from)
 );
 
--- Present, absent, leave, … (seeded by a migration; admins can add more).
+-- Present, absent, half day, leave, … (seeded by a migration; admins can add
+-- more).
 create table attendance.status_types (
   id text primary key,
   label text not null,
   icon_name text,
   color_hex text,
-  description text,
-  -- Whether this status can be picked for just one half of a day. True for
-  -- present/absent/leave; false for holiday and week off, which are whole-
-  -- day concepts (there's no such thing as half a holiday). Defaults true
-  -- so a custom type an admin adds behaves like the everyday ones unless
-  -- they say otherwise.
-  splittable boolean not null default true
+  description text
 );
 
 create table attendance.attendance_days (
   id uuid primary key default gen_random_uuid(),
   employee_id uuid not null references core.employees(id) on delete cascade,
   date date not null,
-  first_half_status text references attendance.status_types(id),
-  second_half_status text references attendance.status_types(id),
+  status text not null references attendance.status_types(id),
   time_in time,
   time_out time,
   note text,
@@ -78,8 +72,7 @@ create function attendance.effective_range_status(
 returns table (
   employee_id uuid,
   date date,
-  first_half_status text,
-  second_half_status text,
+  status text,
   is_explicit boolean,
   is_week_off boolean,
   time_in time,
@@ -135,8 +128,7 @@ as $$
   select
     a.employee_id,
     a.d,
-    ad.first_half_status,
-    ad.second_half_status,
+    ad.status,
     (ad.id is not null),
     (extract(isodow from a.d)::smallint = any(a.week_off_days)),
     ad.time_in,
@@ -165,6 +157,7 @@ as $$
 $$;
 
 -- Minutes worked, late, early and overtime for days with a time entered.
+-- A half day is never "early": leaving at lunchtime is what a half day is.
 create function attendance.derived_flags(
   p_start date,
   p_end date,
@@ -190,6 +183,7 @@ as $$
       ad.date,
       ad.time_in,
       ad.time_out,
+      ad.status,
       coalesce(ad.time_in, sd.default_start) as effective_time_in,
       coalesce(ad.time_out, sd.default_end) as effective_time_out,
       sd.default_start,
@@ -227,8 +221,10 @@ as $$
     -- itself trigger this flag.
     (time_in is not null and effective_time_in > default_start) as is_late,
     -- is_early: only meaningful when time_out was actually entered, and never
-    -- true for an overnight shift (it ends well past default_end the next day).
-    (time_out is not null and not is_overnight and effective_time_out < default_end) as is_early,
+    -- true for an overnight shift (it ends well past default_end the next day)
+    -- or a half day.
+    (time_out is not null and not is_overnight and status <> 'half_day'
+      and effective_time_out < default_end) as is_early,
     greatest(
       0,
       (extract(epoch from worked_interval) / 60)::integer

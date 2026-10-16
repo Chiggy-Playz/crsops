@@ -31,7 +31,7 @@ class StatusTypesManagerPage extends ConsumerWidget {
           itemBuilder: (context, index) {
             final type = types[index];
             return ListTile(
-              leading: StatusBadge(firstHalf: type, secondHalf: type),
+              leading: StatusBadge(status: type),
               title: Text(type.label),
             );
           },

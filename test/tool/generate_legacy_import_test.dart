@@ -86,19 +86,19 @@ void main() {
     });
   });
 
-  group('statusesFor', () {
-    test('maps present/absent/holiday 1:1, unflagged', () {
-      expect(statusesFor('present'), ('present', 'present', false));
-      expect(statusesFor('absent'), ('absent', 'absent', false));
-      expect(statusesFor('holiday'), ('holiday', 'holiday', false));
+  group('statusFor', () {
+    test('maps present/absent/holiday 1:1', () {
+      expect(statusFor('present'), 'present');
+      expect(statusFor('absent'), 'absent');
+      expect(statusFor('holiday'), 'holiday');
     });
 
-    test('maps halfDay to a flagged present/absent default', () {
-      expect(statusesFor('halfDay'), ('present', 'absent', true));
+    test('maps halfDay to half_day', () {
+      expect(statusFor('halfDay'), 'half_day');
     });
 
     test('rejects an unrecognized status', () {
-      expect(() => statusesFor('onLeave'), throwsFormatException);
+      expect(() => statusFor('onLeave'), throwsFormatException);
     });
   });
 

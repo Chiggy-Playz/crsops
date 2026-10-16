@@ -78,8 +78,7 @@ void main() {
                 EffectiveStatusRow(
                   employeeId: '1',
                   date: markedDate,
-                  firstHalfStatus: 'present',
-                  secondHalfStatus: 'present',
+                  status: 'present',
                   isExplicit: true,
                   isWeekOff: false,
                 ),

@@ -27,6 +27,12 @@ const _statusTypes = [
     iconName: 'close',
     colorHex: '#F44336',
   ),
+  StatusType(
+    id: 'half_day',
+    label: 'Half Day',
+    iconName: 'contrast',
+    colorHex: '#009688',
+  ),
 ];
 
 // effectiveRangeStatusProvider (which is what decides which employees are
@@ -43,8 +49,7 @@ final _activeUnmarkedRow = EffectiveStatusRow(
 final _activeMarkedWithTimesRow = EffectiveStatusRow(
   employeeId: '1',
   date: DateTime(2024, 6, 3),
-  firstHalfStatus: 'present',
-  secondHalfStatus: 'present',
+  status: 'present',
   isExplicit: true,
   isWeekOff: false,
   timeIn: '10:35',
@@ -93,25 +98,6 @@ Future<void> _expandTimes(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _expandSplit(WidgetTester tester) async {
-  await tester.tap(find.byKey(const Key('mark-status-split')));
-  await tester.pumpAndSettle();
-}
-
-/// Opens a split-day half picker (a MenuAnchor) and picks the option with
-/// this status id — keyed, so it doesn't depend on label text that could
-/// collide with the sheet's full-day list.
-Future<void> _pickInHalfPicker(
-  WidgetTester tester,
-  String keyPrefix,
-  String statusId,
-) async {
-  await tester.tap(find.byKey(Key(keyPrefix)));
-  await tester.pumpAndSettle();
-  await tester.tap(find.byKey(Key('$keyPrefix-option-$statusId')));
-  await tester.pumpAndSettle();
-}
-
 Future<void> _acceptTimePicker(WidgetTester tester) async {
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
@@ -125,8 +111,7 @@ class _ThrowingMarkRepository extends FakeAttendanceRepository {
   Future<void> markDay({
     required String employeeId,
     required DateTime date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     String? timeIn,
     String? timeOut,
     String? note,
@@ -151,8 +136,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(attendanceRepo.markedDays, hasLength(1));
-        expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'present');
-        expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'present');
+        expect(attendanceRepo.markedDays.first['status'], 'present');
       },
     );
 
@@ -170,8 +154,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(attendanceRepo.markedDays, hasLength(1));
-        expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'absent');
-        expect(attendanceRepo.markedDays.first['secondHalfStatus'], 'absent');
+        expect(attendanceRepo.markedDays.first['status'], 'absent');
       },
     );
 
@@ -256,8 +239,7 @@ void main() {
         expect(attendanceRepo.markedDays, hasLength(1));
         // Halves pass through as null here — the repository (not the UI)
         // applies the presence default.
-        expect(attendanceRepo.markedDays.first['firstHalfStatus'], isNull);
-        expect(attendanceRepo.markedDays.first['secondHalfStatus'], isNull);
+        expect(attendanceRepo.markedDays.first['status'], isNull);
         expect(
           attendanceRepo.markedDays.first['timeIn'],
           matches(RegExp(r'^\d{2}:\d{2}$')),
@@ -380,8 +362,7 @@ void main() {
         final row = EffectiveStatusRow(
           employeeId: '1',
           date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-          secondHalfStatus: 'present',
+          status: 'present',
           isExplicit: true,
           isWeekOff: false,
           // Postgres `time` reads back with seconds — must still parse and
@@ -401,8 +382,7 @@ void main() {
         final row = EffectiveStatusRow(
           employeeId: '1',
           date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-          secondHalfStatus: 'present',
+          status: 'present',
           isExplicit: true,
           isWeekOff: false,
           timeIn: '99:99',
@@ -414,152 +394,37 @@ void main() {
         expect(find.textContaining('99:99'), findsOneWidget);
       });
 
-      testWidgets(
-        'split day saves a different status for each half',
-        (tester) async {
-          final attendanceRepo = FakeAttendanceRepository(
-            rangeStatusSeed: [_activeUnmarkedRow],
-          );
-          await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-          await tester.pumpAndSettle();
+      testWidgets('picking Half Day saves it as the day\'s one status', (
+        tester,
+      ) async {
+        final attendanceRepo = FakeAttendanceRepository(
+          rangeStatusSeed: [_activeMarkedWithTimesRow],
+        );
+        await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+        await tester.pumpAndSettle();
 
-          await _openSheet(tester);
-          await _expandSplit(tester);
+        await _openSheet(tester);
+        await tester.tap(_sheetText('Half Day'));
+        await tester.pumpAndSettle();
 
-          await _pickInHalfPicker(tester, 'mark-status-first-half', 'absent');
+        expect(attendanceRepo.markedDays, hasLength(1));
+        expect(attendanceRepo.markedDays.first['status'], 'half_day');
+        // Times weren't touched in this sheet visit, so they pass through.
+        expect(attendanceRepo.markedDays.first['timeIn'], '10:35');
+        expect(attendanceRepo.markedDays.first['timeOut'], '18:40');
+      });
 
-          await tester.tap(find.byKey(const Key('mark-status-save-split')));
-          await tester.pumpAndSettle();
+      testWidgets('there is no split-day section any more', (tester) async {
+        final attendanceRepo = FakeAttendanceRepository(
+          rangeStatusSeed: [_activeUnmarkedRow],
+        );
+        await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
+        await tester.pumpAndSettle();
 
-          expect(attendanceRepo.markedDays, hasLength(1));
-          expect(attendanceRepo.markedDays.first['firstHalfStatus'], 'absent');
-          // Second half was never touched — stays null, same as an
-          // untouched half in the Time in/out section. The repository (not
-          // the UI) applies the presence default when it writes the row.
-          expect(attendanceRepo.markedDays.first['secondHalfStatus'], isNull);
-        },
-      );
+        await _openSheet(tester);
 
-      testWidgets(
-        'split day defaults each half picker to the day\'s current halves',
-        (tester) async {
-          final attendanceRepo = FakeAttendanceRepository(
-            rangeStatusSeed: [_activeMarkedWithTimesRow],
-          );
-          await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-          await tester.pumpAndSettle();
-
-          await _openSheet(tester);
-          await _expandSplit(tester);
-
-          await _pickInHalfPicker(tester, 'mark-status-second-half', 'absent');
-
-          await tester.tap(find.byKey(const Key('mark-status-save-split')));
-          await tester.pumpAndSettle();
-
-          expect(attendanceRepo.markedDays, hasLength(1));
-          // First half carries through the row's existing value (present),
-          // only the second half was changed.
-          expect(
-            attendanceRepo.markedDays.first['firstHalfStatus'],
-            'present',
-          );
-          expect(
-            attendanceRepo.markedDays.first['secondHalfStatus'],
-            'absent',
-          );
-          // Times weren't touched in this sheet visit, so they pass through.
-          expect(attendanceRepo.markedDays.first['timeIn'], '10:35');
-          expect(attendanceRepo.markedDays.first['timeOut'], '18:40');
-        },
-      );
-
-      testWidgets(
-        'split day shows Not set for an unmarked day, not a false default',
-        (tester) async {
-          final attendanceRepo = FakeAttendanceRepository(
-            rangeStatusSeed: [_activeUnmarkedRow],
-          );
-          await tester.pumpWidget(_wrap(attendanceRepo: attendanceRepo));
-          await tester.pumpAndSettle();
-
-          await _openSheet(tester);
-          await _expandSplit(tester);
-
-          expect(_sheetText('Not set'), findsNWidgets(2));
-          expect(_sheetText('Present'), findsOneWidget); // the full-day list only
-        },
-      );
-
-      testWidgets(
-        'split day only offers splittable statuses, not Holiday or Week Off',
-        (tester) async {
-          const statusTypesWithWholeDayOnes = [
-            StatusType(
-              id: 'present',
-              label: 'Present',
-              iconName: 'check',
-              colorHex: '#4CAF50',
-            ),
-            StatusType(
-              id: 'holiday',
-              label: 'Holiday',
-              iconName: 'beach_access',
-              colorHex: '#2196F3',
-              splittable: false,
-            ),
-          ];
-          final attendanceRepo = FakeAttendanceRepository(
-            rangeStatusSeed: [_activeUnmarkedRow],
-          );
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                employeeRepositoryProvider.overrideWithValue(
-                  FakeEmployeeRepository(
-                    seed: [
-                      Employee(
-                        id: '1',
-                        name: 'Ramesh',
-                        color: 0xFF4CAF50,
-                        createdAt: DateTime(2024, 1, 1),
-                      ),
-                    ],
-                  ),
-                ),
-                attendanceRepositoryProvider.overrideWithValue(attendanceRepo),
-                statusTypeRepositoryProvider.overrideWithValue(
-                  FakeStatusTypeRepository(seed: statusTypesWithWholeDayOnes),
-                ),
-              ],
-              child: MaterialApp(
-                scaffoldMessengerKey: rootScaffoldMessengerKey,
-                home: AttendanceDayPage(date: DateTime(2024, 6, 3)),
-              ),
-            ),
-          );
-          await tester.pumpAndSettle();
-
-          await _openSheet(tester);
-          await _expandSplit(tester);
-
-          // Holiday is in the full-day list.
-          expect(_sheetText('Holiday'), findsOneWidget);
-
-          // Open the first-half picker's own menu and check its options.
-          await tester.tap(find.byKey(const Key('mark-status-first-half')));
-          await tester.pumpAndSettle();
-
-          expect(
-            find.byKey(const Key('mark-status-first-half-option-holiday')),
-            findsNothing,
-          );
-          expect(
-            find.byKey(const Key('mark-status-first-half-option-present')),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byKey(const Key('mark-status-split')), findsNothing);
+      });
 
       testWidgets(
         'a failed marking shows an error instead of failing silently',

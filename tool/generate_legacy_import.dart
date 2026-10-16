@@ -63,21 +63,17 @@ String sqlEscapeName(String raw) => raw.trim().replaceAll("'", "''");
 String sanitizeForComment(String raw) =>
     raw.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '?');
 
-/// Old statuses map 1:1 onto both halves of a day, except `halfDay`: there's
-/// no time data anywhere in the export to say which half was worked, so it
-/// defaults to present/absent and is flagged for manual review.
-(String firstHalf, String secondHalf, bool flagged) statusesFor(
-  String oldStatus,
-) {
+/// Old statuses map 1:1 onto the new status ids; `halfDay` is `half_day`.
+String statusFor(String oldStatus) {
   switch (oldStatus) {
     case 'present':
-      return ('present', 'present', false);
+      return 'present';
     case 'absent':
-      return ('absent', 'absent', false);
+      return 'absent';
     case 'holiday':
-      return ('holiday', 'holiday', false);
+      return 'holiday';
     case 'halfDay':
-      return ('present', 'absent', true);
+      return 'half_day';
     default:
       throw FormatException('Unrecognized attendance status: $oldStatus');
   }
@@ -120,9 +116,6 @@ String formatDate(DateTime d) => _dateFormat.format(d);
 /// `;` on the next line is fine, but `value, -- comment;` is not: the `;`
 /// would be part of the comment and the statement would never terminate.
 typedef SqlRow = (String value, String? comment);
-
-/// Employee name + date for the manual-review report printed to stdout.
-typedef HalfDayFlag = (String employeeName, DateTime date);
 
 /// Renders rows with the comma/semicolon placed before any trailing
 /// comment, never after -- see [SqlRow].
@@ -207,7 +200,6 @@ void main(List<String> args) {
   final employeeRows = <SqlRow>[];
   final eventRows = <SqlRow>[];
   final attendanceRows = <SqlRow>[];
-  final halfDayFlags = <HalfDayFlag>[];
 
   for (final entry in employees.entries) {
     final oldId = entry.key;
@@ -253,14 +245,10 @@ void main(List<String> args) {
     }
 
     for (final (date, oldStatus) in dates) {
-      final (firstHalf, secondHalf, flagged) = statusesFor(oldStatus);
       attendanceRows.add((
-        "('$newId', '${formatDate(date)}', '$firstHalf', '$secondHalf')",
-        flagged
-            ? '-- halfDay, no time data to disambiguate, verify manually'
-            : null,
+        "('$newId', '${formatDate(date)}', '${statusFor(oldStatus)}')",
+        null,
       ));
-      if (flagged) halfDayFlags.add((rawName, date));
     }
   }
 
@@ -291,7 +279,7 @@ insert into core.employees (id, name, color, salary) values
 ${valuesBlock(employeeRows)}
 insert into core.employee_events (employee_id, event_type, event_date, note, created_at) values
 ${valuesBlock(eventRows)}
-insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status) values
+insert into attendance.attendance_days (employee_id, date, status) values
 ${valuesBlock(attendanceRows)}
 -- Self-describing verification, computed from this run's own input --
 -- never hardcoded, so it always matches whatever export was fed in. Aborts
@@ -324,13 +312,4 @@ commit;
     '$employeeCount employees, $eventCount events, '
     '$attendanceCount attendance_days.',
   );
-  if (halfDayFlags.isNotEmpty) {
-    stdout.writeln(
-      '\n${halfDayFlags.length} halfDay rows defaulted to present/absent '
-      '-- verify manually:',
-    );
-    for (final (employeeName, date) in halfDayFlags) {
-      stdout.writeln('  $employeeName — ${formatDate(date)}');
-    }
-  }
 }

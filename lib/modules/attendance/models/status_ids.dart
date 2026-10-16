@@ -4,13 +4,21 @@
 abstract final class StatusIds {
   static const present = 'present';
   static const absent = 'absent';
+  static const halfDay = 'half_day';
   static const leave = 'leave';
   static const holiday = 'holiday';
   static const weekOff = 'week_off';
 
   /// The order statuses are offered in: the everyday ones first (what gets
   /// tapped most). Custom types come after these.
-  static const builtInOrder = [present, absent, leave, holiday, weekOff];
+  static const builtInOrder = [
+    present,
+    absent,
+    halfDay,
+    leave,
+    holiday,
+    weekOff,
+  ];
 
   /// Not a status type: the report's bucket for working days nobody marked.
   static const unmarked = 'unmarked';

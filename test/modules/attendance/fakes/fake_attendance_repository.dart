@@ -40,8 +40,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
   Future<void> markDay({
     required String employeeId,
     required DateTime date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     String? timeIn,
     String? timeOut,
     String? note,
@@ -49,8 +48,7 @@ class FakeAttendanceRepository implements AttendanceRepository {
     markedDays.add({
       'employeeId': employeeId,
       'date': date,
-      'firstHalfStatus': firstHalfStatus,
-      'secondHalfStatus': secondHalfStatus,
+      'status': status,
       'timeIn': timeIn,
       'timeOut': timeOut,
       'note': note,

@@ -8,8 +8,7 @@ class AttendanceDay with AttendanceDayMappable {
     this.id,
     required this.employeeId,
     required this.date,
-    this.firstHalfStatus,
-    this.secondHalfStatus,
+    this.status,
     this.timeIn,
     this.timeOut,
     this.note,
@@ -21,10 +20,8 @@ class AttendanceDay with AttendanceDayMappable {
   final String employeeId;
   @MappableField(key: 'date')
   final DateTime date;
-  @MappableField(key: 'first_half_status')
-  final String? firstHalfStatus;
-  @MappableField(key: 'second_half_status')
-  final String? secondHalfStatus;
+  @MappableField(key: 'status')
+  final String? status;
   @MappableField(key: 'time_in')
   final String? timeIn;
   @MappableField(key: 'time_out')

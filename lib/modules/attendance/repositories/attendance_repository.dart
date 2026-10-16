@@ -6,12 +6,11 @@ import '../models/derived_flags_row.dart';
 import '../models/effective_status_row.dart';
 import '../models/status_ids.dart';
 
-/// A day marked without an explicit half status (e.g. by entering times)
-/// counts as present: entering times implies presence. Lives here — not in
-/// the UI — so the rule is independent of whichever sheet calls `markDay`.
+/// A day marked without an explicit status (e.g. by entering times) counts as
+/// present: entering times implies presence. Lives here — not in the UI — so
+/// the rule is independent of whichever sheet calls `markDay`.
 /// Pure so it stays unit testable without a Supabase client.
-String applyPresenceDefault(String? halfStatus) =>
-    halfStatus ?? StatusIds.present;
+String applyPresenceDefault(String? status) => status ?? StatusIds.present;
 
 /// The exact upsert payload [SupabaseAttendanceRepository.markDay] writes.
 /// Pure so upsert shape and presence-default application stay unit tested
@@ -19,16 +18,14 @@ String applyPresenceDefault(String? halfStatus) =>
 Map<String, dynamic> markDayPayload({
   required String employeeId,
   required String date,
-  String? firstHalfStatus,
-  String? secondHalfStatus,
+  String? status,
   String? timeIn,
   String? timeOut,
   String? note,
 }) => {
   'employee_id': employeeId,
   'date': date,
-  'first_half_status': applyPresenceDefault(firstHalfStatus),
-  'second_half_status': applyPresenceDefault(secondHalfStatus),
+  'status': applyPresenceDefault(status),
   'time_in': timeIn,
   'time_out': timeOut,
   'note': note,
@@ -46,20 +43,18 @@ abstract class AttendanceRepository {
     String? employeeId,
   });
 
-  /// Explicit per-employee marking for one date — full-day tap-to-present sets
-  /// both halves to the same status; the half-split UI can call this with
-  /// different first/second half values.
+  /// Explicit per-employee marking for one date. A null [status] means
+  /// present (see [applyPresenceDefault]).
   Future<void> markDay({
     required String employeeId,
     required DateTime date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     String? timeIn,
     String? timeOut,
     String? note,
   });
 
-  /// Bulk action: marks every active employee present (both halves) for [date].
+  /// Bulk action: marks every active employee present for [date].
   /// Overwrites any existing explicit marking for that date — the UI gates this
   /// behind a confirm dialog.
   Future<void> markAllPresent({
@@ -67,8 +62,8 @@ abstract class AttendanceRepository {
     required List<String> employeeIds,
   });
 
-  /// Bulk action: marks every active employee's day as a company holiday (both
-  /// halves) for [date]. Same overwrite/confirm-dialog caveat as markAllPresent.
+  /// Bulk action: marks every active employee's day as a company holiday for
+  /// [date]. Same overwrite/confirm-dialog caveat as markAllPresent.
   Future<void> markHoliday({
     required DateTime date,
     required List<String> employeeIds,
@@ -139,8 +134,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
   Future<void> markDay({
     required String employeeId,
     required DateTime date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     String? timeIn,
     String? timeOut,
     String? note,
@@ -153,8 +147,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
             markDayPayload(
               employeeId: employeeId,
               date: dateOnly(date),
-              firstHalfStatus: firstHalfStatus,
-              secondHalfStatus: secondHalfStatus,
+              status: status,
               timeIn: timeIn,
               timeOut: timeOut,
               note: note,
@@ -203,8 +196,7 @@ class SupabaseAttendanceRepository implements AttendanceRepository {
             (id) => {
               'employee_id': id,
               'date': dateOnly(date),
-              'first_half_status': status,
-              'second_half_status': status,
+              'status': status,
             },
           )
           .toList();

@@ -8,7 +8,7 @@ void main() {
       expect(applyPresenceDefault(null), StatusIds.present);
     });
 
-    test('an explicit half passes through untouched', () {
+    test('an explicit status passes through untouched', () {
       expect(applyPresenceDefault('absent'), 'absent');
       expect(applyPresenceDefault('leave'), 'leave');
       expect(applyPresenceDefault(''), '');
@@ -21,8 +21,7 @@ void main() {
         markDayPayload(
           employeeId: 'e1',
           date: '2024-06-03',
-          firstHalfStatus: 'present',
-          secondHalfStatus: 'absent',
+          status: 'half_day',
           timeIn: '10:35',
           timeOut: '18:40',
           note: 'late train',
@@ -30,8 +29,7 @@ void main() {
         {
           'employee_id': 'e1',
           'date': '2024-06-03',
-          'first_half_status': 'present',
-          'second_half_status': 'absent',
+          'status': 'half_day',
           'time_in': '10:35',
           'time_out': '18:40',
           'note': 'late train',
@@ -39,11 +37,10 @@ void main() {
       );
     });
 
-    test('null halves get the presence default, times stay nullable', () {
+    test('a null status gets the presence default, times stay nullable', () {
       final payload = markDayPayload(employeeId: 'e1', date: '2024-06-03');
 
-      expect(payload['first_half_status'], StatusIds.present);
-      expect(payload['second_half_status'], StatusIds.present);
+      expect(payload['status'], StatusIds.present);
       expect(payload['time_in'], isNull);
       expect(payload['time_out'], isNull);
       expect(payload['note'], isNull);

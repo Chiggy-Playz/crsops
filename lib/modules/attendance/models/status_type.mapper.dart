@@ -46,13 +46,6 @@ class StatusTypeMapper extends ClassMapperBase<StatusType> {
     _$description,
     opt: true,
   );
-  static bool _$splittable(StatusType v) => v.splittable;
-  static const Field<StatusType, bool> _f$splittable = Field(
-    'splittable',
-    _$splittable,
-    opt: true,
-    def: true,
-  );
 
   @override
   final MappableFields<StatusType> fields = const {
@@ -61,7 +54,6 @@ class StatusTypeMapper extends ClassMapperBase<StatusType> {
     #iconName: _f$iconName,
     #colorHex: _f$colorHex,
     #description: _f$description,
-    #splittable: _f$splittable,
   };
 
   static StatusType _instantiate(DecodingData data) {
@@ -71,7 +63,6 @@ class StatusTypeMapper extends ClassMapperBase<StatusType> {
       iconName: data.dec(_f$iconName),
       colorHex: data.dec(_f$colorHex),
       description: data.dec(_f$description),
-      splittable: data.dec(_f$splittable),
     );
   }
 
@@ -141,7 +132,6 @@ abstract class StatusTypeCopyWith<$R, $In extends StatusType, $Out>
     String? iconName,
     String? colorHex,
     String? description,
-    bool? splittable,
   });
   StatusTypeCopyWith<$R2, $In, $Out2> $chain<$R2, $Out2>(Then<$Out2, $R2> t);
 }
@@ -161,7 +151,6 @@ class _StatusTypeCopyWithImpl<$R, $Out>
     Object? iconName = $none,
     Object? colorHex = $none,
     Object? description = $none,
-    bool? splittable,
   }) => $apply(
     FieldCopyWithData({
       if (id != null) #id: id,
@@ -169,7 +158,6 @@ class _StatusTypeCopyWithImpl<$R, $Out>
       if (iconName != $none) #iconName: iconName,
       if (colorHex != $none) #colorHex: colorHex,
       if (description != $none) #description: description,
-      if (splittable != null) #splittable: splittable,
     }),
   );
   @override
@@ -179,7 +167,6 @@ class _StatusTypeCopyWithImpl<$R, $Out>
     iconName: data.get(#iconName, or: $value.iconName),
     colorHex: data.get(#colorHex, or: $value.colorHex),
     description: data.get(#description, or: $value.description),
-    splittable: data.get(#splittable, or: $value.splittable),
   );
 
   @override

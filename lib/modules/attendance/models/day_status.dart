@@ -10,14 +10,16 @@ import 'status_type.dart';
 // dots, the report summary and screen-reader labels so they never disagree.
 
 /// The single shared "which status represents this row" rule: an explicit
-/// mark wins with its first-half status, otherwise a week-off date reports
-/// `week_off`, otherwise there is no status (unmarked working day).
+/// mark wins, otherwise a week-off date reports `week_off`, otherwise there is
+/// no status (unmarked working day).
 /// Used by both the report summary buckets and the calendar dots so the two
 /// can never disagree on priority — only on what they do with the answer
 /// (count vs. dot).
-String? representativeStatus(EffectiveStatusRow row) => row.isExplicit
-    ? row.firstHalfStatus
-    : (row.isWeekOff ? StatusIds.weekOff : null);
+String? representativeStatus(EffectiveStatusRow row) {
+  if (row.isExplicit) return row.status;
+  if (row.isWeekOff) return StatusIds.weekOff;
+  return null;
+}
 
 /// Groups rows by date (`yyyy-MM-dd` key) — shared by any calendar view that
 /// needs "what happened on this day" regardless of how many employees' rows
@@ -36,9 +38,7 @@ Map<String, List<EffectiveStatusRow>> groupRowsByDate(
 /// day (some present, some absent) naturally gets multiple dots instead of
 /// needing a single "winning" fill color, which sidesteps the "how does a
 /// mixed day roll up" open question entirely rather than answering it.
-/// Skips unmarked, non-week-off rows (no status to show); uses each row's
-/// first-half status as its representative status, same simplification
-/// already used by report_calculations.dart's summary buckets.
+/// Skips unmarked, non-week-off rows (no status to show).
 ///
 /// isWeekOff is a property of the date (every row on a Sunday has it true),
 /// not of whether that employee has an explicit mark — an explicit mark

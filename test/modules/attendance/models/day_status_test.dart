@@ -6,27 +6,26 @@ import 'package:flutter_test/flutter_test.dart';
 EffectiveStatusRow _row({
   String employeeId = '1',
   DateTime? date,
-  String? firstHalfStatus,
+  String? status,
   bool isExplicit = true,
   bool isWeekOff = false,
 }) => EffectiveStatusRow(
   employeeId: employeeId,
   date: date ?? DateTime(2024, 6, 3),
-  firstHalfStatus: firstHalfStatus,
-  secondHalfStatus: firstHalfStatus,
+  status: status,
   isExplicit: isExplicit,
   isWeekOff: isWeekOff,
 );
 
 void main() {
   group('representativeStatus', () {
-    test('an explicit mark wins with its first-half status', () {
-      expect(representativeStatus(_row(firstHalfStatus: 'present')), 'present');
+    test('an explicit mark wins with its status', () {
+      expect(representativeStatus(_row(status: 'present')), 'present');
     });
 
     test('an explicit mark beats week-off', () {
       expect(
-        representativeStatus(_row(firstHalfStatus: 'present', isWeekOff: true)),
+        representativeStatus(_row(status: 'present', isWeekOff: true)),
         'present',
       );
     });
@@ -43,28 +42,16 @@ void main() {
     });
 
     test('an explicit row without a status has no status', () {
-      expect(representativeStatus(_row(firstHalfStatus: null)), isNull);
+      expect(representativeStatus(_row(status: null)), isNull);
     });
   });
 
   group('groupRowsByDate', () {
     test('groups rows under yyyy-MM-dd keys', () {
       final rows = [
-        _row(
-          employeeId: '1',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-        ),
-        _row(
-          employeeId: '2',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'absent',
-        ),
-        _row(
-          employeeId: '1',
-          date: DateTime(2024, 6, 4),
-          firstHalfStatus: 'present',
-        ),
+        _row(employeeId: '1', date: DateTime(2024, 6, 3), status: 'present'),
+        _row(employeeId: '2', date: DateTime(2024, 6, 3), status: 'absent'),
+        _row(employeeId: '1', date: DateTime(2024, 6, 4), status: 'present'),
       ];
 
       final grouped = groupRowsByDate(rows);
@@ -87,16 +74,8 @@ void main() {
 
     test('one dot per distinct status on a mixed day', () {
       final dots = statusDotsFor([
-        _row(
-          employeeId: '1',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-        ),
-        _row(
-          employeeId: '2',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'absent',
-        ),
+        _row(employeeId: '1', date: DateTime(2024, 6, 3), status: 'present'),
+        _row(employeeId: '2', date: DateTime(2024, 6, 3), status: 'absent'),
       ], colors);
 
       expect(dots, hasLength(2));
@@ -104,16 +83,8 @@ void main() {
 
     test('dots follow status order, not row order', () {
       final dots = statusDotsFor([
-        _row(
-          employeeId: '1',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'absent',
-        ),
-        _row(
-          employeeId: '2',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-        ),
+        _row(employeeId: '1', date: DateTime(2024, 6, 3), status: 'absent'),
+        _row(employeeId: '2', date: DateTime(2024, 6, 3), status: 'present'),
       ], colors);
 
       expect(dots, [const Color(0xFF4CAF50), const Color(0xFFF44336)]);
@@ -124,7 +95,7 @@ void main() {
         _row(
           employeeId: '1',
           date: DateTime(2024, 6, 2),
-          firstHalfStatus: 'present',
+          status: 'present',
           isWeekOff: true,
         ),
       ], colors);
@@ -155,11 +126,7 @@ void main() {
 
     test('an unknown status id falls back to grey', () {
       final dots = statusDotsFor([
-        _row(
-          employeeId: '1',
-          date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'mystery',
-        ),
+        _row(employeeId: '1', date: DateTime(2024, 6, 3), status: 'mystery'),
       ], colors);
 
       expect(dots, [Colors.grey]);
@@ -172,16 +139,14 @@ void main() {
 
     test('an active employee left unmarked on a past working day', () {
       final rows = [
-        _row(employeeId: '1', date: pastDay, firstHalfStatus: 'present'),
+        _row(employeeId: '1', date: pastDay, status: 'present'),
         _row(employeeId: '2', date: pastDay, isExplicit: false),
       ];
       expect(hasUnmarkedPastDay(rows, pastDay), isTrue);
     });
 
     test('a fully marked day is not a gap', () {
-      final rows = [
-        _row(employeeId: '1', date: pastDay, firstHalfStatus: 'present'),
-      ];
+      final rows = [_row(employeeId: '1', date: pastDay, status: 'present')];
       expect(hasUnmarkedPastDay(rows, pastDay), isFalse);
     });
 

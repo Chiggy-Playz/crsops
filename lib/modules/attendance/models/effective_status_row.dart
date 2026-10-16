@@ -7,8 +7,7 @@ class EffectiveStatusRow with EffectiveStatusRowMappable {
   const EffectiveStatusRow({
     required this.employeeId,
     required this.date,
-    this.firstHalfStatus,
-    this.secondHalfStatus,
+    this.status,
     required this.isExplicit,
     required this.isWeekOff,
     this.timeIn,
@@ -20,10 +19,8 @@ class EffectiveStatusRow with EffectiveStatusRowMappable {
   final String employeeId;
   @MappableField(key: 'date')
   final DateTime date;
-  @MappableField(key: 'first_half_status')
-  final String? firstHalfStatus;
-  @MappableField(key: 'second_half_status')
-  final String? secondHalfStatus;
+  @MappableField(key: 'status')
+  final String? status;
   @MappableField(key: 'is_explicit')
   final bool isExplicit;
   @MappableField(key: 'is_week_off')

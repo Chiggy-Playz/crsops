@@ -6,10 +6,8 @@ import '../../models/effective_status_row.dart';
 import '../../models/status_ids.dart';
 import '../../models/status_type.dart';
 
-/// Open product question, deliberately not resolved here (see plan.md): a
-/// mixed first-half-present/second-half-absent day counts only toward
-/// first_half_status's bucket — second_half_status is not counted
-/// separately. Real, working v1 behavior with a known, stated limitation.
+/// How many rows fall in each status's bucket, plus `unmarked` for working
+/// days nobody marked. A half day is its own bucket.
 Map<String, int> computeStatusSummary(
   List<EffectiveStatusRow> rows,
   List<StatusType> statusTypes,

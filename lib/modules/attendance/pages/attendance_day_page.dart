@@ -112,8 +112,7 @@ class _AttendanceDayPageState extends ConsumerState<AttendanceDayPage> {
         .markDay(
           employeeId: employeeId,
           date: widget.date,
-          firstHalfStatus: pick.firstHalfStatus,
-          secondHalfStatus: pick.secondHalfStatus,
+          status: pick.status,
           timeIn: pick.timeIn,
           timeOut: pick.timeOut,
           note: pick.note,

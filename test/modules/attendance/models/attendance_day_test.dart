@@ -7,8 +7,7 @@ void main() {
       'id': '22222222-2222-2222-2222-222222222222',
       'employee_id': '11111111-1111-1111-1111-111111111111',
       'date': '2024-06-01',
-      'first_half_status': 'present',
-      'second_half_status': 'present',
+      'status': 'half_day',
       'time_in': null,
       'time_out': null,
       'note': null,
@@ -16,7 +15,7 @@ void main() {
 
     final day = AttendanceDayMapper.fromMap(json);
 
-    expect(day.firstHalfStatus, 'present');
+    expect(day.status, 'half_day');
     expect(day.timeIn, isNull);
   });
 }

@@ -36,18 +36,10 @@ class AttendanceDayMapper extends ClassMapperBase<AttendanceDay> {
   );
   static DateTime _$date(AttendanceDay v) => v.date;
   static const Field<AttendanceDay, DateTime> _f$date = Field('date', _$date);
-  static String? _$firstHalfStatus(AttendanceDay v) => v.firstHalfStatus;
-  static const Field<AttendanceDay, String> _f$firstHalfStatus = Field(
-    'firstHalfStatus',
-    _$firstHalfStatus,
-    key: r'first_half_status',
-    opt: true,
-  );
-  static String? _$secondHalfStatus(AttendanceDay v) => v.secondHalfStatus;
-  static const Field<AttendanceDay, String> _f$secondHalfStatus = Field(
-    'secondHalfStatus',
-    _$secondHalfStatus,
-    key: r'second_half_status',
+  static String? _$status(AttendanceDay v) => v.status;
+  static const Field<AttendanceDay, String> _f$status = Field(
+    'status',
+    _$status,
     opt: true,
   );
   static String? _$timeIn(AttendanceDay v) => v.timeIn;
@@ -76,8 +68,7 @@ class AttendanceDayMapper extends ClassMapperBase<AttendanceDay> {
     #id: _f$id,
     #employeeId: _f$employeeId,
     #date: _f$date,
-    #firstHalfStatus: _f$firstHalfStatus,
-    #secondHalfStatus: _f$secondHalfStatus,
+    #status: _f$status,
     #timeIn: _f$timeIn,
     #timeOut: _f$timeOut,
     #note: _f$note,
@@ -88,8 +79,7 @@ class AttendanceDayMapper extends ClassMapperBase<AttendanceDay> {
       id: data.dec(_f$id),
       employeeId: data.dec(_f$employeeId),
       date: data.dec(_f$date),
-      firstHalfStatus: data.dec(_f$firstHalfStatus),
-      secondHalfStatus: data.dec(_f$secondHalfStatus),
+      status: data.dec(_f$status),
       timeIn: data.dec(_f$timeIn),
       timeOut: data.dec(_f$timeOut),
       note: data.dec(_f$note),
@@ -162,8 +152,7 @@ abstract class AttendanceDayCopyWith<$R, $In extends AttendanceDay, $Out>
     String? id,
     String? employeeId,
     DateTime? date,
-    String? firstHalfStatus,
-    String? secondHalfStatus,
+    String? status,
     String? timeIn,
     String? timeOut,
     String? note,
@@ -184,8 +173,7 @@ class _AttendanceDayCopyWithImpl<$R, $Out>
     Object? id = $none,
     String? employeeId,
     DateTime? date,
-    Object? firstHalfStatus = $none,
-    Object? secondHalfStatus = $none,
+    Object? status = $none,
     Object? timeIn = $none,
     Object? timeOut = $none,
     Object? note = $none,
@@ -194,8 +182,7 @@ class _AttendanceDayCopyWithImpl<$R, $Out>
       if (id != $none) #id: id,
       if (employeeId != null) #employeeId: employeeId,
       if (date != null) #date: date,
-      if (firstHalfStatus != $none) #firstHalfStatus: firstHalfStatus,
-      if (secondHalfStatus != $none) #secondHalfStatus: secondHalfStatus,
+      if (status != $none) #status: status,
       if (timeIn != $none) #timeIn: timeIn,
       if (timeOut != $none) #timeOut: timeOut,
       if (note != $none) #note: note,
@@ -206,8 +193,7 @@ class _AttendanceDayCopyWithImpl<$R, $Out>
     id: data.get(#id, or: $value.id),
     employeeId: data.get(#employeeId, or: $value.employeeId),
     date: data.get(#date, or: $value.date),
-    firstHalfStatus: data.get(#firstHalfStatus, or: $value.firstHalfStatus),
-    secondHalfStatus: data.get(#secondHalfStatus, or: $value.secondHalfStatus),
+    status: data.get(#status, or: $value.status),
     timeIn: data.get(#timeIn, or: $value.timeIn),
     timeOut: data.get(#timeOut, or: $value.timeOut),
     note: data.get(#note, or: $value.note),

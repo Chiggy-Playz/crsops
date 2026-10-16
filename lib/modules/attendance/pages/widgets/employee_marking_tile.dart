@@ -35,21 +35,19 @@ class EmployeeMarkingTile extends StatelessWidget {
       builder: (context) => StatusPickerSheet(
         employeeName: employee.name,
         statusTypes: statusTypes,
-        currentFirstHalf: status?.firstHalfStatus,
-        currentSecondHalf: status?.secondHalfStatus,
+        currentStatus: status?.status,
         currentTimeIn: status?.timeIn,
         currentTimeOut: status?.timeOut,
         currentNote: status?.note,
-        isCurrentlyMarked: status?.firstHalfStatus != null,
+        isCurrentlyMarked: status?.status != null,
       ),
     );
     if (result == null) return;
     // All-null means "nothing was entered" (the sheet's Unmark entry pops
     // exactly this) — anything else, times/note included, is a marking, with
-    // null halves resolved to the presence default by the repository.
+    // a null status resolved to the presence default by the repository.
     final isEmpty =
-        result.firstHalfStatus == null &&
-        result.secondHalfStatus == null &&
+        result.status == null &&
         result.timeIn == null &&
         result.timeOut == null &&
         result.note == null;
@@ -64,18 +62,11 @@ class EmployeeMarkingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final typeById = {for (final type in statusTypes) type.id: type};
     final isWeekOff = status?.isWeekOff == true;
-    final isUnmarked = status?.firstHalfStatus == null;
-    // "Present", or "Present / Absent" for a split day.
+    final statusId = status?.status;
+    final isUnmarked = statusId == null;
     String? currentLabel;
-    if (!isUnmarked) {
-      final firstHalf = status!.firstHalfStatus!;
-      final secondHalf = status!.secondHalfStatus;
-      if (firstHalf == secondHalf) {
-        currentLabel = displayLabel(firstHalf);
-      } else {
-        currentLabel =
-            '${displayLabel(firstHalf)} / ${displayLabel(secondHalf ?? '—')}';
-      }
+    if (statusId != null) {
+      currentLabel = displayLabel(statusId);
     } else if (isWeekOff) {
       currentLabel = 'Week off';
     }
@@ -102,10 +93,7 @@ class EmployeeMarkingTile extends StatelessWidget {
       key: Key('mark-status-${employee.id}'),
       enabled: !busy && statusTypes.isNotEmpty,
       onTap: () => _openStatusPicker(context),
-      leading: StatusBadge(
-        firstHalf: typeById[status?.firstHalfStatus] ?? weekOffType,
-        secondHalf: typeById[status?.secondHalfStatus] ?? weekOffType,
-      ),
+      leading: StatusBadge(status: typeById[statusId] ?? weekOffType),
       title: Text(employee.name),
       subtitle: subtitleParts.isEmpty
           ? const Text('Unmarked')

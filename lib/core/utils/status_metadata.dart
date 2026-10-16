@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 const _iconByName = <String, IconData>{
   'check': Icons.check,
   'close': Icons.close,
+  'contrast': Icons.contrast,
   'event_busy': Icons.event_busy,
   'beach_access': Icons.beach_access,
   'weekend': Icons.weekend,

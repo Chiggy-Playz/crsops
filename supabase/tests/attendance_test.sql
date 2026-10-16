@@ -30,8 +30,8 @@ as $$
 declare
   employee uuid := tests.employee_with_stints();
 begin
-  insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status, note)
-  values (employee, '2099-01-06', 'present', 'absent', 'half day');
+  insert into attendance.attendance_days (employee_id, date, status, note)
+  values (employee, '2099-01-06', 'half_day', 'left at lunch');
 
   return next is(
     (select count(*)::int from attendance.effective_range_status('2099-01-01', '2099-01-31', employee)),
@@ -45,10 +45,10 @@ begin
      from attendance.effective_range_status('2099-01-01', '2099-01-31', employee)),
     'week-offs follow the shift in force');
   return next results_eq(
-    format($sql$ select date, first_half_status, second_half_status, note
+    format($sql$ select date, status, note
                  from attendance.effective_range_status('2099-01-01', '2099-01-31', %L)
                  where is_explicit $sql$, employee),
-    $sql$ values ('2099-01-06'::date, 'present', 'absent', 'half day') $sql$,
+    $sql$ values ('2099-01-06'::date, 'half_day', 'left at lunch') $sql$,
     'only the marked day is explicit, with what was marked');
   return next is(
     (select count(*)::int from attendance.effective_range_status('2099-01-06', '2099-01-07', employee)),
@@ -79,13 +79,14 @@ as $$
 declare
   employee uuid := tests.employee_with_stints();
 begin
-  insert into attendance.attendance_days (employee_id, date, time_in, time_out) values
-    (employee, '2099-01-07', '10:00', '18:00'),
-    (employee, '2099-01-08', '10:30', '17:00'),
-    (employee, '2099-01-09', null, '20:00'),
-    (employee, '2099-01-20', '22:00', '02:00');
-  insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status)
-  values (employee, '2099-01-21', 'present', 'present');
+  insert into attendance.attendance_days (employee_id, date, status, time_in, time_out) values
+    (employee, '2099-01-07', 'present', '10:00', '18:00'),
+    (employee, '2099-01-08', 'present', '10:30', '17:00'),
+    (employee, '2099-01-09', 'present', null, '20:00'),
+    (employee, '2099-01-20', 'present', '22:00', '02:00'),
+    (employee, '2099-01-21', 'half_day', '10:00', '14:00');
+  insert into attendance.attendance_days (employee_id, date, status)
+  values (employee, '2099-01-22', 'present');
 
   return next results_eq(
     format($sql$ select date, worked_minutes, is_late, is_early, overtime_minutes
@@ -94,8 +95,9 @@ begin
       ('2099-01-07'::date, 480, false, false, 0),
       ('2099-01-08'::date, 390, true, true, 0),
       ('2099-01-09'::date, 600, false, false, 120),
-      ('2099-01-20'::date, 240, true, false, 0) $sql$,
-    'on time; late and early; missing time-in uses the shift start, overtime; overnight shift isn''t early');
+      ('2099-01-20'::date, 240, true, false, 0),
+      ('2099-01-21'::date, 240, false, false, 0) $sql$,
+    'on time; late and early; missing time-in uses the shift start, overtime; overnight shift and half day aren''t early');
 end;
 $$;
 
@@ -110,8 +112,8 @@ begin
   insert into core.employees (name, color) values ('ZZ Gaps', 0) returning id into employee;
   insert into core.employee_events (employee_id, event_type, event_date)
   values (employee, 'joined', today - 30);
-  insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status)
-  values (employee, today - 3, 'present', 'present');
+  insert into attendance.attendance_days (employee_id, date, status)
+  values (employee, today - 3, 'present');
 
   return next ok(
     exists (select 1 from attendance.recent_gaps() where employee_id = employee),
@@ -146,16 +148,16 @@ begin
   insert into core.employees (name, color) values ('ZZ Other', 0) returning id into other_employee;
   update core.employees set user_id = staff_id where id = employee;
   update core.employees set user_id = outsider_id where id = other_employee;
-  insert into attendance.attendance_days (employee_id, date, first_half_status, second_half_status) values
-    (employee, '2099-01-06', 'present', 'present'),
-    (other_employee, '2099-01-06', 'present', 'present');
+  insert into attendance.attendance_days (employee_id, date, status) values
+    (employee, '2099-01-06', 'present'),
+    (other_employee, '2099-01-06', 'present');
 
   perform tests.act_as(staff_id);
   return next is(
     (select array_agg(employee_id) from attendance.attendance_days where date = '2099-01-06'),
     array[employee], 'staff with attendance access see only their own days');
   return next throws_ok(
-    format($sql$ insert into attendance.attendance_days (employee_id, date) values (%L, '2099-01-07') $sql$, employee),
+    format($sql$ insert into attendance.attendance_days (employee_id, date, status) values (%L, '2099-01-07', 'present') $sql$, employee),
     '42501', null, 'and can''t mark attendance, even their own');
 
   perform tests.act_as(outsider_id);
@@ -166,7 +168,7 @@ begin
   return next is((select count(*)::int from attendance.attendance_days where date = '2099-01-06'), 2,
     'an admin sees everyone');
   return next lives_ok(
-    format($sql$ insert into attendance.attendance_days (employee_id, date, first_half_status) values (%L, '2099-01-07', 'present') $sql$, employee),
+    format($sql$ insert into attendance.attendance_days (employee_id, date, status) values (%L, '2099-01-07', 'present') $sql$, employee),
     'and can mark attendance');
   return next throws_ok(
     $sql$ update attendance.shift_defaults set default_start = '09:00' where effective_from = '2099-01-01' $sql$,

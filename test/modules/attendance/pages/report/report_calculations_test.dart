@@ -12,13 +12,12 @@ void main() {
       StatusType(id: 'week_off', label: 'Week Off'),
     ];
 
-    test('an explicit day counts toward its first_half_status bucket', () {
+    test('an explicit day counts toward its status bucket', () {
       final rows = [
         EffectiveStatusRow(
           employeeId: '1',
           date: DateTime(2024, 6, 3),
-          firstHalfStatus: 'present',
-          secondHalfStatus: 'absent',
+          status: 'present',
           isExplicit: true,
           isWeekOff: false,
         ),
@@ -30,13 +29,32 @@ void main() {
       expect(summary['absent'], 0);
     });
 
+    test('a half day is its own bucket, not present', () {
+      final rows = [
+        EffectiveStatusRow(
+          employeeId: '1',
+          date: DateTime(2024, 6, 3),
+          status: 'half_day',
+          isExplicit: true,
+          isWeekOff: false,
+        ),
+      ];
+
+      final summary = computeStatusSummary(rows, [
+        ...statusTypes,
+        const StatusType(id: 'half_day', label: 'Half Day'),
+      ]);
+
+      expect(summary['half_day'], 1);
+      expect(summary['present'], 0);
+    });
+
     test('explicit beats computed week-off — an explicitly marked Sunday counts by its status, not week_off', () {
       final rows = [
         EffectiveStatusRow(
           employeeId: '1',
           date: DateTime(2024, 6, 2),
-          firstHalfStatus: 'present',
-          secondHalfStatus: 'present',
+          status: 'present',
           isExplicit: true,
           isWeekOff: true,
         ),
