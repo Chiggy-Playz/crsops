@@ -71,8 +71,30 @@ class StatusBadge extends StatelessWidget {
           height: size,
           child: Row(
             children: [
-              Expanded(child: ColoredBox(color: firstRoles.color)),
-              Expanded(child: ColoredBox(color: secondRoles.color)),
+              Expanded(
+                child: ColoredBox(
+                  color: firstRoles.color,
+                  child: Center(
+                    child: Icon(
+                      iconFor(first.iconName),
+                      size: radius * 0.8,
+                      color: firstRoles.onColor,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ColoredBox(
+                  color: secondRoles.color,
+                  child: Center(
+                    child: Icon(
+                      iconFor(second.iconName),
+                      size: radius * 0.8,
+                      color: secondRoles.onColor,
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
