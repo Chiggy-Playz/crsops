@@ -103,7 +103,8 @@ class _ClientListPageState extends ConsumerState<ClientListPage> {
         ? ListActionRow(
             icon: Icons.add_business_outlined,
             label: 'New client',
-            onTap: () => const ClientNewRoute().push(context),
+            // Replaces the right pane; a push would stack a second form.
+            onTap: () => const ClientNewRoute().go(context),
           )
         : null;
 

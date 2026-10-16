@@ -38,6 +38,9 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
   /// Anything entered since the form opened, so leaving asks first.
   bool _changed = false;
 
+  /// Saved; a second Save would make a duplicate, and leaving shouldn't ask.
+  bool _saved = false;
+
   bool get _isEditing => widget.existing != null;
 
   /// "Name on challan" copies the client name as it's typed, until the
@@ -66,7 +69,7 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate() || _saving) return;
+    if (!_formKey.currentState!.validate() || _saving || _saved) return;
     final repo = ref.read(clientRepositoryProvider);
     final name = _nameController.text.trim();
     final notes = _notesController.text.trim();
@@ -98,6 +101,7 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
         ref.read(clientsRevisionProvider.notifier).bump();
         // Saved: nothing to ask about on the way out.
         _changed = false;
+        _saved = true;
         final createdId = newClientId;
         if (createdId == null) {
           Navigator.of(context).pop();
@@ -120,7 +124,7 @@ class _ClientEditPageState extends ConsumerState<ClientEditPage> {
       saving: _saving,
       onSave: _save,
       onChanged: () => _changed = true,
-      hasUnsavedChanges: () => _changed,
+      hasUnsavedChanges: () => _changed && !_saved,
       closeLocation: existing == null
           ? const ClientsRoute().location
           : ClientDetailRoute(existing.id).location,

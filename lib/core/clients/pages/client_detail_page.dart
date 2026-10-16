@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../auth/providers/auth_providers.dart';
 import '../../layout/two_pane_layout.dart';
+import '../../layout/window_size.dart';
 import '../../sections/app_sections_provider.dart';
 import '../../widgets/confirm_dialog.dart';
 import '../../widgets/guarded_save.dart';
@@ -25,6 +26,17 @@ Future<bool> _runClientAction(
   final succeeded = await runGuardedAction(action);
   if (succeeded) ref.read(clientsRevisionProvider.notifier).bump();
   return succeeded;
+}
+
+/// Wide: the form replaces the client in the right pane (a push would stack
+/// it on top). Narrow: a page on top, so back returns here.
+void _openEdit(BuildContext context, Client client) {
+  final route = ClientEditRoute(client.id, $extra: client);
+  if (context.isTwoPane) {
+    route.go(context);
+  } else {
+    route.push(context);
+  }
 }
 
 class ClientDetailPage extends ConsumerWidget {
@@ -93,9 +105,7 @@ class ClientDetailPage extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: 'Edit client',
-            onPressed: client == null
-                ? null
-                : () => ClientEditRoute(clientId, $extra: client).push(context),
+            onPressed: client == null ? null : () => _openEdit(context, client),
           ),
           if (client != null)
             OverflowMenu(
