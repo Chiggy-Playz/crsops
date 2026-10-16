@@ -33,7 +33,13 @@ create table attendance.status_types (
   label text not null,
   icon_name text,
   color_hex text,
-  description text
+  description text,
+  -- Whether this status can be picked for just one half of a day. True for
+  -- present/absent/leave; false for holiday and week off, which are whole-
+  -- day concepts (there's no such thing as half a holiday). Defaults true
+  -- so a custom type an admin adds behaves like the everyday ones unless
+  -- they say otherwise.
+  splittable boolean not null default true
 );
 
 create table attendance.attendance_days (

@@ -12,6 +12,7 @@ class StatusType with StatusTypeMappable {
     this.iconName,
     this.colorHex,
     this.description,
+    this.splittable = true,
   });
 
   @MappableField(key: 'id')
@@ -24,6 +25,10 @@ class StatusType with StatusTypeMappable {
   final String? colorHex;
   @MappableField(key: 'description')
   final String? description;
+  // Whether this status can apply to just one half of a day — false for
+  // holiday/week off, which are whole-day concepts.
+  @MappableField(key: 'splittable')
+  final bool splittable;
 }
 
 /// Built-ins by their fixed position ([StatusIds.builtInOrder]); anything
