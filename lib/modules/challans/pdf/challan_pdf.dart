@@ -331,7 +331,7 @@ class _ChallanPage {
       children: [
         row(challan.nameOnChallan, ruled: true),
         row(challan.address, ruled: true),
-        row('GST No. : ${challan.gstin ?? ''}', ruled: false),
+        row('GST No. : ${challan.gstin ?? 'NA'}', ruled: false),
       ],
     );
   }
