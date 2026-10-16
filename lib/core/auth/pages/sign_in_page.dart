@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../gen/assets.gen.dart';
 import '../../errors/app_exception.dart';
+import '../../errors/exception_translator.dart';
 import '../../widgets/error_snackbar.dart';
 import '../providers/auth_providers.dart';
 
@@ -15,6 +16,21 @@ class SignInPage extends ConsumerStatefulWidget {
 
 class _SignInPageState extends ConsumerState<SignInPage> {
   bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // On web, a failed sign-in comes back as an error on the auth stream
+    // before this page exists; show it once the page is up.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showRedirectError(ref.read(authStateChangesProvider));
+    });
+  }
+
+  void _showRedirectError(AsyncValue<Object?> authState) {
+    final error = authState.error;
+    if (error != null) showErrorSnackBar(translateException(error));
+  }
 
   Future<void> _signIn() async {
     setState(() => _loading = true);
@@ -29,6 +45,10 @@ class _SignInPageState extends ConsumerState<SignInPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      authStateChangesProvider,
+      (previous, next) => _showRedirectError(next),
+    );
     return Scaffold(
       body: Center(
         child: ConstrainedBox(
