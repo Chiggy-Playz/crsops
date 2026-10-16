@@ -404,29 +404,23 @@ class _DetailsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: 16,
           children: [
-            Wrap(
-              spacing: 32,
-              runSpacing: 16,
-              children: [
-                _Fact(
-                  icon: Icons.person_outline,
-                  value: challan.handledByName,
-                  label: challan.direction.handledByLabel,
-                ),
-                if (vehicle != null)
-                  _Fact(
-                    icon: Icons.local_shipping_outlined,
-                    value: vehicle,
-                    label: 'Vehicle',
-                  ),
-                if (value != null)
-                  _Fact(
-                    icon: Icons.currency_rupee,
-                    value: formatRupees(value),
-                    label: 'Value of goods',
-                  ),
-              ],
+            _Fact(
+              icon: Icons.person_outline,
+              value: challan.handledByName,
+              label: challan.direction.handledByLabel,
             ),
+            if (vehicle != null)
+              _Fact(
+                icon: Icons.local_shipping_outlined,
+                value: vehicle,
+                label: 'Vehicle',
+              ),
+            if (value != null)
+              _Fact(
+                icon: Icons.currency_rupee,
+                value: formatRupees(value),
+                label: 'Value of goods',
+              ),
             if (notes != null)
               _Fact(icon: Icons.notes, value: notes, label: 'Notes'),
           ],
