@@ -10,8 +10,9 @@ declare
   created core.employees;
 begin
   perform tests.act_as(admin_id);
-  created := core.create_employee('ZZ New Hire', 0, 15000, null, '2099-02-01');
+  created := core.create_employee('ZZ New Hire', 4282339765, 15000, null, '2099-02-01');
   return next is(created.name, 'ZZ New Hire', 'an admin can add an employee');
+  return next is(created.color, 4282339765::bigint, 'with a full ARGB colour, which needs more than 32 bits');
   return next results_eq(
     format($sql$ select event_type, event_date, created_by from core.employee_events where employee_id = %L $sql$,
       created.id),

@@ -110,7 +110,7 @@ $$;
 -- row-level security decides whether they may.
 create function core.create_employee(
   p_name text,
-  p_color integer,
+  p_color bigint,
   p_salary integer,
   p_notes text,
   p_joined_on date
@@ -136,8 +136,8 @@ begin
 end;
 $$;
 
-revoke execute on function core.create_employee(text, integer, integer, text, date) from public, anon;
-grant execute on function core.create_employee(text, integer, integer, text, date) to authenticated;
+revoke execute on function core.create_employee(text, bigint, integer, text, date) from public, anon;
+grant execute on function core.create_employee(text, bigint, integer, text, date) to authenticated;
 
 -- ── Row-level security ─────────────────────────────────────────────────────
 -- Helpers are wrapped as (select …) so Postgres works them out once per query,
