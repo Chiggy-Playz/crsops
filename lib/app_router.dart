@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/auth/providers/auth_providers.dart';
 import 'core/router/auth_routes.dart' as auth_routes;
@@ -24,8 +25,12 @@ GoRouter appRouter(Ref ref) {
   final refreshNotifier = _RouterRefreshNotifier();
   ref.listen(sessionProvider, (previous, next) => refreshNotifier.refresh());
 
+  // Sentry observers: each navigator needs its own, and each adds a "went to
+  // <route>" breadcrumb to error reports. The root one only sees top-level
+  // pages; every section branch and the Settings shell is a navigator too.
   return GoRouter(
     navigatorKey: rootNavigatorKey,
+    observers: [SentryNavigatorObserver()],
     initialLocation: const auth_routes.LoadingRoute().location,
     redirect: (context, state) => computeRedirect(
       sessionValue: ref.read(sessionProvider),
@@ -46,12 +51,14 @@ GoRouter appRouter(Ref ref) {
           for (final section in sections)
             StatefulShellBranch(
               initialLocation: section.homeLocation,
+              observers: [SentryNavigatorObserver()],
               routes: identical(section, settingsSection)
                   ? [
                       // Hub + page as two panes on wide windows. Built here
                       // rather than with @TypedShellRoute because the pages
                       // come from several sections' route files.
                       ShellRoute(
+                        observers: [SentryNavigatorObserver()],
                         builder: (context, state, child) => SettingsSplitLayout(
                           selectedLocation: state.matchedLocation,
                           child: child,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -33,7 +34,8 @@ Future<void> _start() async {
         appSectionsProvider.overrideWithValue(allSections),
         sharedPreferencesProvider.overrideWithValue(prefs),
       ],
-      child: const App(),
+      // SentryWidget adds a breadcrumb for each tap to error reports.
+      child: SentryWidget(child: const App()),
     ),
   );
 }
