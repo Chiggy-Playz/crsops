@@ -4,6 +4,7 @@ import 'package:http/http.dart' show ClientException;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../logging/app_talker.dart';
+import '../logging/error_reporting.dart';
 import 'app_exception.dart';
 
 /// Turns any error from Supabase or the network into an [AppException]
@@ -20,9 +21,11 @@ AppException translateException(Object error) {
   if (error is AuthException) return AuthFailureException(error.message);
   if (error is PostgrestException) {
     appTalker.error('Database error ${error.code}: ${error.message}', error);
+    reportHandledError(error, StackTrace.current);
     return DataException(friendlyDatabaseMessage(error));
   }
   appTalker.error('Unexpected error', error);
+  reportHandledError(error, StackTrace.current);
   return const UnknownException();
 }
 
