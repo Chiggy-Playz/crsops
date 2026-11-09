@@ -13,6 +13,8 @@ inputs:
   supabase-url: { required: true }
   supabase-publishable-key: { required: true }
   google-server-client-id: { required: true }
+  # Empty = error reporting off (cache-warming builds leave it out).
+  sentry-dsn: { required: false, default: '' }
   keystore-base64: { required: true }
   keystore-password: { required: true }
   key-alias: { required: true }
@@ -45,12 +47,14 @@ runs:
         SUPABASE_URL: ${{ inputs.supabase-url }}
         SUPABASE_PUBLISHABLE_KEY: ${{ inputs.supabase-publishable-key }}
         GOOGLE_SERVER_CLIENT_ID: ${{ inputs.google-server-client-id }}
+        SENTRY_DSN: ${{ inputs.sentry-dsn }}
       run: |
         jq -n \
           --arg url "$SUPABASE_URL" \
           --arg key "$SUPABASE_PUBLISHABLE_KEY" \
           --arg google "$GOOGLE_SERVER_CLIENT_ID" \
-          '{SUPABASE_URL: $url, SUPABASE_PUBLISHABLE_KEY: $key, GOOGLE_SERVER_CLIENT_ID: $google}' \
+          --arg sentry "$SENTRY_DSN" \
+          '{SUPABASE_URL: $url, SUPABASE_PUBLISHABLE_KEY: $key, GOOGLE_SERVER_CLIENT_ID: $google, SENTRY_DSN: $sentry}' \
           > env.json
 
     - name: Set up signing key

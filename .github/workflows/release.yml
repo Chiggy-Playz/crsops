@@ -168,6 +168,7 @@ jobs:
           supabase-url: ${{ secrets.SUPABASE_URL }}
           supabase-publishable-key: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           google-server-client-id: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+          sentry-dsn: ${{ secrets.SENTRY_DSN }}
           keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
